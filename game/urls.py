@@ -1,19 +1,31 @@
-# game/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CharacterViewSet, LobbyViewSet,RaceListView,ClassListView
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,)
+from .views import (
+    CharacterViewSet,
+    RaceListView,
+    ClassListView,
+    CharacterTemplateListView,
+    InitiateCombatView,
+    MeleeAttackView,
+    EndTurnView,
+    RangedAttackView,
+    BattleStateView
+)
 
 router = DefaultRouter()
-router.register(r'characters', CharacterViewSet)
-router.register(r'lobbies', LobbyViewSet)
+router.register(r'characters', CharacterViewSet, basename='characters')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('races/', RaceListView.as_view(), name='races-list'),
     path('classes/', ClassListView.as_view(), name='classes-list'),
+    path('character-templates/', CharacterTemplateListView.as_view(), name='character_templates'),
+    # Combat endpoint'leri:
+    path('combat/initiate/', InitiateCombatView.as_view(), name='initiate-combat'),
+    path('combat/melee-attack/', MeleeAttackView.as_view(), name='melee-attack'),
+    path('combat/ranged-attack/', RangedAttackView.as_view(), name='ranged-attack'),
+    path('combat/end-turn/', EndTurnView.as_view(), name='end-turn'),
+    
+    # Battle state endpoint
+    path('battle-state/<int:lobby_id>/', BattleStateView.as_view(), name='battle-state'),
 ]

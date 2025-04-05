@@ -1,6 +1,35 @@
 # game/serializers.py
+
 from rest_framework import serializers
-from .models import Character, Race, Class
+from .models import Character, Race, Class, CharacterTemplate
+
+class CharacterTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CharacterTemplate
+        fields = [
+            'template_id',
+            'name',
+            'class_name',  # veritabanında "class" sütunu olarak saklanır
+            'race',
+            'level',
+            'hp',
+            'strength',
+            'dexterity',
+            'constitution',
+            'intelligence',
+            'wisdom',
+            'charisma',
+            'equipment',
+            'spells',
+            'gold',
+            'created_at',
+            'updated_at'
+        ]
+    
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['class'] = rep.pop('class_name')
+        return rep
 
 class RaceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,7 +42,6 @@ class ClassSerializer(serializers.ModelSerializer):
         fields = ['class_name', 'description', 'features']
 
 class CharacterSerializer(serializers.ModelSerializer):
-    # race ve character_class alanlarını nested gösterelim istersen
     race = serializers.SlugRelatedField(
         slug_field='race_name',
         queryset=Race.objects.all()
@@ -31,11 +59,3 @@ class CharacterSerializer(serializers.ModelSerializer):
             'intelligence', 'wisdom', 'charisma', 'gold',
             'equipment', 'prepared_spells', 'class_features'
         ]
-# game/serializers.py
-from rest_framework import serializers
-from .models import Character, Lobby, Race, Class
-
-class LobbySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Lobby
-        fields = '__all__'  # veya istediğin sütunları yazabilirsin

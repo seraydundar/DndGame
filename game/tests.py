@@ -2,7 +2,8 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.urls import reverse
 from accounts.models import CustomUser  # Eski Player yerine CustomUser
-from game.models import Character, Lobby
+from game.models import Character
+ 
 
 class CharacterAPITest(TestCase):
     def setUp(self):
@@ -10,14 +11,12 @@ class CharacterAPITest(TestCase):
         # Örnek kullanıcı oluşturuluyor. create_user şifreyi otomatik hashler.
         self.user = CustomUser.objects.create_user(username='testplayer', email='test@example.com', password='hashed_password')
         # Örnek lobi oluşturuluyor, gm_player alanı custom user referansı.
-        self.lobby = Lobby.objects.create(gm_player=self.user, lobby_name='Test Lobby')
         # Karakter oluşturma endpoint URL'sini alıyoruz (router üzerinden gelen isim)
         self.url = reverse('character-list')
 
     def test_create_character(self):
         data = {
-            "player": self.user.id,
-            "lobby": self.lobby.id,
+
             "name": "Test Character",
             "race": "Human",
             "character_class": "Fighter",
