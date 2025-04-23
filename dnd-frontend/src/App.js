@@ -19,8 +19,6 @@ import EndBattle from "./pages/EndBattle";
 
 // Bileşenler / Context
 import RequireAuth from "./components/RequireAuth";
-import FriendSidebar from "./components/FriendSidebar";
-import NotificationSidebar from "./components/NotificationSidebar";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
 
@@ -29,7 +27,7 @@ function App() {
     <AuthProvider>
       <Router>
         <AuthContext.Consumer>
-          {({ userId, username, setUser }) => (
+          {({ userId }) => (
             <WebSocketProvider userId={userId}>
               {userId ? (
                 // Kullanıcı giriş yapmışsa:
@@ -81,7 +79,7 @@ function App() {
                             <EndBattle />
                           </RequireAuth>
                         }
-                      />  
+                      />
                       <Route
                         path="/trade"
                         element={
@@ -145,9 +143,7 @@ function App() {
                       />
                     </Routes>
                   </div>
-                  {/* Sağ tarafta arkadaş listesi ve bildirim paneli */}
-                  <FriendSidebar />
-                  <NotificationSidebar />
+                  {/* Artık yan paneller burada değil, Dashboard.js içinde tek seferlik render ediliyor */}
                 </div>
               ) : (
                 // Kullanıcı giriş yapmamışsa:
@@ -156,82 +152,9 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-
-                    {/* Korunan sayfalar (giriş gerektirir) */}
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <RequireAuth>
-                          <Dashboard />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/charactercreation"
-                      element={
-                        <RequireAuth>
-                          <CharacterCreation />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/lobbies/:lobby_id/character-creation"
-                      element={
-                        <RequireAuth>
-                          <CharacterCreation />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/battle"
-                      element={
-                        <RequireAuth>
-                          <Battle />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/trade"
-                      element={
-                        <RequireAuth>
-                          <Trade />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/chat"
-                      element={
-                        <RequireAuth>
-                          <Chat />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/lobbies"
-                      element={
-                        <RequireAuth>
-                          <Lobbies />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/lobbies/create"
-                      element={
-                        <RequireAuth>
-                          <CreateLobby />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/lobbies/:id"
-                      element={
-                        <RequireAuth>
-                          <Lobby />
-                        </RequireAuth>
-                      }
-                    />
+                    <Route path="/dashboard" element={<Dashboard />} />
                   </Routes>
-                  <p>Lütfen giriş yapınız, userId yok.</p>
+                  <p>Lütfen giriş yapınız.</p>
                 </div>
               )}
             </WebSocketProvider>

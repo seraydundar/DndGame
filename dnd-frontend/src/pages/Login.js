@@ -1,48 +1,30 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../contexts/AuthContext';
 
 const Login = () => {
-  // Local state
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-
-  // AuthContext'ten setUser fonksiyonunu al
   const { setUser } = useContext(AuthContext);
+
+  const [visible, setVisible] = useState(false);
+  const [blurScale, setBlurScale] = useState(1.1);
+
+  useEffect(() => {
+    setVisible(true);
+    setBlurScale(1);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      // Sunucuda custom_login_view'e istek atıyoruz
-      // Örnek: POST /api/accounts/login/ 
-      const response = await api.post("accounts/login/", {
-        username,
-        password,
-      });
-      console.log("Login response:", response.data);
-      /*
-        response.data:
-        {
-          "message": "Giriş başarılı.",
-          "user_id": 5,
-          "username": "ali"
-        }
-      */
-
-      // LocalStorage'a kaydet
-      localStorage.setItem("user_id", response.data.user_id);
-      localStorage.setItem("username", response.data.username);
-
-      // AuthContext içindeki user state güncelle
-      setUser({
-        userId: response.data.user_id,
-        username: response.data.username,
-      });
-
-      alert("Giriş başarılı!");
-      // Dashboard'a yönlendir
+      const response = await api.post("accounts/login/", { username, password });
+      const { user_id, username: uname } = response.data;
+      localStorage.setItem("user_id", user_id);
+      localStorage.setItem("username", uname);
+      setUser({ userId: user_id, username: uname });
       navigate("/dashboard");
     } catch (error) {
       console.error("Login hatası:", error);
@@ -51,30 +33,116 @@ const Login = () => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Giriş Yap</h2>
-      <form onSubmit={handleLogin}>
-        <div>
-          <label>Kullanıcı Adı</label><br />
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0,
+      }}
+    >
+      {/* Bulanık arkaplan */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundImage: 'url("/dndregister.jpg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(6px)',
+          transform: `scale(${blurScale})`,
+          transition: 'transform 1s ease-out',
+          zIndex: -1,
+        }}
+      />
+
+      {/* Form kutusu tam ortada */}
+      <form
+        onSubmit={handleLogin}
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: visible
+            ? 'translate(-50%, -50%)'
+            : 'translate(-50%, -60%)',
+          opacity: visible ? 1 : 0,
+          transition: 'transform 0.8s ease-in-out, opacity 0.8s ease-in-out',
+          background: 'rgba(0, 0, 0, 0.7)',
+          color: '#fff',
+          padding: '50px 40px',
+          borderRadius: '14px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+          width: '90%',
+          maxWidth: '480px',
+          textAlign: 'center',
+          zIndex: 1,
+        }}
+      >
+        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>Giriş Yap</h2>
+
+        <div style={{ marginBottom: '24px', textAlign: 'left' }}>
+          <label style={{ display: 'block', marginBottom: '8px' }}>Kullanıcı Adı</label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
+            style={{
+              width: '100%',
+              padding: '14px',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'rgba(255,255,255,0.9)',
+              fontSize: '1em',
+            }}
           />
         </div>
-        <br />
-        <div>
-          <label>Şifre</label><br />
+
+        <div style={{ marginBottom: '32px', textAlign: 'left' }}>
+          <label style={{ display: 'block', marginBottom: '8px' }}>Şifre</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            style={{
+              width: '100%',
+              padding: '14px',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'rgba(255,255,255,0.9)',
+              fontSize: '1em',
+            }}
           />
         </div>
-        <br />
-        <button type="submit">Giriş Yap</button>
+
+        <button
+          type="submit"
+          style={{
+            width: '100%',
+            padding: '16px',
+            border: 'none',
+            borderRadius: '10px',
+            backgroundColor: '#a57c3c',
+            color: '#fff',
+            fontSize: '1.1em',
+            fontWeight: '700',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8d662f')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#a57c3c')}
+        >
+          Giriş Yap
+        </button>
       </form>
     </div>
   );

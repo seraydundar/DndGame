@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import socket from '../services/socket';
+import './Lobbies.css';
 
 // Basit bir sleep fonksiyonu
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -59,39 +60,33 @@ const Lobby = () => {
 
   // Periyodik güncelleme: Her 3 saniyede bir lobiyi güncelliyoruz.
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      fetchLobby();
-    }, 3000);
+    const intervalId = setInterval(fetchLobby, 3000);
     return () => clearInterval(intervalId);
   }, [id]);
 
-  // WebSocket mesajlarını dinleyerek lobideki güncellemeleri de alıyoruz.
+  // WebSocket mesajlarını dinleyerek lobideki güncellemeleri alıyoruz.
   useEffect(() => {
     if (!lobby) return;
-    const messageHandler = (event) => {
+    const handler = event => {
       try {
         const data = JSON.parse(event.data);
         if (data.event === "gameStarted") {
           navigate(currentUserId === lobby.gm_player ? "/godpanel" : "/playerpage");
         }
-        if (
-          data.event === "playerReadyUpdate" ||
-          data.event === "playerJoined" ||
-          data.event === "lobbyUpdate"
-        ) {
+        if (["playerReadyUpdate","playerJoined","lobbyUpdate"].includes(data.event)) {
           fetchLobby();
         }
-      } catch (error) {
-        console.error("Mesaj ayrıştırma hatası:", error);
+      } catch (e) {
+        console.error("WS mesaj ayrıştırma hatası:", e);
       }
     };
-    socket.addEventListener("message", messageHandler);
-    return () => socket.removeEventListener("message", messageHandler);
+    socket.addEventListener("message", handler);
+    return () => socket.removeEventListener("message", handler);
   }, [lobby, currentUserId, navigate]);
 
   // Lobiye katıldığında diğer oyunculara bildiriyoruz.
   useEffect(() => {
-    const sendPlayerJoined = async () => {
+    const joinNotify = async () => {
       if (lobby && !hasJoined) {
         if (socket.readyState !== WebSocket.OPEN) {
           await sleep(1000);
@@ -100,138 +95,115 @@ const Lobby = () => {
         setHasJoined(true);
       }
     };
-    sendPlayerJoined();
+    joinNotify();
   }, [lobby, hasJoined]);
 
-  // Davet için
   const handleInviteFriend = async () => {
-    if (!selectedFriend) {
-      alert('Davet edeceğin arkadaşı seç!');
-      return;
-    }
+    if (!selectedFriend) return alert('Davet edeceğin arkadaşı seç!');
     try {
       await api.post(`accounts/lobbies/${id}/invite/`, { player_id: selectedFriend });
       alert('Arkadaş başarıyla davet edildi!');
-    } catch (error) {
-      console.error('Oyuncu davet hatası:', error);
+    } catch (e) {
+      console.error('Davet hatası:', e);
       alert('Oyuncu davet edilemedi.');
     }
   };
 
-  // Karakter silme işlemi
-  const handleDeleteCharacter = async (characterId) => {
-    try {
-      await api.delete(`characters/${characterId}/`);
-      setMyCharacters(myCharacters.filter((char) => char.id !== characterId));
-      alert('Karakter silindi!');
-    } catch (error) {
-      console.error('Karakter silme hatası:', error);
-      alert('Karakter silinemedi.');
-    }
-  };
-
-  // GM için oyunu başlatma
-  const handleStartGame = async () => {
-    try {
-      if (socket.readyState !== WebSocket.OPEN) {
-        await new Promise((resolve) => {
-          socket.addEventListener("open", resolve, { once: true });
-        });
-      }
-      socket.send(JSON.stringify({ event: "startGame", lobbyId: lobby.lobby_id }));
-      navigate("/godpanel");
-    } catch (error) {
-      console.error("Oyun başlatma hatası:", error);
-      alert("Oyun başlatılamadı.");
-    }
-  };
-
-  // Ready toggle: oyuncu karakterini seçip hazır dediğinde
   const handleReadyToggle = async () => {
     if (!selectedCharacter && myCharacters.length > 0) {
       return alert("Önce bir karakter seçmelisin!");
     }
-    const newReadyStatus = !isReady;
+    const newReady = !isReady;
     try {
       await api.patch(`lobbies/${id}/players/${currentUserId}/ready/`, {
-        is_ready: newReadyStatus,
+        is_ready: newReady,
         character_id: selectedCharacter
       });
-      setIsReady(newReadyStatus);
+      setIsReady(newReady);
       if (socket.readyState !== WebSocket.OPEN) {
         await sleep(1000);
       }
       socket.send(JSON.stringify({ event: "playerReadyUpdate", lobbyId: lobby.lobby_id }));
-      const response = await api.get(`lobbies/${id}/`);
-      setLobby(response.data);
-      if (!response.data.is_active) {
-        navigate(currentUserId === response.data.gm_player ? "/godpanel" : "/playerpage");
+      const resp = await api.get(`lobbies/${id}/`);
+      setLobby(resp.data);
+      if (!resp.data.is_active) {
+        navigate(currentUserId === resp.data.gm_player ? "/godpanel" : "/playerpage");
       }
-    } catch (error) {
-      console.error("Hazır durum güncelleme hatası:", error);
+    } catch (e) {
+      console.error("Hazır durum güncelleme hatası:", e);
       alert("Hazır durumu güncellenemedi.");
     }
   };
 
+  const handleStartGame = async () => {
+    try {
+      if (socket.readyState !== WebSocket.OPEN) {
+        await new Promise(resolve => socket.addEventListener("open", resolve, { once: true }));
+      }
+      socket.send(JSON.stringify({ event: "startGame", lobbyId: lobby.lobby_id }));
+      navigate("/godpanel");
+    } catch (e) {
+      console.error("Oyun başlatma hatası:", e);
+      alert("Oyun başlatılamadı.");
+    }
+  };
+
   const filteredFriends = lobby
-    ? friends.filter((friend) => {
-        const friendId = friend.friend_user.id;
-        return !lobby.lobby_players.some(lp => lp.player === friendId);
-      })
+    ? friends.filter(f => !lobby.lobby_players.some(lp => lp.player === f.friend_user.id))
     : [];
 
   if (!lobby) {
-    return <div style={{ padding: '20px' }}>Lobi bilgisi yükleniyor...</div>;
+    return <div className="lobby-detail-container">Lobi bilgisi yükleniyor...</div>;
   }
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="lobby-detail-container">
       <h2>{lobby.lobby_name} Lobisi</h2>
-      <p>
-        <strong>GM:</strong> {lobby.gm_player_username || lobby.gm_player}
-      </p>
-      <p>
-        <strong>Durum:</strong> {lobby.is_active ? 'Aktif' : 'Oyun Başlatıldı'}
-      </p>
+      <div className="lobby-detail-info">
+        <p><strong>GM:</strong> {lobby.gm_player_username || lobby.gm_player}</p>
+        <p><strong>Durum:</strong> {lobby.is_active ? 'Aktif' : 'Oyun Başlatıldı'}</p>
+      </div>
 
-      <h3>Oyuncular</h3>
-      {lobby.lobby_players && lobby.lobby_players.length > 0 ? (
-        <ul>
-          {lobby.lobby_players.map((lp) => (
-            <li key={lp.id}>
-              {lp.player_username} {lp.is_ready ? '✅' : '❌'}
-              {lp.is_ready && lp.character ? (
-                <> - {lp.character.name} ({lp.character.race} / {lp.character.character_class})</>
-              ) : lp.is_ready && !lp.character && lp.player === currentUserId ? (
-                (() => {
-                  const myChar = myCharacters.find(c => c.id === parseInt(selectedCharacter));
-                  return myChar ? <> - {myChar.name} ({myChar.race} / {myChar.character_class})</> : null;
-                })()
-              ) : null}
-            </li>
+      <div className="lobby-players-section">
+        <h3>Oyuncular</h3>
+        {lobby.lobby_players.length > 0 ? (
+          <ul className="lobby-players-list">
+            {lobby.lobby_players.map(lp => (
+              <li key={lp.id}>
+                {lp.player_username} {lp.is_ready ? '✅' : '❌'}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-message">Henüz katılan oyuncu yok.</p>
+        )}
+      </div>
+
+      <div className="lobby-invite-section">
+        <h3>Arkadaş Davet Et</h3>
+        <select
+          value={selectedFriend}
+          onChange={e => setSelectedFriend(e.target.value)}
+        >
+          <option value="">--Arkadaş Seç--</option>
+          {filteredFriends.map(f => (
+            <option key={f.id} value={f.friend_user.id}>
+              {f.friend_username}
+            </option>
           ))}
-        </ul>
-      ) : (
-        <p>Henüz katılan oyuncu yok.</p>
-      )}
-
-      <h3>Arkadaş Davet Et</h3>
-      <select value={selectedFriend} onChange={(e) => setSelectedFriend(e.target.value)}>
-        <option value="">--Arkadaş Seç--</option>
-        {filteredFriends.map((friend) => (
-          <option key={friend.id} value={friend.friend_user.id}>
-            {friend.friend_username}
-          </option>
-        ))}
-      </select>
-      <button onClick={handleInviteFriend}>Davet Et</button>
+        </select>
+        <button onClick={handleInviteFriend}>Davet Et</button>
+      </div>
 
       {currentUserId !== lobby.gm_player && (
-        <>
+        <div className="lobby-ready-section">
           <h3>Karakterlerim</h3>
-          <select value={selectedCharacter} onChange={(e) => setSelectedCharacter(e.target.value)}>
+          <select
+            value={selectedCharacter}
+            onChange={e => setSelectedCharacter(e.target.value)}
+          >
             <option value="">--Karakter Seç--</option>
-            {myCharacters.map((c) => (
+            {myCharacters.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -243,16 +215,18 @@ const Lobby = () => {
           <button onClick={handleReadyToggle}>
             {isReady ? "Hazır Değilim ❌" : "Hazırım ✅"}
           </button>
-        </>
+        </div>
       )}
 
       {currentUserId === lobby.gm_player && (
-        <button onClick={handleStartGame}>Oyunu Başlat (GM)</button>
+        <button className="lobby-start-btn" onClick={handleStartGame}>
+          Oyunu Başlat (GM)
+        </button>
       )}
 
-      <div style={{ marginTop: 20 }}>
-        <button onClick={() => navigate('/lobbies')}>Tüm Lobiler</button>
-      </div>
+      <button className="lobby-back-btn" onClick={() => navigate('/lobbies')}>
+        Tüm Lobiler
+      </button>
     </div>
   );
 };

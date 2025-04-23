@@ -1,0 +1,90 @@
+/* GodPanel.css */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+:root {
+  --panel-bg: rgba(0, 0, 0, 0.6);
+  --panel-border: #ccb974;
+  --text-color: #f9f4e6;
+  --accent-color: #d4af37;
+  --button-bg: #3c2f2f;
+  --button-hover-bg: #5a4b4b;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Eğer wrapper kullanılmadıysa: direkt .god-panel'i ortalayın */
+.god-panel {
+  max-width: 600px;
+  padding: 20px;
+  background-color: var(--panel-bg);
+  border: 2px solid var(--panel-border);
+  border-radius: 8px;
+  font-family: 'Cinzel', serif;
+  color: var(--text-color);
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+
+  /* Ekran ortasına sabitle */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.god-panel h2 {
+  margin-bottom: 16px;
+  font-size: 2rem;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+  text-align: center;
+}
+
+.gp-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.gp-button {
+  padding: 10px 24px;
+  font-size: 1rem;
+  color: var(--text-color);
+  background-color: var(--button-bg);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.gp-button:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.gp-divider {
+  border: 0;
+  height: 1px;
+  background: var(--accent-color);
+  margin: 20px 0;
+  opacity: 0.6;
+}
+
+.gp-section-title {
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+  border-bottom: 1px dashed var(--accent-color);
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+.gp-diceroll-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.gp-stats p {
+  margin: 6px 0;
+  font-size: 1rem;
+}

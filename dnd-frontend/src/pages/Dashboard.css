@@ -1,0 +1,164 @@
+/* D&D Temalı Minimalist Dashboard CSS */
+
+:root, html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Cinzel', serif;
+  color: #2e2e2e;
+  position: relative;
+}
+
+/* Arkaplan: 4 resim Ken Burns (Fade + Zoom) Efekti */
+html::before,
+html::after,
+body::before,
+body::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+  opacity: 0;
+  transform: scale(1);
+  animation: kenburns 40s ease-in-out infinite;
+  animation-fill-mode: both;
+}
+
+html::before {
+  background-image: url('../assets/dash1.jpg');
+  animation-delay: 0s;
+}
+html::after {
+  background-image: url('../assets/dash2.jpg');
+  animation-delay: 10s;
+}
+body::before {
+  background-image: url('../assets/dash3.jpg');
+  animation-delay: 20s;
+}
+body::after {
+  background-image: url('../assets/dash4.jpg');
+  animation-delay: 30s;
+}
+
+@keyframes kenburns {
+  /* İlk slide: %0-%24 */
+  0%, 24% { opacity: 1; transform: scale(1.1); }
+  /* Geçiş: %25 */
+  25% { opacity: 0; transform: scale(1.1); }
+  /* Gizli kalan süre: %26-%100 */
+  26%, 100% { opacity: 0; transform: scale(1); }
+}
+
+/* Dashboard Layout */
+.dashboard-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.dashboard-main {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 250, 240, 0.9);
+  border: 2px solid #8b5e3c;
+  border-radius: 8px;
+  padding: 20px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 4px 4px 10px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+.dashboard-main h2 {
+  margin-bottom: 16px;
+  color: #6b4f3f;
+  font-size: 1.8rem;
+}
+
+.btn {
+  font-family: inherit;
+  padding: 8px 16px;
+  background: #6b4f3f;
+  color: #f4ecd8;
+  border: 1px solid #4b3621;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: #4b3621;
+}
+
+.dashboard-nav ul {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+}
+
+.dashboard-nav li {
+  margin: 8px 0;
+}
+
+.dashboard-nav a {
+  color: #4b3621;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.dashboard-nav a:hover {
+  color: #2e2e2e;
+  text-decoration: underline;
+}
+
+/* Yan Paneller */
+.friend-panel {
+  position: absolute;
+  top: 100px;
+  right: 40px;
+  width: 280px;
+  z-index: 1;
+}
+
+.notification-panel {
+  position: absolute;
+  top: 360px;
+  right: 40px;
+  width: 280px;
+  z-index: 1;
+}
+
+/* Arkadaş ve Bildirim Kutuları */
+.friend-sidebar,
+.notification-sidebar {
+  background: rgba(255, 250, 240, 0.95);
+  border: 2px solid #8b5e3c;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.2);
+  min-height: 250px;
+}
+
+.friend-sidebar h3,
+.notification-sidebar h3 {
+  margin: 0 0 8px;
+  color: #6b4f3f;
+  font-size: 1.1rem;
+}
+
+.friend-sidebar p,
+.notification-sidebar p {
+  margin: 4px 0;
+  font-weight: bold;
+}
