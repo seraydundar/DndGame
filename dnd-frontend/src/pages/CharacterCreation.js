@@ -1,277 +1,182 @@
+// src/pages/CharacterCreation.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
-import TemplateDisplay from '../components/TemplateDisplay';
 import socket from '../services/socket';
+import './Dashboard.css';
+import './CharacterCreation.css';
 
 const CharacterCreation = () => {
   const { lobby_id } = useParams();
   const navigate = useNavigate();
   const currentUserId = parseInt(localStorage.getItem("user_id"), 10);
-  
+
+  // --- Point-buy hesaplama ---
   const totalPoints = 27;
+  const cost = (value) =>
+    value <= 13 ? value - 8 : 5 + 2 * (value - 13);
+
+  // --- State’ler ---
   const [step, setStep] = useState(1);
+
+  const [races, setRaces] = useState([]);
+  const [classes, setClasses] = useState([]);
+
+  // Başlangıçta boş değerler
   const [selectedRace, setSelectedRace] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
-  const [gender, setGender] = useState('Male');
-  const [characterName, setCharacterName] = useState('');
-  const [background, setBackground] = useState('');
-  const [personalityTraits, setPersonalityTraits] = useState('');
-  
+  const [gender, setGender] = useState('');
+
   const [strength, setStrength] = useState(8);
   const [dexterity, setDexterity] = useState(8);
   const [constitution, setConstitution] = useState(8);
   const [intelligence, setIntelligence] = useState(8);
   const [wisdom, setWisdom] = useState(8);
   const [charisma, setCharisma] = useState(8);
-  
+
   const [bonusAssignments, setBonusAssignments] = useState({
     strength: 0,
     dexterity: 0,
     constitution: 0,
     intelligence: 0,
     wisdom: 0,
-    charisma: 0,
+    charisma: 0
   });
-  
+
+  const [startItems, setStartItems] = useState([]);
   const [availableSpells, setAvailableSpells] = useState([]);
   const [selectedSpells, setSelectedSpells] = useState([]);
   const MAX_ZERO_LEVEL = 2;
   const MAX_FIRST_LEVEL = 1;
-  
-  const [races, setRaces] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [startItems, setStartItems] = useState([]);
-  
-  const cost = (value) => {
-    if (value <= 13) {
-      return value - 8;
-    } else {
-      return 5 + 2 * (value - 13);
-    }
-  };
 
-  const totalSpent = cost(strength) +
-                     cost(dexterity) +
-                     cost(constitution) +
-                     cost(intelligence) +
-                     cost(wisdom) +
-                     cost(charisma);
+  const [characterName, setCharacterName] = useState('');
+  const [background, setBackground] = useState('');
+  const [personalityTraits, setPersonalityTraits] = useState('');
+
+  // --- Toplam harcanan ve kalan puan ---
+  const totalSpent =
+    cost(strength) +
+    cost(dexterity) +
+    cost(constitution) +
+    cost(intelligence) +
+    cost(wisdom) +
+    cost(charisma);
+
   const remainingPoints = totalPoints - totalSpent;
 
+  // --- API’den ırk ve sınıf çek ---
   useEffect(() => {
-    const fetchRaces = async () => {
-      try {
-        const response = await api.get('races/');
-        setRaces(response.data);
-        if (response.data.length > 0 && !selectedRace) {
-          setSelectedRace(response.data[0].race_name);
-        }
-      } catch (error) {
-        console.error('Hata (races):', error);
-      }
-    };
-    const fetchClasses = async () => {
-      try {
-        const response = await api.get('classes/');
-        setClasses(response.data);
-        if (response.data.length > 0 && !selectedClass) {
-          setSelectedClass(response.data[0].class_name);
-        }
-      } catch (error) {
-        console.error('Hata (classes):', error);
-      }
-    };
-    fetchRaces();
-    fetchClasses();
-  }, [selectedRace, selectedClass]);
+    api.get('races/')
+      .then(res => setRaces(res.data))
+      .catch(console.error);
 
-  useEffect(() => {
-    if (selectedClass) {
-      const fetchTemplate = async () => {
-        try {
-          const queryParam = selectedClass.trim();
-          const response = await api.get(`character-templates/?class=${queryParam}`);
-          console.log("Template fetch response:", response.data);
-          if (response.data && response.data.length > 0) {
-            const template = response.data[0];
-            setStrength(template.strength);
-            setDexterity(template.dexterity);
-            setConstitution(template.constitution);
-            setIntelligence(template.intelligence);
-            setWisdom(template.wisdom);
-            setCharisma(template.charisma);
-          } else {
-            console.log('Hazır şablon bulunamadı, varsayılan statlar kullanılacak.');
-          }
-        } catch (error) {
-          console.error('Hata (template fetch):', error);
-        }
-      };
-      fetchTemplate();
-    }
-  }, [selectedClass]);
-
-  useEffect(() => {
-    if (selectedClass) {
-      const fetchStartItems = async () => {
-        try {
-          const rarityParam = "Start";
-          const nameParam = selectedClass.trim();
-          const response = await api.get(`items/?rarity=${rarityParam}&name__icontains=${nameParam}`);
-          console.log("Start items response:", response.data);
-          setStartItems(response.data);
-        } catch (error) {
-          console.error('Start items fetch error:', error);
-          setStartItems([]);
-        }
-      };
-      fetchStartItems();
-    }
-  }, [selectedClass, step]);
-
-  useEffect(() => {
-    if (selectedClass) {
-      const fetchSpells = async () => {
-        try {
-          const response = await api.get(`spells/?classes__icontains=${selectedClass}&spell_level__lte=1`);
-          console.log("Available spells:", response.data);
-          setAvailableSpells(response.data);
-        } catch (error) {
-          console.error("Error fetching spells:", error);
-          setAvailableSpells([]);
-        }
-      };
-      fetchSpells();
-    }
-  }, [selectedClass]);
-
-  useEffect(() => {
-    const ccUpdateHandler = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.event === "characterCreationUpdate") {
-          if (data.races) {
-            setRaces(data.races);
-          }
-          if (data.classes) {
-            setClasses(data.classes);
-          }
-          if (data.startItems) {
-            setStartItems(data.startItems);
-          }
-          if (data.spells) {
-            setAvailableSpells(data.spells);
-          }
-          console.log("CharacterCreation güncellemesi alındı:", data);
-        }
-      } catch (error) {
-        console.error("CharacterCreationUpdate mesaj ayrıştırma hatası:", error);
-      }
-    };
-
-    socket.addEventListener("message", ccUpdateHandler);
-    return () => {
-      socket.removeEventListener("message", ccUpdateHandler);
-    };
+    api.get('classes/')
+      .then(res => setClasses(res.data))
+      .catch(console.error);
   }, []);
 
-  const toggleSpellSelection = (spell) => {
+  // --- Sınıfa göre şablon, eşyalar ve büyüler çek ---
+  useEffect(() => {
+    if (!selectedClass) return;
+
+    api.get(`character-templates/?class=${selectedClass}`)
+      .then(res => {
+        const tpl = res.data[0];
+        if (tpl) {
+          setStrength(tpl.strength);
+          setDexterity(tpl.dexterity);
+          setConstitution(tpl.constitution);
+          setIntelligence(tpl.intelligence);
+          setWisdom(tpl.wisdom);
+          setCharisma(tpl.charisma);
+        }
+      })
+      .catch(console.error);
+
+    api.get(`items/?rarity=Start&name__icontains=${selectedClass}`)
+      .then(res => setStartItems(res.data))
+      .catch(() => setStartItems([]));
+
+    api.get(`spells/?classes__icontains=${selectedClass}&spell_level__lte=1`)
+      .then(res => setAvailableSpells(res.data))
+      .catch(() => setAvailableSpells([]));
+  }, [selectedClass]);
+
+  // --- WebSocket üzerinden dinamik güncelleme ---
+  useEffect(() => {
+    const handler = e => {
+      const data = JSON.parse(e.data);
+      if (data.event === 'characterCreationUpdate') {
+        data.races && setRaces(data.races);
+        data.classes && setClasses(data.classes);
+        data.startItems && setStartItems(data.startItems);
+        data.spells && setAvailableSpells(data.spells);
+      }
+    };
+    socket.addEventListener('message', handler);
+    return () => socket.removeEventListener('message', handler);
+  }, []);
+
+  // --- Stat arttırma/azaltma ve bonus atama ---
+  const changeStat = (stat, delta) => {
+    const map = {
+      strength: [strength, setStrength],
+      dexterity: [dexterity, setDexterity],
+      constitution: [constitution, setConstitution],
+      intelligence: [intelligence, setIntelligence],
+      wisdom: [wisdom, setWisdom],
+      charisma: [charisma, setCharisma]
+    };
+    const [value, setter] = map[stat];
+    const newValue = value + delta;
+    if (newValue < 8 || newValue > 17) return;
+    const newSpent = totalSpent - cost(value) + cost(newValue);
+    if (newSpent > totalPoints) return;
+    setter(newValue);
+  };
+
+  const toggleBonus = stat => {
+    const totalBonus = Object.values(bonusAssignments).reduce((a,b) => a + b, 0);
+    if (!bonusAssignments[stat] && totalBonus >= 2) {
+      return alert('En fazla 2 bonus puan seçebilirsiniz.');
+    }
+    setBonusAssignments({
+      ...bonusAssignments,
+      [stat]: bonusAssignments[stat] ? 0 : 1
+    });
+  };
+
+  // --- Büyü seçimi ---
+  const toggleSpell = spell => {
     if (selectedSpells.some(s => s.spell_id === spell.spell_id)) {
       setSelectedSpells(selectedSpells.filter(s => s.spell_id !== spell.spell_id));
     } else {
-      if (spell.spell_level === 0) {
-        const zeroLevelCount = selectedSpells.filter(s => s.spell_level === 0).length;
-        if (zeroLevelCount >= MAX_ZERO_LEVEL) {
-          alert(`Seviye 0 büyüden en fazla ${MAX_ZERO_LEVEL} seçebilirsiniz.`);
-          return;
-        }
-      }
-      if (spell.spell_level === 1) {
-        const firstLevelCount = selectedSpells.filter(s => s.spell_level === 1).length;
-        if (firstLevelCount >= MAX_FIRST_LEVEL) {
-          alert(`Seviye 1 büyüden en fazla ${MAX_FIRST_LEVEL} seçebilirsiniz.`);
-          return;
-        }
+      const zeroCount = selectedSpells.filter(s => s.spell_level === 0).length;
+      const oneCount = selectedSpells.filter(s => s.spell_level === 1).length;
+      if ((spell.spell_level === 0 && zeroCount >= MAX_ZERO_LEVEL) ||
+          (spell.spell_level === 1 && oneCount >= MAX_FIRST_LEVEL)) {
+        return alert(`Bu seviyeden daha fazla seçemezsiniz.`);
       }
       setSelectedSpells([...selectedSpells, spell]);
     }
   };
 
-  const toggleBonus = (stat) => {
-    const current = bonusAssignments[stat];
-    const totalBonus = Object.values(bonusAssignments).reduce((sum, val) => sum + val, 0);
-    if (current === 0) {
-      if (totalBonus >= 2) {
-        alert("En fazla 2 bonus puan seçebilirsiniz.");
-        return;
-      }
-      setBonusAssignments({ ...bonusAssignments, [stat]: 1 });
-    } else {
-      setBonusAssignments({ ...bonusAssignments, [stat]: 0 });
-    }
-  };
+  // --- Form adımları ---
+  const next = () => setStep(step + 1);
+  const prev = () => setStep(step - 1);
 
-  const increaseStat = (statName) => {
-    let current, setter;
-    switch(statName) {
-      case 'strength':
-        current = strength; setter = setStrength; break;
-      case 'dexterity':
-        current = dexterity; setter = setDexterity; break;
-      case 'constitution':
-        current = constitution; setter = setConstitution; break;
-      case 'intelligence':
-        current = intelligence; setter = setIntelligence; break;
-      case 'wisdom':
-        current = wisdom; setter = setWisdom; break;
-      case 'charisma':
-        current = charisma; setter = setCharisma; break;
-      default: return;
-    }
-    const newValue = current + 1;
-    if (newValue > 17) return;
-    const newTotalSpent = totalSpent - cost(current) + cost(newValue);
-    if (newTotalSpent <= totalPoints) {
-      setter(newValue);
-    }
-  };
-
-  const decreaseStat = (statName) => {
-    let current, setter;
-    switch(statName) {
-      case 'strength':
-        current = strength; setter = setStrength; break;
-      case 'dexterity':
-        current = dexterity; setter = setDexterity; break;
-      case 'constitution':
-        current = constitution; setter = setConstitution; break;
-      case 'intelligence':
-        current = intelligence; setter = setIntelligence; break;
-      case 'wisdom':
-        current = wisdom; setter = setWisdom; break;
-      case 'charisma':
-        current = charisma; setter = setCharisma; break;
-      default: return;
-    }
-    const newValue = current - 1;
-    if (newValue < 8) return;
-    setter(newValue);
-  };
-
-  const handleNext = () => setStep(step + 1);
-  const handlePrev = () => setStep(step - 1);
-
-  const handleSubmit = async (e) => {
+  // --- Gönderim ---
+  const handleSubmit = async e => {
     e.preventDefault();
-    const finalStrength = strength + bonusAssignments.strength;
-    const finalDexterity = dexterity + bonusAssignments.dexterity;
-    const finalConstitution = constitution + bonusAssignments.constitution;
-    const finalIntelligence = intelligence + bonusAssignments.intelligence;
-    const finalWisdom = wisdom + bonusAssignments.wisdom;
-    const finalCharisma = charisma + bonusAssignments.charisma;
-
-    const newCharacter = {
+    const finalStats = {
+      strength: strength + bonusAssignments.strength,
+      dexterity: dexterity + bonusAssignments.dexterity,
+      constitution: constitution + bonusAssignments.constitution,
+      intelligence: intelligence + bonusAssignments.intelligence,
+      wisdom: wisdom + bonusAssignments.wisdom,
+      charisma: charisma + bonusAssignments.charisma
+    };
+    const payload = {
       player_id: currentUserId,
       lobby_id: Number(lobby_id),
       name: characterName,
@@ -280,198 +185,254 @@ const CharacterCreation = () => {
       gender,
       level: 1,
       hp: 10,
-      strength: finalStrength,
-      dexterity: finalDexterity,
-      constitution: finalConstitution,
-      intelligence: finalIntelligence,
-      wisdom: finalWisdom,
-      charisma: finalCharisma,
+      ...finalStats,
       gold: 10,
       equipment: startItems,
       prepared_spells: selectedSpells,
       class_features: {},
       xp: 0,
       background,
-      personality_traits: personalityTraits,
+      personality_traits: personalityTraits
     };
-
     try {
-      await api.post('characters/', newCharacter);
+      await api.post('characters/', payload);
       alert('Karakter başarıyla oluşturuldu!');
       navigate(`/lobbies/${lobby_id}`);
-    } catch (error) {
-      console.error('Karakter oluşturma hatası:', error);
+    } catch {
       alert('Karakter oluşturulamadı.');
     }
   };
 
+  // --- Dinamik görsel ---
+  let imgSrc = null;
+  try {
+    imgSrc = require(`../assets/character/${selectedRace}-${selectedClass}-${gender}.png`);
+  } catch {
+    imgSrc = require(`../assets/character/rndm1.jpg`);
+  }
+
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h2>Yeni Karakter Oluşturma</h2>
-      <form onSubmit={handleSubmit}>
-        {step === 1 && (
-          <div>
-            <h3>Adım 1: Irk, Sınıf ve Cinsiyet Seçimi</h3>
-            <div>
+    <div className="character-creation-container">
+      <div className="cc-panel">
+        <h2>Yeni Karakter Oluşturma</h2>
+        <form onSubmit={handleSubmit}>
+
+          {step === 1 && (
+            <>
+              <h3>Adım 1: Irk, Sınıf ve Cinsiyet Seçimi</h3>
               <label>
                 <strong>Irk:</strong>
-                <select value={selectedRace} onChange={(e) => setSelectedRace(e.target.value)}>
-                  {races.length > 0 ? (
-                    races.map((r) => (
-                      <option key={r.race_name} value={r.race_name}>
-                        {r.race_name} - {r.description}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">Irk bulunamadı</option>
-                  )}
+                <select value={selectedRace} onChange={e => setSelectedRace(e.target.value)}>
+                  <option value="" hidden>-- Irk Seçiniz --</option>
+                  {races.map(r => (
+                    <option key={r.race_name} value={r.race_name}>
+                      {r.race_name} – {r.description}
+                    </option>
+                  ))}
                 </select>
               </label>
-            </div>
-            <div style={{ marginTop: '10px' }}>
+
               <label>
                 <strong>Sınıf:</strong>
-                <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
-                  {classes.length > 0 ? (
-                    classes.map((c) => (
-                      <option key={c.class_name} value={c.class_name}>
-                        {c.class_name} - {c.description}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">Sınıf bulunamadı</option>
-                  )}
+                <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
+                  <option value="" hidden>-- Sınıf Seçiniz --</option>
+                  {classes.map(c => (
+                    <option key={c.class_name} value={c.class_name}>
+                      {c.class_name} – {c.description}
+                    </option>
+                  ))}
                 </select>
               </label>
-            </div>
-            <div style={{ marginTop: '10px' }}>
+
               <label>
                 <strong>Cinsiyet:</strong>
-                <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                <select value={gender} onChange={e => setGender(e.target.value)}>
+                  <option value="" hidden>-- Cinsiyet Seçiniz --</option>
                   <option value="Male">Erkek</option>
                   <option value="Female">Kadın</option>
                   <option value="Other">Diğer</option>
                 </select>
               </label>
-            </div>
-            <br />
-            <button type="button" onClick={handleNext} disabled={!selectedRace || !selectedClass}>
-              Devam Et
-            </button>
-          </div>
-        )}
 
-        {step === 2 && (
-          <div>
-            <h3>Adım 2: Stat Değerlerini Düzenle</h3>
-            <p>
-              <strong>Kalan Point-Buy Puanı:</strong> {remainingPoints}
-            </p>
-            <div>
-              {/* Stat ayarlama */}
-              <p>
-                <strong>Strength:</strong> {strength} {bonusAssignments.strength ? `(+${bonusAssignments.strength})` : ""} (Toplam: {strength + bonusAssignments.strength})
-                <button type="button" onClick={() => increaseStat('strength')}>+</button>
-                <button type="button" onClick={() => decreaseStat('strength')}>-</button>
-                <input type="checkbox" checked={bonusAssignments.strength === 1} onChange={() => toggleBonus('strength')} /> Bonus
-              </p>
-              {/* Diğer statlar benzer şekilde */}
-              <p>
-                <strong>Dexterity:</strong> {dexterity} {bonusAssignments.dexterity ? `(+${bonusAssignments.dexterity})` : ""} (Toplam: {dexterity + bonusAssignments.dexterity})
-                <button type="button" onClick={() => increaseStat('dexterity')}>+</button>
-                <button type="button" onClick={() => decreaseStat('dexterity')}>-</button>
-                <input type="checkbox" checked={bonusAssignments.dexterity === 1} onChange={() => toggleBonus('dexterity')} /> Bonus
-              </p>
-              <p>
-                <strong>Constitution:</strong> {constitution} {bonusAssignments.constitution ? `(+${bonusAssignments.constitution})` : ""} (Toplam: {constitution + bonusAssignments.constitution})
-                <button type="button" onClick={() => increaseStat('constitution')}>+</button>
-                <button type="button" onClick={() => decreaseStat('constitution')}>-</button>
-                <input type="checkbox" checked={bonusAssignments.constitution === 1} onChange={() => toggleBonus('constitution')} /> Bonus
-              </p>
-              <p>
-                <strong>Intelligence:</strong> {intelligence} {bonusAssignments.intelligence ? `(+${bonusAssignments.intelligence})` : ""} (Toplam: {intelligence + bonusAssignments.intelligence})
-                <button type="button" onClick={() => increaseStat('intelligence')}>+</button>
-                <button type="button" onClick={() => decreaseStat('intelligence')}>-</button>
-                <input type="checkbox" checked={bonusAssignments.intelligence === 1} onChange={() => toggleBonus('intelligence')} /> Bonus
-              </p>
-              <p>
-                <strong>Wisdom:</strong> {wisdom} {bonusAssignments.wisdom ? `(+${bonusAssignments.wisdom})` : ""} (Toplam: {wisdom + bonusAssignments.wisdom})
-                <button type="button" onClick={() => increaseStat('wisdom')}>+</button>
-                <button type="button" onClick={() => decreaseStat('wisdom')}>-</button>
-                <input type="checkbox" checked={bonusAssignments.wisdom === 1} onChange={() => toggleBonus('wisdom')} /> Bonus
-              </p>
-              <p>
-                <strong>Charisma:</strong> {charisma} {bonusAssignments.charisma ? `(+${bonusAssignments.charisma})` : ""} (Toplam: {charisma + bonusAssignments.charisma})
-                <button type="button" onClick={() => increaseStat('charisma')}>+</button>
-                <button type="button" onClick={() => decreaseStat('charisma')}>-</button>
-                <input type="checkbox" checked={bonusAssignments.charisma === 1} onChange={() => toggleBonus('charisma')} /> Bonus
-              </p>
-            </div>
-            <button type="button" onClick={handlePrev}>Geri</button>
-            <button type="button" onClick={handleNext}>Devam Et</button>
-          </div>
-        )}
+              <button type="button" onClick={next} disabled={!selectedRace || !selectedClass || !gender}>
+                Devam Et
+              </button>
+            </>
+          )}
 
-        {step === 3 && (
-          <div>
-            <h3>Adım 3: Equipment ve Spells Düzenle</h3>
-            <div>
-              <strong>Başlangıç Item'leri:</strong>
-              {startItems.length > 0 ? (
+          {step === 2 && (
+            <>
+              <h3>Adım 2: Stat Değerlerini Düzenle</h3>
+              <p><strong>Kalan Puan:</strong> {remainingPoints}</p>
+
+              {/* Stat satırları */}
+              <p>
+                <strong>Strength:</strong> {strength}
+                {bonusAssignments.strength ? ` (+${bonusAssignments.strength})` : ''} 
+                (Toplam: {strength + bonusAssignments.strength})
+                <button type="button" onClick={() => changeStat('strength', +1)}>+</button>
+                <button type="button" onClick={() => changeStat('strength', -1)}>-</button>
+                <input
+                  type="checkbox"
+                  checked={bonusAssignments.strength === 1}
+                  onChange={() => toggleBonus('strength')}
+                /> Bonus
+              </p>
+
+              <p>
+                <strong>Dexterity:</strong> {dexterity}
+                {bonusAssignments.dexterity ? ` (+${bonusAssignments.dexterity})` : ''} 
+                (Toplam: {dexterity + bonusAssignments.dexterity})
+                <button type="button" onClick={() => changeStat('dexterity', +1)}>+</button>
+                <button type="button" onClick={() => changeStat('dexterity', -1)}>-</button>
+                <input
+                  type="checkbox"
+                  checked={bonusAssignments.dexterity === 1}
+                  onChange={() => toggleBonus('dexterity')}
+                /> Bonus
+              </p>
+
+              <p>
+                <strong>Constitution:</strong> {constitution}
+                {bonusAssignments.constitution ? ` (+${bonusAssignments.constitution})` : ''} 
+                (Toplam: {constitution + bonusAssignments.constitution})
+                <button type="button" onClick={() => changeStat('constitution', +1)}>+</button>
+                <button type="button" onClick={() => changeStat('constitution', -1)}>-</button>
+                <input
+                  type="checkbox"
+                  checked={bonusAssignments.constitution === 1}
+                  onChange={() => toggleBonus('constitution')}
+                /> Bonus
+              </p>
+
+              <p>
+                <strong>Intelligence:</strong> {intelligence}
+                {bonusAssignments.intelligence ? ` (+${bonusAssignments.intelligence})` : ''} 
+                (Toplam: {intelligence + bonusAssignments.intelligence})
+                <button type="button" onClick={() => changeStat('intelligence', +1)}>+</button>
+                <button type="button" onClick={() => changeStat('intelligence', -1)}>-</button>
+                <input
+                  type="checkbox"
+                  checked={bonusAssignments.intelligence === 1}
+                  onChange={() => toggleBonus('intelligence')}
+                /> Bonus
+              </p>
+
+              <p>
+                <strong>Wisdom:</strong> {wisdom}
+                {bonusAssignments.wisdom ? ` (+${bonusAssignments.wisdom})` : ''} 
+                (Toplam: {wisdom + bonusAssignments.wisdom})
+                <button type="button" onClick={() => changeStat('wisdom', +1)}>+</button>
+                <button type="button" onClick={() => changeStat('wisdom', -1)}>-</button>
+                <input
+                  type="checkbox"
+                  checked={bonusAssignments.wisdom === 1}
+                  onChange={() => toggleBonus('wisdom')}
+                /> Bonus
+              </p>
+
+              <p>
+                <strong>Charisma:</strong> {charisma}
+                {bonusAssignments.charisma ? ` (+${bonusAssignments.charisma})` : ''} 
+                (Toplam: {charisma + bonusAssignments.charisma})
+                <button type="button" onClick={() => changeStat('charisma', +1)}>+</button>
+                <button type="button" onClick={() => changeStat('charisma', -1)}>-</button>
+                <input
+                  type="checkbox"
+                  checked={bonusAssignments.charisma === 1}
+                  onChange={() => toggleBonus('charisma')}
+                /> Bonus
+              </p>
+
+              <button type="button" onClick={prev}>Geri</button>
+              <button type="button" onClick={next}>Devam Et</button>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <h3>Adım 3: Equipment ve Spells</h3>
+
+              <div>
+                <strong>Başlangıç Item'leri:</strong>
                 <ul>
-                  {startItems.map((item) => (
+                  {startItems.map(item => (
                     <li key={item.item_id}>
-                      <strong>{item.name}</strong>: {item.description} (Attributes: {JSON.stringify(item.attributes)})
+                      <strong>{item.name}</strong>: {item.description}
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <span> Başlangıç item'i bulunamadı.</span>
-              )}
-            </div>
-            <br />
-            <div>
-              <strong>Mevcut Büyüler:</strong>
-              {availableSpells.length > 0 ? (
+              </div>
+
+              <div>
+                <strong>Mevcut Büyüler:</strong>
                 <ul>
-                  {availableSpells.map((spell) => (
+                  {availableSpells.map(spell => (
                     <li key={spell.spell_id}>
                       <label>
                         <input
                           type="checkbox"
                           checked={selectedSpells.some(s => s.spell_id === spell.spell_id)}
-                          onChange={() => toggleSpellSelection(spell)}
+                          onChange={() => toggleSpell(spell)}
                         />
-                        <strong>{spell.name}</strong> (Seviye: {spell.spell_level}) - {spell.school}<br />
-                        <small>Açıklama: {spell.description}</small><br />
-                        <small>Efekt: {spell.effect?.text}</small>
+                        <strong>{spell.name}</strong> (Seviye: {spell.spell_level})
                       </label>
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <span>Büyü bulunamadı.</span>
-              )}
-            </div>
-            <button type="button" onClick={handlePrev}>Geri</button>
-            <button type="button" onClick={handleNext}>Devam Et</button>
-          </div>
-        )}
+              </div>
 
-        {step === 4 && (
-          <div>
-            <h3>Adım 4: Karakter İsmi ve Ek Bilgiler</h3>
-            <label>Karakter İsmi:</label>
-            <input type="text" value={characterName} onChange={(e) => setCharacterName(e.target.value)} required /><br />
-            <label>Arka Plan (Background):</label>
-            <input type="text" value={background} onChange={(e) => setBackground(e.target.value)} /><br />
-            <label>Kişilik Özellikleri (Personality Traits):</label>
-            <textarea value={personalityTraits} onChange={(e) => setPersonalityTraits(e.target.value)} /><br />
-            <button type="button" onClick={handlePrev}>Geri</button>
-            <button type="submit" disabled={!characterName}>Karakter Oluştur</button>
-          </div>
-        )}
-      </form>
+              <button type="button" onClick={prev}>Geri</button>
+              <button type="button" onClick={next}>Devam Et</button>
+            </>
+          )}
+
+          {step === 4 && (
+            <>
+              <h3>Adım 4: Karakter İsmi & Ek Bilgiler</h3>
+
+              <label>
+                Karakter İsmi:
+                <input
+                  type="text"
+                  value={characterName}
+                  onChange={e => setCharacterName(e.target.value)}
+                  required
+                />
+              </label>
+
+              <label>
+                Arka Plan:
+                <input
+                  type="text"
+                  value={background}
+                  onChange={e => setBackground(e.target.value)}
+                />
+              </label>
+
+              <label>
+                Kişilik Özellikleri:
+                <textarea
+                  value={personalityTraits}
+                  onChange={e => setPersonalityTraits(e.target.value)}
+                />
+              </label>
+
+              <button type="button" onClick={prev}>Geri</button>
+              <button type="submit" disabled={!characterName}>
+                Karakter Oluştur
+              </button>
+            </>
+          )}
+
+        </form>
+      </div>
+
+      {selectedRace && selectedClass && gender && (
+        <div className="character-image">
+          <img src={imgSrc} alt="Karakter Önizleme" />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,0 +1,125 @@
+/* 1) Google Font Cinzel'i yükleyelim */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+/* --- Genel Container: sol panel, sağ görsel --- */
+.character-creation-container {
+  width: 100%;
+  min-height: 100vh;
+  padding: 40px 60px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-family: 'Cinzel', serif;
+  color: #f4ecd8;
+  position: relative;
+}
+
+/* --- Karakter Oluşturma Paneli --- */
+.cc-panel {
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #8b5e3c;
+  border-radius: 8px;
+  padding: 30px;
+  width: 600px;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.3);
+}
+.cc-panel h2 {
+  text-align: center;
+  color: #6b4226;
+  margin-bottom: 24px;
+}
+.cc-panel h3 {
+  color: #5a3319;
+  margin-top: 20px;
+  margin-bottom: 12px;
+}
+.cc-panel label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.cc-panel input[type="text"],
+.cc-panel textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #8b5e3c;
+  border-radius: 4px;
+  background: #fbf6ee;
+  margin-top: 4px;
+  margin-bottom: 16px;
+  font-family: inherit;
+  color: #3e2a14;
+}
+.cc-panel button {
+  padding: 8px 16px;
+  margin-right: 10px;
+  background: #6b4f3f;
+  color: #f4ecd8;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+.cc-panel button:hover {
+  background: #4b3621;
+}
+
+/* --- Karakter Görseli: Şeffaf ve Koyu Panel Efekti --- */
+.character-image {
+  flex-shrink: 0;
+  width: 520px;
+  margin-left: 50px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(218, 165, 32, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.character-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
+}
+/* Stilize edilmiş select kutusu ve seçenekler */
+
+/* cc-panel içindeki select’e özel stiller */
+.cc-panel select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #3e2a14;
+  background: #ffffff;
+  border: 1px solid #8b5e3c;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%238b5e3c" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg"><path d="M0,0 L5,6 L10,0 Z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  margin: 8px 0 16px;
+}
+
+/* focus durumunda vurgulama */
+.cc-panel select:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 5px rgba(212,175,55,0.5);
+  outline: none;
+}
+
+/* (Destekleyen tarayıcılarda) dropdown içi seçeneklerin rengi */
+.cc-panel select option {
+  background: #fbf6ee;
+  color: #3e2a14;
+  padding: 8px;
+}

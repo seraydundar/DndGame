@@ -49,11 +49,11 @@ body::after {
 
 @keyframes kenburns {
   /* İlk slide: %0-%24 */
-  0%, 24% { opacity: 1; transform: scale(1.1); }
+  0%, 24%   { opacity: 1; transform: scale(1.1); }
   /* Geçiş: %25 */
-  25% { opacity: 0; transform: scale(1.1); }
+  25%       { opacity: 0; transform: scale(1.1); }
   /* Gizli kalan süre: %26-%100 */
-  26%, 100% { opacity: 0; transform: scale(1); }
+  26%,100%  { opacity: 0; transform: scale(1); }
 }
 
 /* Dashboard Layout */
@@ -126,16 +126,16 @@ body::after {
 .friend-panel {
   position: absolute;
   top: 100px;
-  right: 40px;
-  width: 280px;
+  right: 20px;    /* Sağ kenara daha yakın */
+  width: 340px;   /* Genişlik artırıldı */
   z-index: 1;
 }
 
 .notification-panel {
   position: absolute;
-  top: 360px;
-  right: 40px;
-  width: 280px;
+  top: 520px;     /* Arkadaş panelinin altına inecek şekilde ayarlandı */
+  right: 20px;    /* Align edilsin diye aynı sağ mesafe */
+  width: 340px;   /* Genişlik eşitlendi */
   z-index: 1;
 }
 
@@ -147,7 +147,7 @@ body::after {
   border-radius: 6px;
   padding: 16px;
   box-shadow: 4px 4px 12px rgba(0,0,0,0.2);
-  min-height: 250px;
+  min-height: 350px;   /* Yükseklik artırıldı */
 }
 
 .friend-sidebar h3,
@@ -161,4 +161,25 @@ body::after {
 .notification-sidebar p {
   margin: 4px 0;
   font-weight: bold;
+}
+/* Ekle Butonu Stilleri */
+.friend-sidebar button,
+.friend-sidebar input[type="submit"] {
+  display: inline-block;
+  margin-left: 8px;        /* Butonu input’un yanına biraz kaydırır */
+  margin-top: 8px;         /* Üstten boşluk */
+  padding: 6px 14px;       /* Dikey/yatay iç boşluk */
+  font-family: inherit;    
+  font-weight: 600;
+  background: #6b4f3f;     /* Koyu kahverengi zemin */
+  color: #f4ecd8;          /* Açık krem yazı */
+  border: 1px solid #4b3621;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.friend-sidebar button:hover,
+.friend-sidebar input[type="submit"]:hover {
+  background: #4b3621;     /* Hover’da biraz daha koyu */
 }
