@@ -1,3 +1,5 @@
+// src/pages/Login.js
+
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -22,8 +24,15 @@ const Login = () => {
     try {
       const response = await api.post("accounts/login/", { username, password });
       const { user_id, username: uname } = response.data;
+
+      // LocalStorage’a kaydet
       localStorage.setItem("user_id", user_id);
       localStorage.setItem("username", uname);
+
+      // Aynı verileri SessionStorage’a da kaydet
+      sessionStorage.setItem("user_id", user_id);
+      sessionStorage.setItem("username", uname);
+
       setUser({ userId: user_id, username: uname });
       navigate("/dashboard");
     } catch (error) {

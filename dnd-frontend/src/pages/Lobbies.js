@@ -26,6 +26,16 @@ const Lobbies = () => {
   };
 
   const goToLobbyDetail = (lobbyId) => {
+    // Seçilen lobi ID'sini sessionStorage'a kaydet
+    sessionStorage.setItem('lobby_id', lobbyId);
+    // Mevcut user_id'yi header olarak ayarla (isteğe bağlı)
+    const userId = sessionStorage.getItem('user_id');
+    if (userId) {
+      api.defaults.headers.common['X-User-Id'] = userId;
+    } else {
+      console.warn('sessionStorage["user_id"] bulunamadı; login akışını kontrol edin.');
+    }
+    // Ardından ilgili lobi sayfasına yönlendir
     navigate(`/lobbies/${lobbyId}`);
   };
 

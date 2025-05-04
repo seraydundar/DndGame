@@ -1,3 +1,5 @@
+# settings.py
+
 """
 Django settings for dnd_project project.
 """
@@ -22,7 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
-    'corsheaders',  # ✅ CORS Middleware
+    'corsheaders',  # ✅ CORS Middleware :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
     'rest_framework',
     'channels',     # ✅ Django Channels (WebSocket Desteği)
     'accounts',
@@ -72,6 +74,7 @@ CORS_ALLOW_HEADERS = [
     'content-type',
     'x-requested-with',
     'accept',
+    'x-user-id',  # ← eklenen satır :contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
 ]
 
 # 📌 WebSocket (Channels) Yapılandırması
@@ -96,7 +99,6 @@ DATABASES = {
 }
 
 # 📌 REST Framework Ayarları
-# 📌 REST Framework Ayarları
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     # Sadece SessionAuthentication kullanıyoruz.
@@ -107,7 +109,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
-
 
 # Eğer JWT'yi başka endpoint'lerde kullanmak isterseniz SIMPLE_JWT ayarlarını da bırakabilirsiniz,
 # ancak bu örnekte tüm endpointler session tabanlı doğrulama ile çalışacaktır.
@@ -152,3 +153,7 @@ CACHES = {
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_SAMESITE = 'Lax'  # veya 'None' (HTTPS'de 'None' kullanılır)
 SESSION_COOKIE_SECURE = False    # Geliştirme ortamında False, production'da True olmalı
+
+# Media (dosya yükleme) ayarları
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

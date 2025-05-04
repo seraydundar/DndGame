@@ -265,6 +265,41 @@ class RangedAttackView(APIView):
             "chat_log": chat_log
         })
     
+class MoveCharacterView(APIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        lobby_id   = request.data.get("lobby_id")
+        placements = request.data.get("placements", {})
+        if not lobby_id or not isinstance(placements, dict):
+            return Response({"detail": "Eksik veri"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # In-memory state’inizi güncelleyin:
+        state = BATTLE_STATE.get(str(lobby_id), {})
+        state["placements"] = placements
+        BATTLE_STATE[str(lobby_id)] = state
+
+        # Tüm gruba yayınla (Channels)
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"lobby_{lobby_id}",
+            {
+                "type": "battle.update",
+                "event": "battleUpdate",
+                "lobbyId": lobby_id,
+                "placements": placements,
+                "initiative_order": state.get("initiative_order"),
+                "available_characters": state.get("available_characters"),
+                "current_turn_index": state.get("current_turn_index"),
+                "chat_log": state.get("chat_log"),
+            }
+        )
+
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+
+
 # EndTurn endpoint: Sadece GM güncellemesi yapar.
 class EndTurnView(APIView):
     """

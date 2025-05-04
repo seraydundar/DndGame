@@ -9,7 +9,8 @@ from .views import (
     MeleeAttackView,
     EndTurnView,
     RangedAttackView,
-    BattleStateView
+    BattleStateView,
+    MoveCharacterView
 )
 
 router = DefaultRouter()
@@ -25,6 +26,7 @@ urlpatterns = [
     path('combat/melee-attack/', MeleeAttackView.as_view(), name='melee-attack'),
     path('combat/ranged-attack/', RangedAttackView.as_view(), name='ranged-attack'),
     path('combat/end-turn/', EndTurnView.as_view(), name='end-turn'),
+    path('combat/move/', MoveCharacterView.as_view(), name='combat-move'),
     
     # Battle state endpoint
     path('battle-state/<int:lobby_id>/', BattleStateView.as_view(), name='battle-state'),

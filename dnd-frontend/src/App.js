@@ -1,7 +1,9 @@
+// src/App.js
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// Sayfalar
+// Pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -13,11 +15,15 @@ import Trade from "./pages/Trade";
 import Chat from "./pages/Chat";
 import CreateLobby from "./pages/CreateLobby";
 import Lobbies from "./pages/Lobbies";
-import GodPanel from "./pages/GodPanel";     // GM paneli
-import PlayerPage from "./pages/PlayerPage"; // Oyuncu sayfası
+import GodPanel from "./pages/GodPanel";
+import PlayerPage from "./pages/PlayerPage";
 import EndBattle from "./pages/EndBattle";
 
-// Bileşenler / Context
+// Spells
+import SpellCreate from "./components/SpellCreate";
+import SpellList   from "./components/SpellList";
+
+// Auth & Context
 import RequireAuth from "./components/RequireAuth";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
@@ -30,16 +36,15 @@ function App() {
           {({ userId }) => (
             <WebSocketProvider userId={userId}>
               {userId ? (
-                // Kullanıcı giriş yapmışsa:
                 <div style={styles.container}>
                   <div style={styles.mainContent}>
                     <Routes>
-                      {/* Public sayfalar */}
+                      {/* Public pages */}
                       <Route path="/" element={<Home />} />
                       <Route path="/login" element={<Login />} />
                       <Route path="/register" element={<Register />} />
 
-                      {/* Korunan sayfalar */}
+                      {/* Protected pages */}
                       <Route
                         path="/dashboard"
                         element={
@@ -64,6 +69,33 @@ function App() {
                           </RequireAuth>
                         }
                       />
+
+                      {/* Lobbies list and detail */}
+                      <Route
+                        path="/lobbies/*"
+                        element={
+                          <RequireAuth>
+                            <Lobbies />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/lobbies/create"
+                        element={
+                          <RequireAuth>
+                            <CreateLobby />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/lobbies/:id"
+                        element={
+                          <RequireAuth>
+                            <Lobby />
+                          </RequireAuth>
+                        }
+                      />
+
                       <Route
                         path="/battle"
                         element={
@@ -96,7 +128,8 @@ function App() {
                           </RequireAuth>
                         }
                       />
-                      {/* GM paneli */}
+
+                      {/* GM panel */}
                       <Route
                         path="/godpanel"
                         element={
@@ -105,7 +138,8 @@ function App() {
                           </RequireAuth>
                         }
                       />
-                      {/* Oyuncu sayfası */}
+
+                      {/* Player page */}
                       <Route
                         path="/playerpage"
                         element={
@@ -114,45 +148,33 @@ function App() {
                           </RequireAuth>
                         }
                       />
-                      {/* Lobi listesi */}
+
+                      {/* Spells pages */}
                       <Route
-                        path="/lobbies"
+                        path="/spells"
                         element={
                           <RequireAuth>
-                            <Lobbies />
+                            <SpellList />
                           </RequireAuth>
                         }
                       />
-                      {/* Yeni lobi oluşturma */}
                       <Route
-                        path="/lobbies/create"
+                        path="/spells/create"
                         element={
                           <RequireAuth>
-                            <CreateLobby />
-                          </RequireAuth>
-                        }
-                      />
-                      {/* Tekil Lobi Detayı */}
-                      <Route
-                        path="/lobbies/:id"
-                        element={
-                          <RequireAuth>
-                            <Lobby />
+                            <SpellCreate />
                           </RequireAuth>
                         }
                       />
                     </Routes>
                   </div>
-                  {/* Artık yan paneller burada değil, Dashboard.js içinde tek seferlik render ediliyor */}
                 </div>
               ) : (
-                // Kullanıcı giriş yapmamışsa:
                 <div style={{ padding: 20 }}>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
                   </Routes>
                   <p>Lütfen giriş yapınız.</p>
                 </div>

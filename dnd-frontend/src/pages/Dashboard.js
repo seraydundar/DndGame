@@ -1,3 +1,5 @@
+// src/pages/Dashboard.js
+
 import React, { useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -11,13 +13,11 @@ const Dashboard = () => {
   const ctx = useContext(WebSocketContext) || {};
   const { friendRequests = [], notifications = [] } = ctx;
 
-  // Hooks called unconditionally
   useEffect(() => {
     console.log('Friend Requests:', friendRequests);
     console.log('Notifications:', notifications);
   }, [friendRequests, notifications]);
 
-  // Logout handler
   const handleLogout = async () => {
     try {
       await api.post('accounts/logout/');
@@ -48,16 +48,32 @@ const Dashboard = () => {
         </button>
         <nav className="dashboard-nav">
           <ul>
-            <li><Link to="/charactercreation">Yeni Karakter Oluştur</Link></li>
-            <li><Link to="/lobbies">Lobiye Katıl / Lobi Oluştur</Link></li>
-            <li><Link to="/battle">Savaş Alanına Gir</Link></li>
-            <li><Link to="/trade">Ticaret Alanına Gir</Link></li>
-            <li><Link to="/chat">Sohbet Ekranı</Link></li>
+            <li>
+              <Link to="/charactercreation">Yeni Karakter Oluştur</Link>
+            </li>
+            <li>
+              <Link to="/spells">Tüm Büyüleri Görüntüle</Link>
+            </li>
+            <li>
+              <Link to="/spells/create">Yeni Büyü Oluştur</Link>
+            </li>
+            <li>
+              <Link to="/lobbies">Lobiye Katıl / Lobi Oluştur</Link>
+            </li>
+            <li>
+              <Link to="/battle">Savaş Alanına Gir</Link>
+            </li>
+            <li>
+              <Link to="/trade">Ticaret Alanına Gir</Link>
+            </li>
+            <li>
+              <Link to="/chat">Sohbet Ekranı</Link>
+            </li>
           </ul>
         </nav>
       </div>
     </div>
   );
-};
+}
 
 export default Dashboard;

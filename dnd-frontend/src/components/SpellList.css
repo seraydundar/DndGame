@@ -1,0 +1,40 @@
+.spell-list-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+  
+  .spell-list-container h2 {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  
+  .spell-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+  }
+  
+  .spell-card {
+    background: rgba(255,255,255,0.9);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  
+  .spell-card img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin-bottom: 8px;
+  }
+  
+  .spell-icon-placeholder {
+    width: 64px;
+    height: 64px;
+    background: #ccc;
+    margin: 0 auto 8px;
+    border-radius: 4px;
+  }
+  

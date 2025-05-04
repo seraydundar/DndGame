@@ -1,8 +1,13 @@
+// src/pages/Lobby.js
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import socket from '../services/socket';
 import './Lobbies.css';
+
+// Eğer global olarak ayarlanmışsa, custom X-User-Id header’ını bu sayfada kaldır
+delete api.defaults.headers.common['X-User-Id'];
 
 // Basit bir sleep fonksiyonu
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -17,6 +22,8 @@ const Lobby = () => {
   const [isReady, setIsReady] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const navigate = useNavigate();
+
+  // user_id artık localStorage'de tutuluyor
   const currentUserId = parseInt(localStorage.getItem("user_id") || '0', 10);
 
   // Lobinin, arkadaşların ve karakterlerin verisini çekiyoruz.
