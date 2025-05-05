@@ -19,6 +19,7 @@ if (!userId) {
 // WebSocket URL’de sadece lobbyId var, userId’yi header olarak iletebilirsin (isteğe bağlı)
 const socket = new WebSocket(`ws://localhost:8000/ws/lobby/${lobbyId}/`);
 
+
 socket.onopen = () => {
   console.log("WebSocket bağlantısı kuruldu, lobby id:", lobbyId, "user id:", userId);
   // Eğer sunucu custom header bekliyorsa, ilk mesajda userId’yi yollayabilirsin:

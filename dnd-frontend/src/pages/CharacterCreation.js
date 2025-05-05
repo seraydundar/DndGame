@@ -147,12 +147,15 @@ const CharacterCreation = () => {
   };
 
   // --- Büyü seçimi ---
-  const toggleSpell = spell => {
-    if (selectedSpells.some(s => s.spell_id === spell.spell_id)) {
-      setSelectedSpells(selectedSpells.filter(s => s.spell_id !== spell.spell_id));
+const toggleSpell = (spell) => {
+    const zeroCount = selectedSpells.filter(s => s.spell_level === 0).length;
+    const oneCount = selectedSpells.filter(s => s.spell_level === 1).length;
+
+    const alreadySelected = selectedSpells.some(s => s.id === spell.id);
+
+    if (alreadySelected) {
+      setSelectedSpells(selectedSpells.filter(s => s.id !== spell.id));
     } else {
-      const zeroCount = selectedSpells.filter(s => s.spell_level === 0).length;
-      const oneCount = selectedSpells.filter(s => s.spell_level === 1).length;
       if ((spell.spell_level === 0 && zeroCount >= MAX_ZERO_LEVEL) ||
           (spell.spell_level === 1 && oneCount >= MAX_FIRST_LEVEL)) {
         return alert(`Bu seviyeden daha fazla seçemezsiniz.`);
@@ -188,7 +191,7 @@ const CharacterCreation = () => {
       ...finalStats,
       gold: 10,
       equipment: startItems,
-      prepared_spells: selectedSpells,
+      prepared_spells_input: selectedSpells.map(s => ({ id: s.id })),
       class_features: {},
       xp: 0,
       background,
@@ -368,18 +371,18 @@ const CharacterCreation = () => {
                 <strong>Mevcut Büyüler:</strong>
                 <ul>
                   {availableSpells.map(spell => (
-                    <li key={spell.spell_id}>
+                    <li key={spell.id}>
                       <label>
                         <input
                           type="checkbox"
-                          checked={selectedSpells.some(s => s.spell_id === spell.spell_id)}
+                          checked={selectedSpells.some(s => s.id === spell.id)}
                           onChange={() => toggleSpell(spell)}
                         />
                         <strong>{spell.name}</strong> (Seviye: {spell.spell_level})
                       </label>
                     </li>
                   ))}
-                </ul>
+                </ul>q
               </div>
 
               <button type="button" onClick={prev}>Geri</button>

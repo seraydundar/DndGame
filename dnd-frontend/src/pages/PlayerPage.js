@@ -8,6 +8,8 @@ const PlayerPage = () => {
   const [levelUpInfo, setLevelUpInfo] = useState(null);
   const currentUserId = parseInt(localStorage.getItem("user_id") || '0', 10);
   const navigate = useNavigate();
+const lobbyId = sessionStorage.getItem('lobby_id');
+
 
   useEffect(() => {
     const fetchCharacter = async () => {
@@ -51,7 +53,7 @@ const PlayerPage = () => {
         const data = JSON.parse(event.data);
         if (data.event === "redirect") {
           if (data.target === "battle") {
-            navigate('/battle');
+            navigate(`/battle/${lobbyId}`);
           } else if (data.target === "trade") {
             navigate('/trade');
           }

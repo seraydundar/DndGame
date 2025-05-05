@@ -20240,3 +20240,301 @@ Not Found: /api/lobbies/6/characters/
 Not Found: /api/lobbies/6/
 Bad Request: /api/combat/melee-attack/
 Bad Request: /api/combat/melee-attack/
+Not Found: /static/rest_framework/css/bootstrap.min.css
+Not Found: /static/rest_framework/css/prettify.css
+Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+Not Found: /static/rest_framework/js/ajax-form.js
+Not Found: /static/rest_framework/css/default.css
+Not Found: /static/rest_framework/js/jquery-3.7.1.min.js
+Not Found: /static/rest_framework/js/csrf.js
+Not Found: /static/rest_framework/js/prettify-min.js
+Not Found: /static/rest_framework/js/bootstrap.min.js
+Not Found: /static/rest_framework/js/default.js
+Not Found: /static/rest_framework/js/load-ajax-form.js
+Not Found: /favicon.ico
+Not Found: /api/trade_area_items/
+Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+Not Found: /static/rest_framework/js/jquery-3.7.1.min.js
+Not Found: /static/rest_framework/css/prettify.css
+Not Found: /static/rest_framework/js/ajax-form.js
+Not Found: /static/rest_framework/css/bootstrap.min.css
+Not Found: /static/rest_framework/css/default.css
+Not Found: /static/rest_framework/js/prettify-min.js
+Not Found: /static/rest_framework/js/bootstrap.min.js
+Not Found: /static/rest_framework/js/default.js
+Not Found: /static/rest_framework/js/load-ajax-form.js
+Not Found: /static/rest_framework/js/csrf.js
+Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+Not Found: /static/rest_framework/css/bootstrap.min.css
+Not Found: /static/rest_framework/css/prettify.css
+Not Found: /static/rest_framework/css/default.css
+Not Found: /static/rest_framework/js/jquery-3.7.1.min.js
+Not Found: /static/rest_framework/js/ajax-form.js
+Not Found: /static/rest_framework/js/csrf.js
+Not Found: /static/rest_framework/js/bootstrap.min.js
+Not Found: /static/rest_framework/js/prettify-min.js
+Not Found: /static/rest_framework/js/load-ajax-form.js
+Not Found: /static/rest_framework/js/default.js
+Not Found: /api/spells/3/cast/
+Not Found: /api/spells/1/cast/
+Not Found: /api/spells/3/cast/
+Forbidden: /api/spells/3/cast/
+Forbidden: /api/spells/3/cast/
+Forbidden: /api/spells/1/cast/
+Forbidden: /api/spells/2/cast/
+Forbidden: /api/spells/1/cast/
+Forbidden: /api/spells/1/cast/
+Forbidden: /api/spells/3/cast/
+Forbidden: /api/spells/2/cast/
+Forbidden: /api/spells/1/cast/
+Internal Server Error: /api/spells/1/cast/
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\spells\views.py", line 61, in post
+    spell = get_object_or_404(Spell, key=spell_key)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\shortcuts.py", line 86, in get_object_or_404
+    return queryset.get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\query.py", line 635, in get
+    clone = self._chain() if self.query.combinator else self.filter(*args, **kwargs)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\query.py", line 1476, in filter
+    return self._filter_or_exclude(False, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\query.py", line 1494, in _filter_or_exclude
+    clone._filter_or_exclude_inplace(negate, args, kwargs)
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\query.py", line 1501, in _filter_or_exclude_inplace
+    self._query.add_q(Q(*args, **kwargs))
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\sql\query.py", line 1609, in add_q
+    clause, _ = self._add_q(q_object, self.used_aliases)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\sql\query.py", line 1641, in _add_q
+    child_clause, needed_inner = self.build_filter(
+                                 ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\sql\query.py", line 1491, in build_filter
+    lookups, parts, reffed_expression = self.solve_lookup_type(arg, summarize)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\sql\query.py", line 1303, in solve_lookup_type
+    _, field, _, lookup_parts = self.names_to_path(lookup_splitted, self.get_meta())
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\sql\query.py", line 1768, in names_to_path
+    raise FieldError(
+django.core.exceptions.FieldError: Cannot resolve keyword 'key' into field. Choices are: casting_time, classes, components, concentration, created_at, created_by, created_by_id, description, duration, effect, icon, id, material_detail, name, range, ritual, school, spell_level, updated_at
+Not Found: /api/spells/undefined/cast/
+Not Found: /static/rest_framework/css/prettify.css
+Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+Not Found: /static/rest_framework/css/bootstrap.min.css
+Not Found: /static/rest_framework/js/jquery-3.7.1.min.js
+Not Found: /static/rest_framework/css/default.css
+Not Found: /static/rest_framework/js/ajax-form.js
+Not Found: /static/rest_framework/js/prettify-min.js
+Not Found: /static/rest_framework/js/bootstrap.min.js
+Not Found: /static/rest_framework/js/csrf.js
+Not Found: /static/rest_framework/js/default.js
+Not Found: /static/rest_framework/js/load-ajax-form.js
+Not Found: /static/rest_framework/css/bootstrap.min.css
+Not Found: /static/rest_framework/css/default.css
+Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+Not Found: /static/rest_framework/js/jquery-3.7.1.min.js
+Not Found: /static/rest_framework/css/prettify.css
+Not Found: /static/rest_framework/js/ajax-form.js
+Not Found: /static/rest_framework/js/csrf.js
+Not Found: /static/rest_framework/js/bootstrap.min.js
+Not Found: /static/rest_framework/js/prettify-min.js
+Not Found: /static/rest_framework/js/default.js
+Not Found: /static/rest_framework/js/load-ajax-form.js
+Not Found: /static/rest_framework/css/bootstrap.min.css
+Not Found: /static/rest_framework/js/ajax-form.js
+Not Found: /static/rest_framework/css/default.css
+Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+Not Found: /static/rest_framework/js/jquery-3.7.1.min.js
+Not Found: /static/rest_framework/css/prettify.css
+Not Found: /static/rest_framework/js/csrf.js
+Not Found: /static/rest_framework/js/bootstrap.min.js
+Not Found: /static/rest_framework/js/default.js
+Not Found: /static/rest_framework/js/prettify-min.js
+Not Found: /static/rest_framework/js/load-ajax-form.js
+Not Found: /static/admin/css/base.css
+Not Found: /static/admin/css/dark_mode.css
+Not Found: /static/admin/js/theme.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/dashboard.css
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/nav_sidebar.js
+Not Found: /favicon.ico
+Not Found: /static/admin/css/base.css
+Not Found: /static/admin/css/dark_mode.css
+Not Found: /static/admin/css/changelists.css
+Not Found: /static/admin/js/vendor/jquery/jquery.js
+Not Found: /static/admin/js/jquery.init.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/js/theme.js
+Not Found: /static/admin/js/core.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/admin/RelatedObjectLookups.js
+Not Found: /static/admin/js/actions.js
+Not Found: /static/admin/js/prepopulate.js
+Not Found: /static/admin/js/urlify.js
+Not Found: /static/admin/js/vendor/xregexp/xregexp.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/changelists.css
+Not Found: /static/admin/js/nav_sidebar.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/filters.js
+Not Found: /static/admin/css/changelists.css
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/dark_mode.css
+Not Found: /static/admin/js/theme.js
+Not Found: /static/admin/css/base.css
+Not Found: /static/admin/js/jquery.init.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/core.js
+Not Found: /static/admin/js/vendor/jquery/jquery.js
+Not Found: /static/admin/js/admin/RelatedObjectLookups.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/changelists.css
+Not Found: /static/admin/js/actions.js
+Not Found: /static/admin/js/vendor/xregexp/xregexp.js
+Not Found: /static/admin/js/prepopulate.js
+Not Found: /static/admin/js/urlify.js
+Not Found: /static/admin/js/filters.js
+Not Found: /static/admin/js/nav_sidebar.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/css/changelists.css
+Not Found: /static/admin/js/theme.js
+Not Found: /static/admin/css/dark_mode.css
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/base.css
+Not Found: /static/admin/js/vendor/jquery/jquery.js
+Not Found: /static/admin/js/admin/RelatedObjectLookups.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/jquery.init.js
+Not Found: /static/admin/js/core.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/js/actions.js
+Not Found: /static/admin/js/prepopulate.js
+Not Found: /static/admin/css/changelists.css
+Not Found: /static/admin/js/urlify.js
+Not Found: /static/admin/js/vendor/xregexp/xregexp.js
+Not Found: /static/admin/js/filters.js
+Not Found: /static/admin/js/nav_sidebar.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/css/base.css
+Not Found: /static/admin/css/dark_mode.css
+Not Found: /static/admin/css/forms.css
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/js/theme.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/vendor/jquery/jquery.js
+Not Found: /static/admin/js/core.js
+Not Found: /static/admin/js/admin/RelatedObjectLookups.js
+Not Found: /static/admin/js/jquery.init.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/forms.css
+Not Found: /static/admin/js/actions.js
+Not Found: /static/admin/js/prepopulate.js
+Not Found: /static/admin/js/urlify.js
+Not Found: /static/admin/js/vendor/xregexp/xregexp.js
+Not Found: /static/admin/js/prepopulate_init.js
+Not Found: /static/admin/js/nav_sidebar.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/img/icon-changelink.svg
+Not Found: /static/admin/img/icon-deletelink.svg
+Not Found: /static/admin/img/icon-addlink.svg
+Not Found: /static/admin/img/icon-viewlink.svg
+Not Found: /static/admin/js/change_form.js
+Not Found: /static/admin/css/base.css
+Not Found: /static/admin/css/dark_mode.css
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/theme.js
+Not Found: /static/admin/css/changelists.css
+Not Found: /static/admin/js/vendor/jquery/jquery.js
+Not Found: /static/admin/js/admin/RelatedObjectLookups.js
+Not Found: /static/admin/js/core.js
+Not Found: /static/admin/js/jquery.init.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/js/actions.js
+Not Found: /static/admin/js/urlify.js
+Not Found: /static/admin/js/vendor/xregexp/xregexp.js
+Not Found: /static/admin/js/prepopulate.js
+Not Found: /static/admin/js/nav_sidebar.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/filters.js
+Not Found: /static/admin/css/base.css
+Not Found: /static/admin/css/forms.css
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/dark_mode.css
+Not Found: /static/admin/js/theme.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/jquery.init.js
+Not Found: /static/admin/js/vendor/jquery/jquery.js
+Not Found: /static/admin/js/core.js
+Not Found: /static/admin/js/admin/RelatedObjectLookups.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/forms.css
+Not Found: /static/admin/js/prepopulate.js
+Not Found: /static/admin/js/urlify.js
+Not Found: /static/admin/js/actions.js
+Not Found: /static/admin/js/vendor/xregexp/xregexp.js
+Not Found: /static/admin/js/prepopulate_init.js
+Not Found: /static/admin/js/nav_sidebar.js
+Not Found: /static/admin/img/icon-deletelink.svg
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/img/icon-addlink.svg
+Not Found: /static/admin/img/icon-viewlink.svg
+Not Found: /static/admin/img/icon-changelink.svg
+Not Found: /static/admin/js/change_form.js
+Not Found: /static/admin/css/base.css
+Not Found: /static/admin/css/dark_mode.css
+Not Found: /static/admin/js/theme.js
+Not Found: /static/admin/css/nav_sidebar.css
+Not Found: /static/admin/css/changelists.css
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/vendor/jquery/jquery.js
+Not Found: /static/admin/js/jquery.init.js
+Not Found: /static/admin/js/core.js
+Not Found: /static/admin/js/admin/RelatedObjectLookups.js
+Not Found: /static/admin/js/actions.js
+Not Found: /static/admin/js/urlify.js
+Not Found: /static/admin/js/prepopulate.js
+Not Found: /static/admin/js/vendor/xregexp/xregexp.js
+Not Found: /static/admin/js/nav_sidebar.js
+Not Found: /static/admin/css/responsive.css
+Not Found: /static/admin/js/filters.js
+Bad Request: /api/combat/melee-attack/

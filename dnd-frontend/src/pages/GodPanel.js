@@ -8,10 +8,12 @@ import './GodPanel.css';
 
 const GodPanel = () => {
   const navigate = useNavigate();
+const lobbyId = sessionStorage.getItem('lobby_id');
+
 
   const handleBattle = () => {
     socket.send(JSON.stringify({ event: "redirect", target: "battle" }));
-    navigate('/battle');
+    navigate(`/battle/${lobbyId}`);
   };
 
   const handleTrade = () => {

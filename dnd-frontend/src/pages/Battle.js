@@ -1,7 +1,9 @@
+// src/components/Battle.js
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
-import socket from '../services/socket';
+import { createBattleSocket, getBattleSocket } from '../services/battleSocket.js';
 
 const gridSize = 20; // 20x20 grid
 const totalCells = gridSize * gridSize;
@@ -9,50 +11,60 @@ const totalCells = gridSize * gridSize;
 const Battle = () => {
   // --- LOBBY ID YÖNETİMİ BAŞLANGIÇ ---
   const { id } = useParams();
-// Tarayıcıda 'lobby_id' olarak saklanan değeri (veya URL parametresini) al
-const [lobbyId, setLobbyId] = useState(() =>
-  sessionStorage.getItem('lobby_id') ||
-  localStorage.getItem('lobby_id') ||
-  id
-);
+  // Tarayıcıda 'lobby_id' olarak saklanan değeri (veya URL parametresini) al
+  const [lobbyId, setLobbyId] = useState(() =>
+    sessionStorage.getItem('lobby_id') ||
+    localStorage.getItem('lobby_id') ||
+    id ||
+    null
+  );
 
-// URL’deki id değiştiğinde hem state’e hem de depolamaya yaz
-useEffect(() => {
-  if (id && id !== lobbyId) {
-    sessionStorage.setItem('lobby_id', id);
-    localStorage.setItem('lobby_id', id);
-    setLobbyId(id);
-  }
-}, [id, lobbyId]);
-
-// Socket üzerinden gelen 'joinLobby' event’ini dinleyip güncelle
-useEffect(() => {
-  const joinLobbyHandler = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      if (data.event === 'joinLobby' && data.lobbyId) {
-        sessionStorage.setItem('lobby_id', data.lobbyId);
-        localStorage.setItem('lobby_id', data.lobbyId);
-        setLobbyId(data.lobbyId);
-      }
-    } catch (e) {
-      console.error('joinLobby mesajı işlenirken hata:', e);
+  // URL’deki id değiştiğinde hem state’e hem de depolamaya yaz
+  useEffect(() => {
+    if (id && id !== lobbyId) {
+      sessionStorage.setItem('lobby_id', id);
+      localStorage.setItem('lobby_id', id);
+      setLobbyId(id);
     }
-  };
-  socket.addEventListener('message', joinLobbyHandler);
-  return () => {
-    socket.removeEventListener('message', joinLobbyHandler);
-  };
-}, []);
+  }, [id, lobbyId]);
 
-console.log("Battle.js - lobbyId:", lobbyId);
+  // -------------- 2. YÖNTEM: NULL-GUARD İLE joinLobby HANDLER --------------
+  useEffect(() => {
+    const socket = getBattleSocket();
+    if (!socket) {
+      console.warn('Socket henüz hazır değil, joinLobby handler eklenemedi.');
+      return;
+    }
 
+    const joinLobbyHandler = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === 'joinLobby' && data.lobbyId) {
+          sessionStorage.setItem('lobby_id', data.lobbyId);
+          localStorage.setItem('lobby_id', data.lobbyId);
+          setLobbyId(data.lobbyId);
+        }
+      } catch (e) {
+        console.error('joinLobby mesajı işlenirken hata:', e);
+      }
+    };
+
+    socket.addEventListener('message', joinLobbyHandler);
+    return () => {
+      socket.removeEventListener('message', joinLobbyHandler);
+    };
+  }, []); // boş bağımlılık, sadece mount/unmount
+
+  console.log("Battle.js - lobbyId:", lobbyId);
+
+  // --- LOBBY VERİLERİNİ ÇEKME ---
   const [lobbyData, setLobbyData] = useState(null);
   const [isGM, setIsGM] = useState(false);
   const [allCharacters, setAllCharacters] = useState([]);
   const [availableCharacters, setAvailableCharacters] = useState([]);
   const [placements, setPlacements] = useState({});
   const [battleStarted, setBattleStarted] = useState(false);
+  const [battleActive, setBattleActive] = useState(false);
 
   // Initiative ve tur bilgisi
   const [initiativeOrder, setInitiativeOrder] = useState([]);
@@ -61,6 +73,8 @@ console.log("Battle.js - lobbyId:", lobbyId);
   // Aksiyon seçimi
   const [selectedAttacker, setSelectedAttacker] = useState(null);
   const [attackMode, setAttackMode] = useState(false);
+  const [spellMode, setSpellMode]   = useState(false);
+  const [selectedSpell, setSelectedSpell] = useState(null);
 
   // Hareket menzili
   const [reachableCells, setReachableCells] = useState(new Set());
@@ -71,7 +85,7 @@ console.log("Battle.js - lobbyId:", lobbyId);
 
   const currentUserId = parseInt(localStorage.getItem("user_id") || '0', 10);
 
-  // --- Melee attack ve spell fonksiyonları (orijinal koddan birebir alındı) ---
+  // --- Melee attack ve spell fonksiyonları ---
   const handleMeleeAttack = async (targetCharacter) => {
     if (!selectedAttacker || !targetCharacter) return;
     try {
@@ -85,7 +99,7 @@ console.log("Battle.js - lobbyId:", lobbyId);
       const newMessage = `${selectedAttacker.name} ${targetCharacter.name}'e yakın dövüş saldırısı yaptı ve ${damage} hasar verdi (Kalan HP: ${targetRemainingHp}).`;
       const updatedChatLog = [...chatLog, newMessage];
       setChatLog(updatedChatLog);
-      socket.send(JSON.stringify({
+      getBattleSocket().send(JSON.stringify({
         event: "battleUpdate",
         lobbyId,
         chatLog: updatedChatLog
@@ -105,50 +119,42 @@ console.log("Battle.js - lobbyId:", lobbyId);
     }
   };
 
-  const handleSpellCast = async (spellKey, targetCharacter, extraData = {}) => {
-    if (!selectedAttacker || !targetCharacter) return;
-    if (
-      !selectedAttacker.prepared_spells ||
-      !Array.isArray(selectedAttacker.prepared_spells) ||
-      !selectedAttacker.prepared_spells.includes(spellKey)
-    ) {
-      alert(`${selectedAttacker.name} karakteri ${spellKey} spelline sahip değil!`);
-      return;
-    }
+  const handleSpellCast = async (spellKey, targetIds, extraData = {}) => {
+    if (!selectedAttacker || !targetIds?.length) return;
     try {
-      const response = await api.post(`spells/${spellKey}/`, {
+      const response = await api.post(`spells/${spellKey}/cast/`, {
         attacker_id: selectedAttacker.id,
-        target_id: targetCharacter.id,
+        targets: targetIds,
         lobby_id: lobbyId,
         ...extraData
       });
-      const newMessage = response.data.message;
-      const updatedChatLog = [...chatLog, newMessage];
-      setChatLog(updatedChatLog);
-      socket.send(JSON.stringify({
-        event: "battleUpdate",
-        lobbyId,
-        chatLog: updatedChatLog
-      }));
-      const stateResponse = await api.get(`battle-state/${lobbyId}/`);
-      if (stateResponse.data) {
-        setInitiativeOrder(stateResponse.data.initiative_order);
-        setPlacements(stateResponse.data.placements);
-        setAvailableCharacters(stateResponse.data.available_characters);
-        setCurrentTurnIndex(stateResponse.data.current_turn_index || 0);
+      const { message, results } = response.data;
+      setChatLog(prev => [...prev, message]);
+      if (results) {
+        setPlacements(prev => {
+          const next = { ...prev };
+          Object.entries(results).forEach(([charId, hp]) => {
+            const cellIndex = Object.entries(prev)
+              .find(([_, ch]) => ch?.id === Number(charId))?.[0];
+            if (cellIndex != null) {
+              next[cellIndex] = {
+                ...prev[cellIndex],
+                hp
+              };
+            }
+          });
+          return next;
+        });
       }
-      setSelectedAttacker(null);
-      setAttackMode(false);
-      setReachableCells(new Set());
-    } catch (error) {
-      console.error(`Error casting spell ${spellKey}:`, error);
+    } catch (err) {
+      console.error("Spell cast error:", err);
     }
   };
 
-  // Spell handler’ları...
+  // Spell handler’ları
   const handleMagicMissile = (t) => handleSpellCast('magic-missile', t);
   const handleFireball     = (t) => handleSpellCast('fireball', t);
-  // … (diğer tüm handle* fonksiyonları aynı kalacak) …
+  // … diğer handle* fonksiyonları …
 
   // --- Polling, start/end battle, socket event listener’lar vs. ---
   useEffect(() => {
@@ -179,7 +185,7 @@ console.log("Battle.js - lobbyId:", lobbyId);
         available_characters: availableCharacters
       });
       const initOrder = res.data.initiative_order;
-      socket.send(JSON.stringify({
+      getBattleSocket().send(JSON.stringify({
         event: "battleStart",
         lobbyId,
         placements,
@@ -195,8 +201,49 @@ console.log("Battle.js - lobbyId:", lobbyId);
   };
 
   const handleEndBattle = () => {
-    socket.send(JSON.stringify({ event: "battleEnd", lobbyId }));
+    getBattleSocket().send(JSON.stringify({ event: "battleEnd", lobbyId }));
   };
+
+  // Socket battleEvent listener
+  useEffect(() => {
+    if (!lobbyId) {
+      console.warn("lobbyId yok, socket başlatılamıyor.");
+      return;
+    }
+
+    const handleSocketMessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (Number(data.lobbyId) !== Number(lobbyId)) return;
+        switch (data.event) {
+          case "battleStart":
+            setBattleStarted(true);
+            setBattleActive(true);
+            break;
+          // … diğer event’ler …
+          default:
+            break;
+        }
+      } catch (err) {
+        console.error("Socket mesajı çözümlenemedi:", err);
+      }
+    };
+
+    const socket = createBattleSocket(lobbyId, handleSocketMessage);
+    if (!socket) {
+      console.warn("createBattleSocket null döndü.");
+      return;
+    }
+
+    return () => {
+      try {
+        socket.removeEventListener('message', handleSocketMessage);
+        socket.close();
+      } catch (err) {
+        console.warn("Event listener kaldırılamadı:", err);
+      }
+    };
+  }, [lobbyId]);
 
   // Lobi verisini çekme
   useEffect(() => {
@@ -234,39 +281,6 @@ console.log("Battle.js - lobbyId:", lobbyId);
     setAvailableCharacters(notPlaced);
   }, [allCharacters, placements]);
 
-  // Socket mesaj dinleyicileri (battleStart, battleUpdate, battleEnd)
-  useEffect(() => {
-    const onMessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (Number(data.lobbyId) !== Number(lobbyId)) return;
-      switch(data.event) {
-        case "battleStart":
-          setBattleStarted(true);
-          if (data.initiativeOrder) {
-            setInitiativeOrder(data.initiativeOrder);
-            setCurrentTurnIndex(0);
-          }
-          if (data.placements) setPlacements(data.placements);
-          if (data.availableCharacters) setAvailableCharacters(data.availableCharacters);
-          if (data.chatLog) setChatLog(data.chatLog);
-          break;
-        case "battleUpdate":
-          if (data.placements) setPlacements(data.placements);
-          if (data.availableCharacters) setAvailableCharacters(data.availableCharacters);
-          if (data.initiativeOrder) setInitiativeOrder(data.initiativeOrder);
-          if (data.chatLog) setChatLog(data.chatLog);
-          break;
-        case "battleEnd":
-          window.location.href = `/endbattle/${lobbyId}`;
-          break;
-        default:
-          break;
-      }
-    };
-    socket.addEventListener("message", onMessage);
-    return () => socket.removeEventListener("message", onMessage);
-  }, [lobbyId]);
-
   // Seçilen saldıran değişince reachableCells hesapla
   useEffect(() => {
     if (selectedAttacker) {
@@ -297,18 +311,13 @@ console.log("Battle.js - lobbyId:", lobbyId);
 
   // Hareket fonksiyonu
   const handleMoveCharacter = async (targetCell) => {
-    // 1) Yeni placements objesini oluştur
     const newPlacements = { ...placements };
     const currentCell = Object.entries(placements)
       .find(([_, ch]) => ch?.id === selectedAttacker.id)?.[0];
     if (currentCell != null) newPlacements[currentCell] = undefined;
     newPlacements[targetCell] = selectedAttacker;
-  
-    // 2) Önce client-side state’i güncelle
     setPlacements(newPlacements);
     setMoving(true);
-  
-    // 3) Yeni konumu backend’e bildir
     try {
       await api.post('combat/move/', {
         lobby_id: lobbyId,
@@ -317,8 +326,6 @@ console.log("Battle.js - lobbyId:", lobbyId);
     } catch (err) {
       console.error("Move update error:", err);
     }
-  
-    // 4) Animasyon ve seçim temizliği
     setTimeout(() => {
       setMoving(false);
       setSelectedAttacker(null);
@@ -326,105 +333,129 @@ console.log("Battle.js - lobbyId:", lobbyId);
     }, 500);
   };
 
-  // Drag & drop (orijinal haliyle)
+  // Drag & drop
   const handleDragStart = (e, character, source, sourceIndex) => {
     e.dataTransfer.setData("text/plain", JSON.stringify({ character, source, sourceIndex }));
   };
   const handleDragOver = (e) => e.preventDefault();
   const handleDrop = (e, cellIndex) => {
     e.preventDefault();
-  
     const { character, source, sourceIndex } =
       JSON.parse(e.dataTransfer.getData("text/plain"));
-  
-    // ① Yeni bir copy oluştur
     const newPlacements = { ...placements };
-  
-    // ② Kaynak grid’den kaldır
     if (source === "grid") {
       newPlacements[sourceIndex] = undefined;
     }
-  
-    // ③ Eğer hedefte zaten bir karakter varsa onu available’a geri koy
     if (newPlacements[cellIndex]) {
       setAvailableCharacters(prev => [...prev, newPlacements[cellIndex]]);
     }
-  
-    // ④ Yeni hücreye ata
     newPlacements[cellIndex] = character;
-  
-    // ⑤ State’leri güncelle
     setPlacements(newPlacements);
     if (source === "available") {
       setAvailableCharacters(prev =>
         prev.filter(ch => ch.id !== character.id)
       );
     }
-  
-    // ⑥ Socket ile server’a bildir (opsiyonel)
-    socket.send(JSON.stringify({
+    getBattleSocket().send(JSON.stringify({
       event: "battleUpdate",
       lobbyId,
       placements: newPlacements,
       availableCharacters: availableCharacters.filter(ch => ch.id !== character.id)
     }));
   };
-  // Grid hücreleri oluşturma
+
+  // Hücreleri oluştur
   const cells = Array.from({ length: totalCells }, (_, i) => {
     const cellCharacter = placements[i];
     return (
-      <div key={i}
-           onDragOver={handleDragOver}
-           onDrop={(e) => handleDrop(e, i)}
-           style={{
-             border: '1px solid #ccc',
-             width: '35px',
-             height: '35px',
-             display: 'flex',
-             alignItems: 'center',
-             justifyContent: 'center',
-             backgroundColor: cellCharacter ? '#90ee90' : '#fff',
-             cursor: cellCharacter ? 'pointer' : 'default',
-             boxShadow: reachableCells.has(i) ? '0 0 0 2px green' : 'none'
-           }}
-           onClick={() => {
-             if (selectedAttacker && !attackMode && !placements[i] && reachableCells.has(i)) {
-               handleMoveCharacter(i);
-               return;
-             }
-             if (attackMode && selectedAttacker && cellCharacter && cellCharacter.id !== selectedAttacker.id) {
-               handleMeleeAttack(cellCharacter);
-               return;
-             }
-             if (cellCharacter && initiativeOrder.length > 0) {
-               const current = initiativeOrder[currentTurnIndex];
-               if (cellCharacter.player_id != currentUserId) return;
-               if (cellCharacter.id === current.character_id) {
-                 setSelectedAttacker(cellCharacter);
-               } else {
-                 alert("Sıra sizde değil!");
-               }
-             }
-           }}>
+      <div
+        key={i}
+        onDragOver={handleDragOver}
+        onDrop={e => handleDrop(e, i)}
+        style={{
+          border: '1px solid #ccc',
+          width: '35px',
+          height: '35px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: cellCharacter ? '#90ee90' : '#fff',
+          cursor: cellCharacter ? 'pointer' : 'default',
+          boxShadow: reachableCells.has(i) ? '0 0 0 2px green' : 'none'
+        }}
+        onClick={() => {
+          // 1) Hareket modu
+          if (
+            selectedAttacker &&
+            !attackMode &&
+            !spellMode &&
+            !cellCharacter &&
+            reachableCells.has(i)
+          ) {
+            handleMoveCharacter(i);
+            return;
+          }
+  
+          // 2) Melee saldırı modu
+          if (
+            attackMode &&
+            selectedAttacker &&
+            cellCharacter &&
+            cellCharacter.id !== selectedAttacker.id
+          ) {
+            handleMeleeAttack(cellCharacter);
+            return;
+          }
+  
+          // 3) Büyü hedef seçimi modu
+          if (
+            spellMode &&
+            selectedSpell &&
+            cellCharacter
+          ) {
+            handleSpellCast(selectedSpell.id, [cellCharacter.id]);
+            return;
+          }
+  
+          // 4) Karakter seçimi (initiative sırası)
+          if (
+            cellCharacter &&
+            initiativeOrder.length > 0
+          ) {
+            const current = initiativeOrder[currentTurnIndex];
+            if (cellCharacter.player_id !== currentUserId) return;
+            if (cellCharacter.id === current.character_id) {
+              setSelectedAttacker(cellCharacter);
+            } else {
+              alert('Sıra sizde değil!');
+            }
+          }
+        }}
+      >
         {cellCharacter && (
-          <div draggable={isGM}
-               onDragStart={(e) => handleDragStart(e, cellCharacter, "grid", i)}
-               style={{
-                 width: '30px',
-                 height: '30px',
-                 borderRadius: '50%',
-                 backgroundColor: '#4CAF50',
-                 color: '#fff',
-                 display: 'flex',
-                 alignItems: 'center',
-                 justifyContent: 'center',
-                 fontSize: '10px',
-                 textAlign: 'center',
-                 padding: '2px',
-                 border: cellCharacter.player_id === currentUserId ? '2px solid blue' : 'none',
-                 transition: moving ? 'transform 0.5s ease' : 'none',
-                 transform: moving ? 'translateY(-10px)' : 'none'
-               }}>
+          <div
+            draggable={isGM}
+            onDragStart={e => handleDragStart(e, cellCharacter, 'grid', i)}
+            style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '50%',
+              backgroundColor: '#4CAF50',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '10px',
+              textAlign: 'center',
+              padding: '2px',
+              border:
+                cellCharacter.player_id === currentUserId
+                  ? '2px solid blue'
+                  : 'none',
+              transition: moving ? 'transform 0.5s ease' : 'none',
+              transform: moving ? 'translateY(-10px)' : 'none'
+            }}
+          >
             {cellCharacter.name}
           </div>
         )}
@@ -436,7 +467,7 @@ console.log("Battle.js - lobbyId:", lobbyId);
     try {
       const res = await api.post('combat/end-turn/', { lobby_id: lobbyId });
       const newOrder = res.data.initiative_order;
-      socket.send(JSON.stringify({
+      getBattleSocket().send(JSON.stringify({
         event: "battleUpdate",
         lobbyId,
         initiativeOrder: newOrder,
@@ -455,7 +486,7 @@ console.log("Battle.js - lobbyId:", lobbyId);
              handleMeleeAttack(ch);
              return;
            }
-           if (ch.player_id != currentUserId) return;
+           if (ch.player_id !== currentUserId) return;
            if (initiativeOrder.length > 0 && ch.id === initiativeOrder[currentTurnIndex].character_id) {
              setSelectedAttacker(ch);
            } else {
@@ -502,6 +533,7 @@ console.log("Battle.js - lobbyId:", lobbyId);
 
   const renderActionPanel = () => {
     if (!selectedAttacker) return null;
+  
     return (
       <div style={{
         margin: '20px 0',
@@ -511,24 +543,85 @@ console.log("Battle.js - lobbyId:", lobbyId);
         backgroundColor: '#e8f5e9'
       }}>
         <h3>{selectedAttacker.name} - Aksiyon Seçimi</h3>
-        {!attackMode ? (
+  
+        {/* ➊ Başlangıç modu: melee veya büyü */}
+        {!attackMode && !spellMode && (
           <>
-            <button onClick={() => setAttackMode(true)}
-                    style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
+            <button
+              onClick={() => { setAttackMode(true); setSpellMode(false); }}
+              style={{ marginRight: 8 }}
+            >
               Yakın Dövüş Saldırı Seç
             </button>
-            <button onClick={() => { setSelectedAttacker(null); setAttackMode(false); }}
-                    style={{
-                      padding: '10px 20px',
-                      fontSize: '16px',
-                      marginLeft: '10px',
-                      cursor: 'pointer'
-                    }}>
+            <button
+              onClick={() => { setSpellMode(true); setAttackMode(false); }}
+              style={{ marginRight: 8 }}
+            >
+              Büyü Kullan
+            </button>
+            <button
+              onClick={() => {
+                setSelectedAttacker(null);
+                setAttackMode(false);
+                setSpellMode(false);
+                setSelectedSpell(null);
+              }}
+            >
               İptal
             </button>
           </>
-        ) : (
+        )}
+  
+        {/* ➋ Melee modu: hedef seçme */}
+        {attackMode && !spellMode && (
           <p>Hareket menzili vurgulandı; lütfen hedefi seçin.</p>
+        )}
+  
+        {/* ➌ Büyü modu – büyü seçimi */}
+        {spellMode && !attackMode && !selectedSpell && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+            {selectedAttacker.prepared_spells && selectedAttacker.prepared_spells.length > 0 ? (
+              selectedAttacker.prepared_spells.map(spell => (
+                <button
+                  key={spell.id}
+                  onClick={() => setSelectedSpell(spell)}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    backgroundColor: '#4A90E2',
+                    color: '#fff',
+                  }}
+                >
+                  {spell.name}
+                </button>
+              ))
+            ) : (
+              <p>Hazırlı büyü yok.</p>
+            )}
+            <button
+              onClick={() => setSpellMode(false)}
+              style={{
+                padding: '8px 12px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                marginLeft: 'auto'
+              }}
+            >
+              Geri
+            </button>
+          </div>
+        )}
+  
+        {/* ➍ Büyü modu – hedef seçimi */}
+        {spellMode && selectedSpell && (
+          <div style={{ marginTop: '8px' }}>
+            <p>“{selectedSpell.name}” için hedef seçin.</p>
+            <button onClick={() => setSelectedSpell(null)}>
+              Büyü Seçimini İptal
+            </button>
+          </div>
         )}
       </div>
     );

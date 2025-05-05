@@ -1,30 +1,36 @@
-import json
-from channels.generic.websocket import JsonWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-class GameConsumer(JsonWebsocketConsumer):
-    def connect(self):
-        # Örneğin, URL route'dan lobby_id'yi alabiliriz.
-        # Eğer URL route'da lobby_id tanımlı değilse, query string'den de alabilirsiniz.
-        self.lobby_id = self.scope['url_route']['kwargs'].get('lobby_id', 'default')
-        self.group_name = f"lobby_{self.lobby_id}"
-        # Belirlenen gruba katıl
-        self.channel_layer.group_add(self.group_name, self.channel_name)
-        self.accept()
+class BattleConsumer(AsyncJsonWebsocketConsumer):
+    async def connect(self):
+        self.lobby_id = self.scope["url_route"]["kwargs"]["battle_id"]
+        self.group_name = f"battle_{self.lobby_id}"
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
 
-    def disconnect(self, close_code):
-        # Grubu terk et
-        self.channel_layer.group_discard(self.group_name, self.channel_name)
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
-    def receive_json(self, content, **kwargs):
-        # Gelen mesajı aynı gruptaki tüm bağlantılara gönder
-        self.channel_layer.group_send(
+    async def receive_json(self, content, **kwargs):
+        event_type = content.get("event")
+        if not event_type:
+            return
+
+        await self.channel_layer.group_send(
             self.group_name,
             {
-                'type': 'game_message',
-                'message': content,
+                "type": event_type,
+                "data": content
             }
         )
 
-    def game_message(self, event):
-        message = event['message']
-        self.send_json(message)
+    async def battleStart(self, event):
+        await self.send_json(event["data"])
+
+    async def battleUpdate(self, event):
+        await self.send_json(event["data"])
+
+    async def battleEnd(self, event):
+        await self.send_json(event["data"])
+
+    async def joinLobby(self, event):
+        await self.send_json(event["data"])

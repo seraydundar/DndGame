@@ -97,7 +97,7 @@ function App() {
                       />
 
                       <Route
-                        path="/battle"
+                        path="/battle/:lobby_id"
                         element={
                           <RequireAuth>
                             <Battle />

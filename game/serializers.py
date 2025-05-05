@@ -1,7 +1,10 @@
 # game/serializers.py
 
+import json
 from rest_framework import serializers
-from .models import Character, Race, Class, CharacterTemplate
+from .models import Character, Race, Class as CharacterClass, CharacterTemplate, Class
+from spells.models import Spell
+from spells.serializers import SpellSerializer
 
 class CharacterTemplateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,14 +51,54 @@ class CharacterSerializer(serializers.ModelSerializer):
     )
     character_class = serializers.SlugRelatedField(
         slug_field='class_name',
-        queryset=Class.objects.all()
+        queryset=CharacterClass.objects.all()
     )
+
+    # 1) Okuma için nested serializer'ı tutarız
+    prepared_spells = serializers.SerializerMethodField()
+    # 2) Yazma için JSONField
+    prepared_spells_input = serializers.JSONField(
+        write_only=True,
+        required=False,
+        default=list
+    )
+
+    def get_prepared_spells(self, obj):
+        spells = obj.prepared_spells or []
+        if isinstance(spells, str):
+            spells = json.loads(spells)
+        spell_ids = [s.get("id") for s in spells if isinstance(s, dict) and s.get("id") is not None]
+        qs = Spell.objects.filter(id__in=spell_ids)
+        return SpellSerializer(qs, many=True).data
+
+    def create(self, validated_data):
+        spells = validated_data.pop('prepared_spells_input', [])
+        instance = super().create(validated_data)
+        instance.prepared_spells = spells
+        instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        spells = validated_data.pop('prepared_spells_input', None)
+        instance = super().update(instance, validated_data)
+        if spells is not None:
+            instance.prepared_spells = spells
+            instance.save()
+        return instance
 
     class Meta:
         model = Character
         fields = [
-            'id', 'player_id', 'lobby_id', 'name', 'race', 'character_class',
-            'level', 'hp', 'strength', 'dexterity', 'constitution',
-            'intelligence', 'wisdom', 'charisma', 'gold',
-            'equipment', 'prepared_spells', 'class_features'
+            'id', 'player_id', 'lobby_id', 'name',
+            'race', 'character_class',
+            'level', 'hp',
+            'strength', 'dexterity', 'constitution',
+            'intelligence', 'wisdom', 'charisma',
+            'gold', 'equipment',
+            # Okuma ve yazma alanlarını ayrı tuttuk:
+            'prepared_spells',         # read-only nested list of SpellSerializer
+            'prepared_spells_input',   # write-only raw list of {id: ...}
+            'class_features'
         ]
+        read_only_fields = ['prepared_spells']
+
