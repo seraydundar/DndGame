@@ -1,0 +1,123 @@
+/* Creature.css */
+
+/* Formu sayfanın ortasında ve kart tarzında göster */
+.creature-form {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 30px 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    color: #333;
+  }
+  
+  /* Başlık */
+  .creature-form h2 {
+    margin-bottom: 24px;
+    font-size: 1.8rem;
+    text-align: center;
+    color: #4a2f27;
+  }
+  
+  /* Etiketler */
+  .creature-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #555;
+  }
+  
+  /* Tüm input, textarea, select, file */
+  .creature-form input[type="text"],
+  .creature-form input[type="number"],
+  .creature-form input[type="file"],
+  .creature-form textarea,
+  .creature-form select {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    background: #fff;
+    color: #333;
+  }
+  
+  /* Textarea’ya biraz yükseklik verelim */
+  .creature-form textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  
+  /* Çoklu seçim kutusunu biraz uzat */
+  .creature-form select[multiple] {
+    min-height: 100px;
+  }
+  
+  /* Hata metinleri */
+  .creature-form .error {
+    display: block;
+    margin-top: -12px;
+    margin-bottom: 12px;
+    font-size: 0.875rem;
+    color: #d9534f;
+  }
+  
+  /* Gönder butonu */
+  .creature-form button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background-color: #4a2f27;
+    color: #fff;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Hover efekti */
+  .creature-form button[type="submit"]:hover {
+    background-color: #39221c;
+  }
+  
+  /* Listeyi de biraz iyileştirelim */
+  .creature-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px 0;
+  }
+  
+  .creature-card {
+    width: 220px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  
+  .creature-card h3 {
+    margin: 12px 0 8px;
+    font-size: 1.2rem;
+    color: #333;
+  }
+  
+  .creature-card p {
+    margin: 4px 0;
+    font-size: 0.95rem;
+    color: #555;
+  }
+  
+  .creature-icon {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin-bottom: 12px;
+  }
+  

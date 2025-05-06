@@ -41,7 +41,7 @@ const Lobbies = () => {
 
   return (
     <div className="lobbies-container">
-      <h2 className="lobbies-title">Tüm Lobiler</h2>
+      <h2 className="lobbies-title">All Lobbies</h2>
 
       {lobbies.length === 0 ? (
         <p className="empty-message">Henüz bir lobiye katılmadınız.</p>
@@ -54,11 +54,11 @@ const Lobbies = () => {
                 <strong>GM:</strong> {lobby.gm_player_username || lobby.gm_player}
               </p>
               <p>
-                <strong>Durum:</strong> {lobby.is_active ? 'Aktif' : 'Pasif'}
+                <strong>Status:</strong> {lobby.is_active ? 'Active' : 'Pasif'}
               </p>
 
               <div>
-                <strong>Katılan Oyuncular:</strong>
+                <strong>Joined Users:</strong>
                 {lobby.lobby_players && lobby.lobby_players.length > 0 ? (
                   <ul>
                     {lobby.lobby_players.map((lp) => (
@@ -68,7 +68,7 @@ const Lobbies = () => {
                     ))}
                   </ul>
                 ) : (
-                  <p className="empty-message">Henüz katılan oyuncu yok.</p>
+                  <p className="empty-message">There is no Joined User</p>
                 )}
               </div>
 
@@ -76,7 +76,7 @@ const Lobbies = () => {
                 className="lobby-card-button"
                 onClick={() => goToLobbyDetail(lobby.lobby_id)}
               >
-                Lobiyi Gör
+                Show Lobby
               </button>
             </div>
           ))}
@@ -84,7 +84,7 @@ const Lobbies = () => {
       )}
 
       <button className="create-lobby-btn" onClick={handleCreateLobby}>
-        Lobi Oluştur
+        Create New Lobby
       </button>
     </div>
   );

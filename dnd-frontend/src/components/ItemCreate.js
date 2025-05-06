@@ -1,71 +1,78 @@
 // src/components/ItemCreate.js
+import React, { useState, useEffect, useMemo } from "react";
+import api from "../services/api";
+import "./ItemCreate.css";
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import './ItemCreate.css';
+/* ---------- Sabit listeler ---------- */
 
-// CSRF token helper
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i += 1) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
+const ITEM_TYPES = ["Weapon", "Shield", "Armor", "Consumable", "Misc"];
 
-// Axios global configuration
-axios.defaults.baseURL         = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
-axios.defaults.withCredentials = true;
-axios.defaults.headers.common['X-CSRFToken'] = getCookie('csrftoken');
+const SUBTYPES_BY_TYPE = {
+  Weapon: [
+    { value: "sword", label: "Sword" },
+    { value: "axe",   label: "Axe" },
+    { value: "bow",   label: "Bow" }
+  ],
+  Shield: [
+    { value: "buckler", label: "Buckler" },
+    { value: "round",   label: "Round Shield" },
+    { value: "tower",   label: "Tower Shield" }
+  ],
+  Armor: [
+    { value: "light",  label: "Light Armor" },
+    { value: "medium", label: "Medium Armor" },
+    { value: "heavy",  label: "Heavy Armor" }
+  ],
+  Consumable: [
+    { value: "potion", label: "Potion" },
+    { value: "scroll", label: "Scroll" }
+  ],
+  Misc: [
+    { value: "mundane", label: "Mundane" },
+    { value: "magical", label: "Magical" },
+    { value: "quest",   label: "Quest Item" }
+  ]
+};
 
-// Constants
-const ITEM_TYPES     = ['Weapon','Armor','Consumable','Misc'];
-const SUBTYPES       = [ /* aynı listeler */ ];
-const RARITY_CHOICES = ['Common','Uncommon','Rare','Legendary'];
-const EQUIP_SLOTS    = [ /* aynı listeler */ ];
-const BONUS_STATS    = ['attack_bonus','dexterity','strength','constitution','intelligence','wisdom','charisma'];
+const RARITIES = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
 
-export default function ItemCreate() {
-  // State’ler
-  const [allSpells,      setAllSpells]      = useState([]);
-  const [bonuses,        setBonuses]        = useState([]);
-  const [newBonus,       setNewBonus]       = useState({ stat:'', type:'add', value:0 });
-  const [selectedSpells, setSelectedSpells] = useState([]);
-  const [iconPreview,    setIconPreview]    = useState(null);
-  const [rawMode,        setRawMode]        = useState(false);
-  const [rawJson,        setRawJson]        = useState('{}');
+const EQUIP_SLOTS = [
+  "Head", "Chest", "Legs", "Feet",
+  "Main Hand", "Off Hand", "Neck", "Ring"
+];
+
+function ItemCreate() {
   const [form, setForm] = useState({
-    name: '', description:'', item_type: '', subtype: '', rarity: '', equip_slot: '',
-    two_handed: false, damage_dice: '', damage_modifier: '', ac_bonus: ''
+    name: "",
+    description: "",
+    icon: null,        // artık icon alanı
+    item_type: "",
+    subtype: "",
+    rarity: "",
+    equip_slot: "",
+    damage_dice: "",
+    damage_modifier: "",
+    ac_bonus: ""
   });
 
-  // Spell’leri çek
-  useEffect(() => {
-    axios.get('/api/spells/')
-      .then(res => setAllSpells(res.data))
-      .catch(err => console.error('Spells yüklenirken hata:', err));
-  }, []);
+  const [iconPreview, setIconPreview] = useState(null);
+  const [handed, setHanded] = useState("one");
+  const [bonuses, setBonuses] = useState([]);
+  const [newBonus, setNewBonus] = useState({ stat: "", type: "+", value: 0 });
+  const [allSpells, setAllSpells] = useState([]);
+  const [selectedSpells, setSelectedSpells] = useState([]);
 
-  // Genel input handler
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(f => ({
+    setForm((f) => ({
       ...f,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value
     }));
   };
 
-  // Icon önizlemesi
-  const handleIconChange = e => {
+  const handleIconChange = (e) => {
     const file = e.target.files[0] || null;
-    setForm(f => ({ ...f, iconFile: file }));
+    setForm((f) => ({ ...f, icon: file }));
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setIconPreview(reader.result);
@@ -75,230 +82,292 @@ export default function ItemCreate() {
     }
   };
 
-  // Bonus ekle/kaldır
-  const addBonus    = () => {
-    if (newBonus.stat) {
-      setBonuses(b => [...b, newBonus]);
-      setNewBonus({ stat:'', type:'add', value:0 });
+  const subtypes = useMemo(
+    () => SUBTYPES_BY_TYPE[form.item_type] || [],
+    [form.item_type]
+  );
+
+  const baseSlots = { weapon: false, armor: false, shield: false };
+  const equipSlots = useMemo(() => {
+    if (form.item_type === "Weapon")   return { ...baseSlots, weapon: true };
+    if (form.item_type === "Shield")   return { ...baseSlots, shield: true, armor: true };
+    if (form.item_type === "Armor")    return { ...baseSlots, armor: true };
+    return baseSlots;
+  }, [form.item_type]);
+
+  useEffect(() => {
+    async function fetchSpells() {
+      try {
+        const res = await api.get("spells/");
+        setAllSpells(res.data);
+      } catch (err) {
+        console.error("Spells alınamadı:", err);
+      }
     }
+    fetchSpells();
+  }, []);
+
+  const addBonus = () => {
+    if (!newBonus.stat) return;
+    setBonuses((b) => [...b, newBonus]);
+    setNewBonus({ stat: "", type: "+", value: 0 });
   };
-  const removeBonus = idx => setBonuses(b => b.filter((_,i) => i!==idx));
 
-  // Submit
-  const handleSubmit = async e => {
+  const removeBonus = (idx) => {
+    setBonuses((b) => b.filter((_, i) => i !== idx));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.name || !form.item_type) {
+      return alert("Name ve Type zorunlu!");
+    }
 
-    if (!rawMode) {
-      const data = new FormData();
+    const data = new FormData();
+    // Dosya alanı doğru isimle ekleniyor
+    if (form.icon) {
+      data.append("icon", form.icon);
+    }
+    // Geri kalan alanlar ekleniyor
+    Object.entries(form).forEach(([k, v]) => {
+      if (k === "icon") return;
+      if (v !== "" && v !== null) data.append(k, v);
+    });
+    if (form.item_type === "Weapon" || form.item_type === "Shield") {
+      data.append("two_handed", handed === "two");
+    }
+    if (bonuses.length)       data.append("bonuses", JSON.stringify(bonuses));
+    if (selectedSpells.length) data.append("spells", JSON.stringify(selectedSpells));
 
-      // Sadece boş olmayanları append et
-      if (form.name)           data.append('name', form.name);
-      if (form.description)    data.append('description', form.description);
-      if (form.iconFile)       data.append('icon', form.iconFile);
-      if (form.item_type)      data.append('item_type', form.item_type);
-      if (form.subtype)        data.append('subtype', form.subtype);
-      if (form.rarity)         data.append('rarity', form.rarity);
-      if (form.equip_slot)     data.append('equip_slot', form.equip_slot);
-      if (form.two_handed)     data.append('two_handed', form.two_handed);
-      if (form.damage_dice)    data.append('damage_dice', form.damage_dice);
-      if (form.damage_modifier) data.append('damage_modifier', form.damage_modifier);
-      if (form.ac_bonus)       data.append('ac_bonus', form.ac_bonus);
-      if (bonuses.length)      data.append('bonuses', JSON.stringify(bonuses));
-      if (selectedSpells.length) data.append('spells', JSON.stringify(selectedSpells));
-
-      try {
-        await axios.post('http://127.0.0.1:8000/api/items/', data);
-        alert('Eşya başarıyla oluşturuldu!');
-        // Reset
-        setForm({
-          name:'', description:'', item_type:'', subtype:'',
-          rarity:'', equip_slot:'', two_handed:false,
-          damage_dice:'', damage_modifier:'', ac_bonus:''
-        });
-        setBonuses([]);
-        setSelectedSpells([]);
-        setIconPreview(null);
-      } catch (err) {
-        console.error('Eşya oluşturma hatası:', err);
-        alert('Eşya oluşturulamadı. Konsolu kontrol edin.');
-      }
-
-    } else {
-      // Raw JSON
-      let payload;
-      try {
-        payload = JSON.parse(rawJson);
-      } catch {
-        return alert('Raw JSON hatalı, düzeltin.');
-      }
-      try {
-        await axios.post('/api/items/', payload);
-        alert('Eşya başarıyla oluşturuldu!');
-        setRawJson('{}');
-      } catch (err) {
-        console.error('Eşya oluşturma hatası:', err);
-        alert('Eşya oluşturulamadı. Konsolu kontrol edin.');
+    try {
+      await api.post("items/items/", data);
+      alert("Eşya oluşturuldu!");
+      // Formu sıfırla
+      setForm({
+        name: "",
+        description: "",
+        icon: null,
+        item_type: "",
+        subtype: "",
+        rarity: "",
+        equip_slot: "",
+        damage_dice: "",
+        damage_modifier: "",
+        ac_bonus: ""
+      });
+      setHanded("one");
+      setBonuses([]);
+      setSelectedSpells([]);
+      setIconPreview(null);
+    } catch (err) {
+      if (err.response && err.response.data) {
+        console.error("Validation errors:", err.response.data);
+        alert(JSON.stringify(err.response.data, null, 2));
+      } else {
+        console.error(err);
       }
     }
   };
 
   return (
-    <form className="item-create-form" onSubmit={handleSubmit}>
-      <button
-        type="button"
-        className="toggle-button"
-        onClick={() => setRawMode(r => !r)}
-      >
-        {rawMode ? 'Switch to Builder' : 'Switch to Raw JSON'}
-      </button>
-
-      {rawMode ? (
-        <textarea
-          value={rawJson}
-          onChange={e => setRawJson(e.target.value)}
-          style={{ width:'100%', height:200, fontFamily:'monospace' }}
+    <form onSubmit={handleSubmit} className="item-create-form">
+      <label>
+        Name
+        <input
+          required
+          name="name"
+          value={form.name}
+          onChange={handleChange}
         />
-      ) : (
+      </label>
+
+      <label>
+        Description
+        <textarea
+          name="description"
+          value={form.description}
+          onChange={handleChange}
+        />
+      </label>
+
+      <label>
+        Icon
+        <input
+          name="icon"
+          type="file"
+          accept="image/*"
+          onChange={handleIconChange}
+        />
+      </label>
+      {iconPreview && (
+        <img src={iconPreview} alt="Preview" style={{ maxWidth: 100 }} />
+      )}
+
+      <label>
+        Item Type
+        <select
+          required
+          name="item_type"
+          value={form.item_type}
+          onChange={handleChange}
+        >
+          <option value="">—</option>
+          {ITEM_TYPES.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+      </label>
+
+      {subtypes.length > 0 && (
+        <label>
+          Subtype
+          <select
+            required
+            name="subtype"
+            value={form.subtype}
+            onChange={handleChange}
+          >
+            <option value="">—</option>
+            {subtypes.map((st) => (
+              <option key={st.value} value={st.value}>{st.label}</option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <label>
+        Rarity
+        <select
+          name="rarity"
+          value={form.rarity}
+          onChange={handleChange}
+        >
+          <option value="">—</option>
+          {RARITIES.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+      </label>
+
+      {equipSlots.weapon && (
         <>
-          <h2>Yeni Eşya Oluştur</h2>
-
           <label>
-            İsim
-            <input name="name" value={form.name} onChange={handleChange} />
-          </label>
-
-          <label>
-            Açıklama
-            <textarea name="description" value={form.description} onChange={handleChange}/>
-          </label>
-
-          <label>
-            Icon
-            <input type="file" accept="image/*" onChange={handleIconChange} />
-          </label>
-          {iconPreview && <img src={iconPreview} alt="Preview" style={{maxWidth:100}} />}
-
-          <label>
-            Tür
-            <select name="item_type" value={form.item_type} onChange={handleChange}>
-              <option value="">—</option>
-              {ITEM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            Two-Handed
+            <select value={handed} onChange={(e) => setHanded(e.target.value)}>
+              <option value="one">One-Handed</option>
+              <option value="two">Two-Handed</option>
             </select>
           </label>
 
           <label>
-            Alt Tür
-            <select name="subtype" value={form.subtype} onChange={handleChange}>
-              <option value="">—</option>
-              {SUBTYPES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
-          </label>
-
-          <label>
-            Rarity
-            <select name="rarity" value={form.rarity} onChange={handleChange}>
-              <option value="">—</option>
-              {RARITY_CHOICES.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </label>
-
-          <label>
-            Slot
-            <select name="equip_slot" value={form.equip_slot} onChange={handleChange}>
-              <option value="">—</option>
-              {EQUIP_SLOTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
-          </label>
-
-          <label>
-            İki Elli
+            Damage Dice
             <input
-              type="checkbox"
-              name="two_handed"
-              checked={form.two_handed}
+              name="damage_dice"
+              value={form.damage_dice}
               onChange={handleChange}
+              placeholder="e.g. 1d6"
             />
           </label>
 
           <label>
-            Hasar (örn. 1d8)
-            <input name="damage_dice" value={form.damage_dice} onChange={handleChange} />
-          </label>
-
-          <label>
-            Hasar Modifikatörü
+            Damage Modifier
             <input
-              type="number"
               name="damage_modifier"
+              type="number"
               value={form.damage_modifier}
               onChange={handleChange}
             />
           </label>
-
-          <label>
-            AC Bonusu
-            <input
-              type="number"
-              name="ac_bonus"
-              value={form.ac_bonus}
-              onChange={handleChange}
-            />
-          </label>
-
-          <fieldset>
-            <legend>Ek Bonuslar</legend>
-            <div className="bonus-inputs">
-              <select
-                value={newBonus.stat}
-                onChange={e => setNewBonus(b => ({ ...b, stat:e.target.value }))}
-              >
-                <option value="">Stat seçin</option>
-                {BONUS_STATS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-
-              <select
-                value={newBonus.type}
-                onChange={e => setNewBonus(b => ({ ...b, type:e.target.value }))}
-              >
-                <option value="add">Ekle</option>
-                <option value="mul">Çarp</option>
-              </select>
-
-              <input
-                type="number"
-                value={newBonus.value}
-                onChange={e => setNewBonus(b => ({ ...b, value:+e.target.value }))}
-                placeholder="Değer"
-              />
-              <button type="button" onClick={addBonus}>Add</button>
-            </div>
-
-            {bonuses.map((b,i) => (
-              <div key={i} className="bonus-item">
-                {b.stat} {b.type} {b.value}
-                <button type="button" onClick={() => removeBonus(i)}>Remove</button>
-              </div>
-            ))}
-          </fieldset>
-
-          <label>
-            Büyüler
-            <select
-              multiple
-              value={selectedSpells}
-              onChange={e => setSelectedSpells(
-                Array.from(e.target.selectedOptions, o=>o.value)
-              )}
-            >
-              {allSpells.map(sp => (
-                <option key={sp.id} value={sp.id}>{sp.name}</option>
-              ))}
-            </select>
-          </label>
         </>
       )}
 
-      <button type="submit">Eşyayı Oluştur</button>
+      {equipSlots.armor && (
+        <label>
+          AC Bonus
+          <input
+            name="ac_bonus"
+            type="number"
+            value={form.ac_bonus}
+            onChange={handleChange}
+          />
+        </label>
+      )}
+
+      {bonuses.length > 0 && (
+        <div>
+          <h4>Bonuses</h4>
+          <ul>
+            {bonuses.map((b, idx) => (
+              <li key={idx}>
+                {b.stat} {b.type}{b.value}
+                <button type="button" onClick={() => removeBonus(idx)}>x</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="new-bonus">
+        <select
+          value={newBonus.stat}
+          onChange={(e) => setNewBonus((b) => ({ ...b, stat: e.target.value }))}
+        >
+          <option value="">Stat</option>
+          <option value="strength">Strength</option>
+          <option value="dexterity">Dexterity</option>
+          <option value="constitution">Constitution</option>
+        </select>
+        <select
+          value={newBonus.type}
+          onChange={(e) => setNewBonus((b) => ({ ...b, type: e.target.value }))}
+        >
+          <option value="+">+</option>
+          <option value="-">-</option>
+        </select>
+        <input
+          type="number"
+          value={newBonus.value}
+          onChange={(e) => setNewBonus((b) => ({ ...b, value: +e.target.value }))}
+        />
+        <button type="button" onClick={addBonus}>Add Bonus</button>
+      </div>
+
+      {equipSlots.shield && (
+        <label>
+          AC Bonus
+          <input
+            name="ac_bonus"
+            type="number"
+            value={form.ac_bonus}
+            onChange={handleChange}
+          />
+        </label>
+      )}
+
+      {equipSlots.shield && (
+        <label>
+          Spell
+          <select
+            multiple
+            value={selectedSpells}
+            onChange={(e) =>
+              setSelectedSpells(
+                Array.from(e.target.selectedOptions, (o) => o.value)
+              )
+            }
+          >
+            {allSpells.map((sp) => (
+              <option key={sp.id} value={sp.id}>{sp.name}</option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <button type="submit" className="submit-button">
+        Eşyayı Oluştur
+      </button>
     </form>
   );
 }
+
+export default ItemCreate;

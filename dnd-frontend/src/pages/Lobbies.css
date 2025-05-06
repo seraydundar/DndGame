@@ -1,4 +1,4 @@
-/* D&D Temalı Lobby CSS */
+/* -------------- Temel Değişkenler ve Genel Ayar -------------- */
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
 
 :root {
@@ -12,249 +12,23 @@
   --button-hover: #4b3621;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-}
-
-html, body, #root {
-  height: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Cinzel', serif;
-  background: none;
 }
 
-/* Lobby Oluşturma ve Listeleme Wrapper */
-.lobbies-wrapper,
-.lobbies-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  min-height: 100vh;
-  padding: 40px 20px;
-  color: var(--accent-color);
-}
-
-.lobbies-title {
-  font-size: 2rem;
-  margin-bottom: 20px;
-  color: var(--accent-color);
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-}
-
-.lobbies-info {
-  font-size: 1rem;
-  margin-bottom: 30px;
-  color: var(--accent-color);
-}
-
-.lobby-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-  max-width: 1200px;  /* maksimum genişlik */
-  margin: 0 auto;     /* yatayda ortala */
-}
-
-/* Bireysel Lobi Kartı */
-.lobby-card {
-  position: relative;
-  background: var(--parchment);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  padding: 16px;
-  width: 280px;
-  box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
-  color: var(--text-dark);
-  text-align: center;
-}
-
-.lobby-card::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  right: -6px;
-  bottom: -6px;
-  border: 1px dashed var(--border-color);
-  border-radius: 10px;
-  pointer-events: none;
-}
-
-.lobby-card h3 {
-  margin: 0 0 12px;
-  font-size: 1.4rem;
-  color: var(--border-color);
-}
-
-.lobby-card p {
-  margin: 8px 0;
-  font-size: 1rem;
-}
-
-.lobby-card button {
-  margin-top: 12px;
-  padding: 8px 12px;
-  background: var(--button-bg);
-  color: var(--text-light);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.lobby-card button:hover {
-  background: var(--button-hover);
-}
-
-/* Lobi Oluştur Butonu (Listeleme Sayfası) */
-.create-lobby-btn {
-  display: inline-block;
-  margin: 30px auto 0;
-  padding: 10px 16px;
-  background: var(--button-bg);
-  color: var(--text-light);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.create-lobby-btn:hover {
-  background: var(--button-hover);
-}
-
-/* Create Lobby Form */
-.lobby-panel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: var(--panel-bg);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  padding: 30px 20px;
-  width: 400px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.5);
-  text-align: center;
-  z-index: 2;
-}
-
-
-.lobby-form {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.lobby-form label {
-  font-size: 1rem;
-  color: var(--text-light);
-}
-
-.lobby-input {
-  flex: 1;
-  max-width: 200px;
-  padding: 8px 10px;
-  font-size: 1rem;
-  border: 1px solid var(--accent-color);
-  border-radius: 4px;
-  background: rgba(255,255,255,0.1);
-  color: var(--text-dark);
-  outline: none;
-}
-
-.lobby-input:focus {
-  border-color: var(--accent-color);
-  box-shadow: 0 0 5px var(--accent-color);
-}
-
-.lobby-button {
-  padding: 8px 16px;
-  font-size: 1rem;
-  background: var(--button-bg);
-  color: var(--text-light);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.lobby-button:hover {
-  background: var(--button-hover);
-}
-
-/* Lobby Detay Sayfası */
-.lobby-detail-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 20px;
-  min-height: 100vh;
-  color: var(--accent-color);
-}
-
-.lobby-detail-container h2 {
-  font-size: 2rem;
-  margin-bottom: 10px;
-  color: var(--accent-color);
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-}
-
-.lobby-detail-info p {
-  margin: 6px 0;
-  font-size: 1rem;
-  color: var(--accent-color);
-}
-
-.lobby-players-section,
-.lobby-invite-section,
-.lobby-ready-section {
-  background: var(--parchment);
-  padding: 16px;
-  margin: 20px auto;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  max-width: 600px;
-  width: 100%;
-  font-size: 1.1rem;
-  color: var(--text-dark);
-}
-
-.lobby-players-section h3,
-.lobby-invite-section h3,
-.lobby-ready-section h3 {
-  margin-top: 0;
-  color: var(--border-color);
-  font-size: 1.2rem;
-}
-
-.lobby-players-list {
-  list-style: disc inside;
-  margin: 10px 0;
-  padding-left: 20px;
-  color: var(--text-dark);
-}
-
-.lobby-invite-section select,
-.lobby-ready-section select {
-  padding: 6px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: #fff;
-  color: var(--text-dark);
+body,
+html,
+#root {
+  height: 100%;
   font-family: 'Cinzel', serif;
 }
 
-.lobby-invite-section button,
-.lobby-ready-section button,
-.lobby-start-btn,
-.lobby-back-btn {
-  margin-left: 10px;
+/* -------------- Ortak Buton Stili -------------- */
+button {
   padding: 8px 14px;
   background: var(--button-bg);
   color: var(--text-light);
@@ -263,20 +37,136 @@ html, body, #root {
   cursor: pointer;
   transition: background 0.2s;
 }
-
-.lobby-invite-section button:hover,
-.lobby-ready-section button:hover,
-.lobby-start-btn:hover,
-.lobby-back-btn:hover {
+button:hover {
   background: var(--button-hover);
 }
 
+/* -------------- Lobi Listeleme Sayfası -------------- */
+.lobbies-wrapper,
+.lobbies-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  min-height: 100vh;
+  padding: 40px 20px;
+  color: var(--accent-color);
+}
+
+.lobby-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.lobby-card {
+  background: var(--parchment);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  width: 260px;
+  padding: 16px;
+  color: var(--text-dark);
+  text-align: center;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.lobby-card h3 {
+  margin-bottom: 12px;
+  font-size: 1.4rem;
+  color: var(--border-color);
+}
+
+/* -------------- Lobi Oluşturma Sayfası -------------- */
+.lobby-panel {
+  background: var(--panel-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 30px 20px;
+  width: 400px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  margin: 80px auto;
+}
+
+.lobby-form {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.lobby-input {
+  flex: 1;
+  min-width: 150px;
+  padding: 8px;
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+}
+
+/* -------------- Lobi Detay (Lobby.js) -------------- */
+.lobby-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 32px;
+  background: var(--panel-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-light);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.lobby-container h1 {
+  margin-bottom: 24px;
+  font-size: 2rem;
+  color: var(--accent-color);
+  text-shadow: 1px 1px 2px #000;
+}
+
+/* Ortak panel bloğu */
+.lobby-players,
+.lobby-gm,
+.lobby-player {
+  margin-bottom: 28px;
+  padding: 16px;
+  background: var(--parchment);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-dark);
+}
+
+.lobby-players h2,
+.lobby-gm h3,
+.lobby-player h3 {
+  margin-top: 0;
+  color: var(--border-color);
+  font-size: 1.2rem;
+}
+
+.lobby-players ul {
+  list-style: disc inside;
+  margin-top: 8px;
+  padding-left: 18px;
+  color: var(--text-dark);
+}
+
+select {
+  padding: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text-dark);
+  font-family: inherit;
+  min-width: 180px;
+}
+
+/* Start / Back */
 .lobby-start-btn,
 .lobby-back-btn {
   display: block;
   margin: 20px auto;
 }
-
 .lobby-back-btn {
   background: var(--border-color);
 }

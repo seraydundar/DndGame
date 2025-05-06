@@ -1,7 +1,7 @@
+// src/pages/CreateLobby.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import socket from '../services/socket'; // Global native WebSocket nesnesi
 import './Lobbies.css';
 
 const CreateLobby = () => {
@@ -11,23 +11,10 @@ const CreateLobby = () => {
   const handleCreateLobby = async (e) => {
     e.preventDefault();
     try {
-      // Lobi oluşturma isteği (POST: http://localhost:8000/api/lobbies/)
-      const response = await api.post('lobbies/', {
-        lobby_name: lobbyName
-      });
-
-      // WebSocket üzerinden yeni lobi bilgisi gönder
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-          event: "lobbyCreated",
-          lobby: response.data
-        }));
-      } else {
-        console.log("WebSocket bağlantısı henüz açılmamış.");
-      }
-
+      /* Backend "lobbies/create/" → {"lobby_id": 9, ...} döndürüyor */
+      const { data } = await api.post('lobbies/create/', { lobby_name: lobbyName });
       alert('Lobi başarıyla oluşturuldu!');
-      navigate('/lobbies');
+      navigate(`/lobbies/${data.lobby_id}`);
     } catch (error) {
       console.error('Lobi oluşturma hatası:', error);
       alert('Lobi oluşturulamadı.');

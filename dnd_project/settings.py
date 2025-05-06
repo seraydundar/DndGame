@@ -17,22 +17,23 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 # 📌 Uygulamalar
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django_filters',
-    'corsheaders',  # ✅ CORS Middleware :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
-    'rest_framework',
-    'channels',     # ✅ Django Channels (WebSocket Desteği)
-    'accounts',
-    'game',
-    'lobbies',
-    'items',
-    'spells',
-    'combat',       # ✅ Combat Uygulaması
+     'django.contrib.admin',
+     'django.contrib.auth',
+     'django.contrib.contenttypes',
+     'django.contrib.sessions',
+     'django.contrib.messages',
+     'django.contrib.staticfiles',
+     'django_filters',
+     'corsheaders',
+     'rest_framework',
+     'channels',
+     'accounts',
+     'game',
+     'lobbies',
+     'items',
+     'spells',
+    'creature.apps.CreatureConfig',    # ← creature app’i burada ekliyoruz :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
+     'combat',
 ]
 
 TEMPLATES = [
@@ -55,6 +56,7 @@ ROOT_URLCONF = 'dnd_project.urls'
 
 # 📌 Middleware (CORS en üstte olmalı!)
 MIDDLEWARE = [
+    'dnd_project.csrfcookie.CSRFCookieMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -158,3 +160,5 @@ SESSION_COOKIE_SECURE = False    # Geliştirme ortamında False, production'da T
 # Media (dosya yükleme) ayarları
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+APPEND_SLASH = False

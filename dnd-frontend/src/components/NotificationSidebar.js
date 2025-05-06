@@ -61,11 +61,11 @@ const NotificationSidebar = () => {
 
   return (
     <div className="notification-sidebar">
-      <h3>Bildirimler</h3>
+      <h3>Notifications</h3>
       {error && <p className="error-msg">{error}</p>}
       <ul className="notification-list">
         {notifications.length === 0 ? (
-          <li className="notification-item">Henüz bildirim yok.</li>
+          <li className="notification-item">No Notifications</li>
         ) : (
           notifications.map((n) => (
             <li key={n.id} className="notification-item">

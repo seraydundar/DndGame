@@ -96,7 +96,7 @@ const Battle = () => {
       });
       const damage = response.data.damage;
       const targetRemainingHp = response.data.target_remaining_hp;
-      const newMessage = `${selectedAttacker.name} ${targetCharacter.name}'e yakın dövüş saldırısı yaptı ve ${damage} hasar verdi (Kalan HP: ${targetRemainingHp}).`;
+      const newMessage = `${selectedAttacker.name}'attacked' ${targetCharacter.name}'character ${damage} damage dealed (Left HP: ${targetRemainingHp}).`;
       const updatedChatLog = [...chatLog, newMessage];
       setChatLog(updatedChatLog);
       getBattleSocket().send(JSON.stringify({
@@ -701,7 +701,7 @@ const Battle = () => {
             <>
               <div style={gridContainerStyle}>{cells}</div>
               <div>
-                <h3>Yerleştirilmeyi Bekleyen Karakterler</h3>
+                <h3>Characaters</h3>
                 <div style={availableContainerStyle}>{availableList}</div>
               </div>
               <button onClick={handleStartBattle}
@@ -715,7 +715,7 @@ const Battle = () => {
                         borderRadius: '4px',
                         cursor: 'pointer'
                       }}>
-                Savaşı Başlat
+                Start Battle
               </button>
             </>
           ) : (

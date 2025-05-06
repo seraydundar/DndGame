@@ -1,5 +1,4 @@
 // src/pages/Dashboard.js
-
 import React, { useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -43,37 +42,43 @@ const Dashboard = () => {
       <div className="dashboard-main">
         <h2>Dashboard</h2>
         <button className="btn logout-btn" onClick={handleLogout}>
-          Çıkış Yap
+          Logout
         </button>
 
         <nav className="dashboard-nav">
           <ul>
             <li>
-              <Link to="/charactercreation">Yeni Karakter Oluştur</Link>
+              <Link to="/charactercreation">Create New Character</Link>
             </li>
             <li>
-              <Link to="/spells">Tüm Büyüleri Görüntüle</Link>
+              <Link to="/spells">List All Spells</Link>
             </li>
             <li>
-              <Link to="/spells/create">Yeni Büyü Oluştur</Link>
+              <Link to="/spells/create">Create New Spell</Link>
             </li>
             <li>
-              <Link to="/items">Tüm Item’leri Görüntüle</Link>
+              <Link to="/items">List All Items</Link>
             </li>
             <li>
-              <Link to="/items/create">Yeni Item Oluştur</Link>
+              <Link to="/items/create">Create New Item</Link>
             </li>
             <li>
-              <Link to="/lobbies">Lobiye Katıl / Lobi Oluştur</Link>
+              <Link to="/creatures">List All Creatures</Link>
             </li>
             <li>
-              <Link to="/battle">Savaş Alanına Gir</Link>
+              <Link to="/creatures/create">Create New Creature</Link>
             </li>
             <li>
-              <Link to="/trade">Ticaret Alanına Gir</Link>
+              <Link to="/lobbies">Join Lobby/Create Lobby</Link>
             </li>
             <li>
-              <Link to="/chat">Sohbet Ekranı</Link>
+              <Link to="/battle">Create Battle Area</Link>
+            </li>
+            <li>
+              <Link to="/trade">Create Trade Area</Link>
+            </li>
+            <li>
+              <Link to="/chat">Chat</Link>
             </li>
           </ul>
         </nav>

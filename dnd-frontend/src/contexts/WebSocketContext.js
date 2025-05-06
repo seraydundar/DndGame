@@ -1,43 +1,46 @@
-import React, { createContext, useState, useEffect } from "react";
 
-export const WebSocketContext = createContext(null);
+  import React, { createContext, useState } from 'react';
+  import usePersistentWebSocket from '../hooks/usePersistentWebSocket';
 
-export const WebSocketProvider = ({ children, userId }) => {
-  const [friendRequests, setFriendRequests] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [wsFriend, setWsFriend] = useState(null);
-  const [wsNotification, setWsNotification] = useState(null);
+  const WS_BASE = process.env.REACT_APP_WS_URL || 'ws://localhost:8000';
+  export const WebSocketContext = createContext(null);
 
-  useEffect(() => {
-    if (!userId) return;
+  export function WebSocketProvider({ userId, children }) {
+   /* ⇣ WebSocket’ten gelen verileri saklayacağımız state’ler */
+   const [friendRequests, setFriendRequests] = useState([]);
+   const [notifications, setNotifications]   = useState([]);
 
-    const friendSocket = new WebSocket(`ws://localhost:8000/ws/friend/${userId}/`);
-    setWsFriend(friendSocket);
-
-    friendSocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "friend_request") {
-        setFriendRequests((prev) => [...prev, data]);
+    /* ―― mesaj yakalayıcılar ――――――――――――――――――――――――― */
+    function handleFriend(data) {
+     if (data.event === 'friendRequest') {
+       setFriendRequests(data.requests || []);
+     }
+    }
+    function handleNotif(data) {
+    
+        // Sunucu ping'e cevap verince {type:"pong"} geliyor ‑ ekleme.
+        if (data.type === 'pong') return;
+      
+        // Asıl uygulama bildirimleri {event:"notification", ...} şeklinde gelsin
+        if (data.event === 'notification') {
+          setNotifications((prev) => [...prev, data]);
+        }
       }
-    };
 
-    const notificationSocket = new WebSocket(`ws://localhost:8000/ws/notification/${userId}/`);
-    setWsNotification(notificationSocket);
+    const friendWS = usePersistentWebSocket(
+      userId ? `${WS_BASE}/ws/friend/${userId}/` : null,
+      { onMessage: handleFriend }
+    );
+    const notifWS  = usePersistentWebSocket(
+      userId ? `${WS_BASE}/ws/notification/${userId}/` : null,
+      { onMessage: handleNotif }
+    );
 
-    notificationSocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setNotifications((prev) => [...prev, data]);
-    };
+   const value = { friendWS, notifWS, friendRequests, notifications };
 
-    return () => {
-      friendSocket.close();
-      notificationSocket.close();
-    };
-  }, [userId]);
-
-  return (
-    <WebSocketContext.Provider value={{ friendRequests, notifications, wsFriend, wsNotification }}>
-      {children}
-    </WebSocketContext.Provider>
-  );
-};
+    return (
+      <WebSocketContext.Provider value={value}>
+        {children}
+      </WebSocketContext.Provider>
+    );
+  }

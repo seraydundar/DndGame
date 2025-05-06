@@ -20875,3 +20875,342 @@ Forbidden: /api/items/
 Forbidden: /api/items/
 Forbidden: /api/items/
 Forbidden: /api/items/
+Not Found: /api/api/spells/
+Not Found: /api/api/spells/
+Not Found: /api/api/spells/
+Not Found: /api/dice-roll/
+Not Found: /api/trade_area_items/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Not Found: /api/lobbies/9/players/1/ready/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Method Not Allowed: /api/lobbies/create/
+Not Found: /api/lobbies/11/players/1/ready/
+Not Found: /api/lobbies/undefined/
+Not Found: /api/lobbies/undefined/
+Not Found: /api/lobbies/undefined/
+Not Found: /api/lobbies/undefined/
+Not Found: /api/lobbies/undefined/
+Not Found: /api/lobbies/undefined/
+Not Found: /api/lobbies/undefined/
+Not Found: /api/lobbies/undefined/
+Bad Request: /api/combat/initiate/
+Not Found: /api/api/spells/
+Not Found: /items/
+Not Found: /items/
+Forbidden: /api/items/
+Forbidden: /api/items/
+Forbidden: /api/items/
+Not Found: /api/csrf/
+Not Found: /api/csrf/
+Not Found: /api/csrf/
+Not Found: /api/csrf/
+Not Found: /api/csrf/
+Not Found: /api/csrf/
+Not Found: /api/csrf/
+Not Found: /api/csrf/
+Forbidden: /api/items/
+Forbidden: /api/items/
+Forbidden: /api/items/
+Not Found: /api/auth/login/  
+Not Found: /api/csrf/
+
+Not Found: /api/auth/login/  
+
+
+Not Found: /api/auth/login/
+
+
+Not Found: /api/items/
+
+
+
+Not Found: /api/csrf/
+
+
+
+Not Found: /api/login/  
+Not Found: /api/login/  
+Not Found: /api/accounts/login/  
+Method Not Allowed: /api/accounts/login/
+Bad Request: /api/accounts/login/
+Not Found: /api/accounts/login/ {admin,admin} 
+Not Found: /api/accounts/login/{admin,admin} 
+Bad Request: /api/accounts/login/
+Not Found: /api/items/
+
+Internal Server Error: /api/items/items/
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\utils\deprecation.py", line 147, in __acall__
+    response = await sync_to_async(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to localhost:8000/api/items/items/%0A/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+Internal Server Error: /api/items/items/
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\utils\deprecation.py", line 147, in __acall__
+    response = await sync_to_async(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to localhost:8000/api/items/items/%0A/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+Internal Server Error: /api/items/items/
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\utils\deprecation.py", line 147, in __acall__
+    response = await sync_to_async(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to localhost:8000/api/items/items/%0A/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+Bad Request: /api/items/items/
+Bad Request: /api/items/items/
+Bad Request: /api/items/items/
+Bad Request: /api/items/items/
+Bad Request: /api/items/items/
+Bad Request: /api/items/items/
+Bad Request: /api/items/items/
+Bad Request: /api/items/items/
+Not Found: /api/creatures/
+Not Found: /api/creatures/
+Forbidden: /api/creatures/
+Not Found: /api/creatures/creature/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Not Found: /api/creature
+Internal Server Error: /api/creatures
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\utils\deprecation.py", line 147, in __acall__
+    response = await sync_to_async(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to localhost:8000/api/creatures/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+Internal Server Error: /api/accounts/login
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\utils\deprecation.py", line 147, in __acall__
+    response = await sync_to_async(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to localhost:8000/api/accounts/login/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+Method Not Allowed: /api/accounts/login/
+Forbidden: /api/creatures/
+Internal Server Error: /api/accounts/login
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\utils\deprecation.py", line 147, in __acall__
+    response = await sync_to_async(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to localhost:8000/api/accounts/login/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+Internal Server Error: /api/creatures
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\utils\deprecation.py", line 147, in __acall__
+    response = await sync_to_async(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to localhost:8000/api/creatures/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+Not Found: /api/creatures
+Not Found: /api/creature
+Forbidden: /api/creatures/
+Not Found: /services/api/accounts/
+Not Found: /services/api/accounts/
+Not Found: /api/services/accounts
+Not Found: /api/creatures
+Method Not Allowed: /api/accounts/login/
+Forbidden: /api/accounts/login/
+Forbidden: /api/accounts/login/
+Forbidden: /api/creatures/
+Not Found: /api/csrf/
+
+Not Found: /api/csrf/
+
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Method Not Allowed: /api/creatures/
+Method Not Allowed: /api/creatures/
+Method Not Allowed: /api/creatures/
+Method Not Allowed: /api/creatures/
+Method Not Allowed: /api/creatures/
+Method Not Allowed: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Forbidden: /api/creatures/
+Watching for file changes with StatReloader
+Not Found: /ws/notification/1/
+"GET /ws/notification/1/ HTTP/1.1" 404 6878
+Not Found: /ws/friend/1/
+"GET /ws/friend/1/ HTTP/1.1" 404 6860
+Not Found: /api/creatures/
+
+"POST /api/creatures/%0A HTTP/1.1" 404 17211

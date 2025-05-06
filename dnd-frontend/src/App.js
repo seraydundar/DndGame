@@ -1,6 +1,5 @@
 // src/App.js
-
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Pages
@@ -19,20 +18,30 @@ import CreateLobby from "./pages/CreateLobby";
 import GodPanel from "./pages/GodPanel";
 import PlayerPage from "./pages/PlayerPage";
 
-// Spells
-import SpellCreate from "./components/SpellCreate";
-import SpellList   from "./components/SpellList";
-
-// Items
-import ItemCreate  from "./components/ItemCreate";
-import ItemList    from "./components/ItemList";
+// Spells & Items & Creatures
+import SpellCreate    from "./components/SpellCreate";
+import SpellList      from "./components/SpellList";
+import ItemCreate     from "./components/ItemCreate";
+import ItemList       from "./components/ItemList";
+import CreatureCreate from "./components/CreatureCreate";
+import CreatureList   from "./components/CreatureList";
 
 // Auth & Context
 import RequireAuth from "./components/RequireAuth";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
 
+// CSRF endpoint çağrısı için
+import api from "./services/api";
+
 function App() {
+  // Uygulama ayağa kalkınca CSRF çerezini set et
+  useEffect(() => {
+    api.get("/csrf/")
+      .then(() => console.log("CSRFTOKEN çerezi set edildi"))
+      .catch(err => console.error("CSRF alınamadı:", err));
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
@@ -43,140 +52,43 @@ function App() {
                 <div style={styles.container}>
                   <div style={styles.mainContent}>
                     <Routes>
-                      {/* Public pages */}
+                      {/* Public */}
                       <Route path="/" element={<Home />} />
                       <Route path="/login" element={<Login />} />
                       <Route path="/register" element={<Register />} />
 
-                      {/* Protected pages */}
-                      <Route
-                        path="/dashboard"
-                        element={
-                          <RequireAuth>
-                            <Dashboard />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/charactercreation"
-                        element={
-                          <RequireAuth>
-                            <CharacterCreation />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/lobbies"
-                        element={
-                          <RequireAuth>
-                            <Lobbies />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/lobbies/:id"
-                        element={
-                          <RequireAuth>
-                            <Lobby />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/battle/:lobby_id"
-                        element={
-                          <RequireAuth>
-                            <Battle />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/EndBattle/:lobby_id"
-                        element={
-                          <RequireAuth>
-                            <EndBattle />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/trade"
-                        element={
-                          <RequireAuth>
-                            <Trade />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/chat"
-                        element={
-                          <RequireAuth>
-                            <Chat />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/create-lobby"
-                        element={
-                          <RequireAuth>
-                            <CreateLobby />
-                          </RequireAuth>
-                        }
-                      />
+                      {/* Protected */}
+                      <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
 
-                      {/* GM Panel */}
-                      <Route
-                        path="/godpanel"
-                        element={
-                          <RequireAuth>
-                            <GodPanel />
-                          </RequireAuth>
-                        }
-                      />
+                      {/* Character creation */}
+                      <Route path="/lobbies/:id/character-creation" element={<RequireAuth><CharacterCreation /></RequireAuth>} />
 
-                      {/* Player Page */}
-                      <Route
-                        path="/playerpage"
-                        element={
-                          <RequireAuth>
-                            <PlayerPage />
-                          </RequireAuth>
-                        }
-                      />
+                      {/* Lobbies */}
+                      <Route path="/lobbies" element={<RequireAuth><Lobbies /></RequireAuth>} />
+                      <Route path="/lobbies/create" element={<RequireAuth><CreateLobby /></RequireAuth>} />
+                      <Route path="/lobbies/:id" element={<RequireAuth><Lobby /></RequireAuth>} />
 
-                      {/* Spells Pages */}
-                      <Route
-                        path="/spells"
-                        element={
-                          <RequireAuth>
-                            <SpellList />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/spells/create"
-                        element={
-                          <RequireAuth>
-                            <SpellCreate />
-                          </RequireAuth>
-                        }
-                      />
+                      {/* Battle, EndBattle, Trade, Chat */}
+                      <Route path="/battle/:lobby_id" element={<RequireAuth><Battle /></RequireAuth>} />
+                      <Route path="/endbattle/:lobby_id" element={<RequireAuth><EndBattle /></RequireAuth>} />
+                      <Route path="/trade" element={<RequireAuth><Trade /></RequireAuth>} />
+                      <Route path="/chat" element={<RequireAuth><Chat /></RequireAuth>} />
 
-                      {/* Items Pages */}
-                      <Route
-                        path="/items"
-                        element={
-                          <RequireAuth>
-                            <ItemList />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/items/create"
-                        element={
-                          <RequireAuth>
-                            <ItemCreate />
-                          </RequireAuth>
-                        }
-                      />
+                      {/* GM & Player pages */}
+                      <Route path="/godpanel" element={<RequireAuth><GodPanel /></RequireAuth>} />
+                      <Route path="/playerpage" element={<RequireAuth><PlayerPage /></RequireAuth>} />
+
+                      {/* Spells */}
+                      <Route path="/spells" element={<RequireAuth><SpellList /></RequireAuth>} />
+                      <Route path="/spells/create" element={<RequireAuth><SpellCreate /></RequireAuth>} />
+
+                      {/* Items */}
+                      <Route path="/items" element={<RequireAuth><ItemList /></RequireAuth>} />
+                      <Route path="/items/create" element={<RequireAuth><ItemCreate /></RequireAuth>} />
+
+                      {/* Creatures */}
+                      <Route path="/creatures" element={<RequireAuth><CreatureList /></RequireAuth>} />
+                      <Route path="/creatures/create" element={<RequireAuth><CreatureCreate /></RequireAuth>} />
                     </Routes>
                   </div>
                 </div>

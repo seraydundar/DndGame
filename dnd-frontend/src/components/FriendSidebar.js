@@ -43,25 +43,25 @@ const FriendSidebar = () => {
 
   return (
     <div className="friend-sidebar">
-      <h3>Hoş geldiniz, {currentUsername}!</h3>
-      <h3>Arkadaş Ekle</h3>
+      <h3>Welcome {currentUsername}!</h3>
+      <h3>Add Friend</h3>
       <form onSubmit={handleAddFriend} className="friend-form">
         <input
           type="text"
           className="friend-input"
-          placeholder="Kullanıcı adı"
+          placeholder="Username"
           value={friendUsername}
           onChange={(e) => setFriendUsername(e.target.value)}
           required
         />
-        <button type="submit" className="friend-btn">Ekle</button>
+        <button type="submit" className="friend-btn">Add</button>
       </form>
       {message && <p className="friend-message">{message}</p>}
 
-      <h3>Gönderilen İstekler (Gerçek Zamanlı)</h3>
+      <h3>Sended Invites</h3>
       <ul className="friend-list">
         {friendRequests.length === 0 ? (
-          <li className="friend-item">Henüz gönd. isteğiniz yok.</li>
+          <li className="friend-item"></li>
         ) : (
           friendRequests
             .filter((req) => req.friend_user?.username)
@@ -73,10 +73,10 @@ const FriendSidebar = () => {
         )}
       </ul>
 
-      <h3>Arkadaşlar</h3>
+      <h3>Friends</h3>
       <ul className="friend-list">
         {friends.length === 0 ? (
-          <li className="friend-item">Henüz arkadaşınız yok.</li>
+          <li className="friend-item">Friend list is empty.</li>
         ) : (
           friends.map((f) => (
             <li key={f.id} className="friend-item">
