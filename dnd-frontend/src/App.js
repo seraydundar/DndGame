@@ -9,19 +9,23 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CharacterCreation from "./pages/CharacterCreation";
+import Lobbies from "./pages/Lobbies";
 import Lobby from "./pages/Lobby";
 import Battle from "./pages/Battle";
+import EndBattle from "./pages/EndBattle";
 import Trade from "./pages/Trade";
 import Chat from "./pages/Chat";
 import CreateLobby from "./pages/CreateLobby";
-import Lobbies from "./pages/Lobbies";
 import GodPanel from "./pages/GodPanel";
 import PlayerPage from "./pages/PlayerPage";
-import EndBattle from "./pages/EndBattle";
 
 // Spells
 import SpellCreate from "./components/SpellCreate";
 import SpellList   from "./components/SpellList";
+
+// Items
+import ItemCreate  from "./components/ItemCreate";
+import ItemList    from "./components/ItemList";
 
 // Auth & Context
 import RequireAuth from "./components/RequireAuth";
@@ -62,28 +66,10 @@ function App() {
                         }
                       />
                       <Route
-                        path="/lobbies/:lobby_id/character-creation"
-                        element={
-                          <RequireAuth>
-                            <CharacterCreation />
-                          </RequireAuth>
-                        }
-                      />
-
-                      {/* Lobbies list and detail */}
-                      <Route
-                        path="/lobbies/*"
+                        path="/lobbies"
                         element={
                           <RequireAuth>
                             <Lobbies />
-                          </RequireAuth>
-                        }
-                      />
-                      <Route
-                        path="/lobbies/create"
-                        element={
-                          <RequireAuth>
-                            <CreateLobby />
                           </RequireAuth>
                         }
                       />
@@ -95,7 +81,6 @@ function App() {
                           </RequireAuth>
                         }
                       />
-
                       <Route
                         path="/battle/:lobby_id"
                         element={
@@ -128,8 +113,16 @@ function App() {
                           </RequireAuth>
                         }
                       />
+                      <Route
+                        path="/create-lobby"
+                        element={
+                          <RequireAuth>
+                            <CreateLobby />
+                          </RequireAuth>
+                        }
+                      />
 
-                      {/* GM panel */}
+                      {/* GM Panel */}
                       <Route
                         path="/godpanel"
                         element={
@@ -139,7 +132,7 @@ function App() {
                         }
                       />
 
-                      {/* Player page */}
+                      {/* Player Page */}
                       <Route
                         path="/playerpage"
                         element={
@@ -149,7 +142,7 @@ function App() {
                         }
                       />
 
-                      {/* Spells pages */}
+                      {/* Spells Pages */}
                       <Route
                         path="/spells"
                         element={
@@ -163,6 +156,24 @@ function App() {
                         element={
                           <RequireAuth>
                             <SpellCreate />
+                          </RequireAuth>
+                        }
+                      />
+
+                      {/* Items Pages */}
+                      <Route
+                        path="/items"
+                        element={
+                          <RequireAuth>
+                            <ItemList />
+                          </RequireAuth>
+                        }
+                      />
+                      <Route
+                        path="/items/create"
+                        element={
+                          <RequireAuth>
+                            <ItemCreate />
                           </RequireAuth>
                         }
                       />

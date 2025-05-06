@@ -73,6 +73,7 @@ CORS_ALLOW_HEADERS = [
     'authorization',
     'content-type',
     'x-requested-with',
+    'X-CSRFToken',
     'accept',
     'x-user-id',  # ← eklenen satır :contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
 ]

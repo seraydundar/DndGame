@@ -24,9 +24,8 @@ const Dashboard = () => {
       localStorage.removeItem('user_id');
       localStorage.removeItem('username');
       navigate('/login');
-    } catch (error) {
-      console.error('Çıkış hatası:', error);
-      alert('Çıkış yapılamadı.');
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -34,10 +33,10 @@ const Dashboard = () => {
     <div className="dashboard-container">
       {/* Sidebars */}
       <div className="friend-panel">
-        <FriendSidebar />
+        <FriendSidebar requests={friendRequests} />
       </div>
       <div className="notification-panel">
-        <NotificationSidebar />
+        <NotificationSidebar notifications={notifications} />
       </div>
 
       {/* Main Dashboard Panel */}
@@ -46,6 +45,7 @@ const Dashboard = () => {
         <button className="btn logout-btn" onClick={handleLogout}>
           Çıkış Yap
         </button>
+
         <nav className="dashboard-nav">
           <ul>
             <li>
@@ -56,6 +56,12 @@ const Dashboard = () => {
             </li>
             <li>
               <Link to="/spells/create">Yeni Büyü Oluştur</Link>
+            </li>
+            <li>
+              <Link to="/items">Tüm Item’leri Görüntüle</Link>
+            </li>
+            <li>
+              <Link to="/items/create">Yeni Item Oluştur</Link>
             </li>
             <li>
               <Link to="/lobbies">Lobiye Katıl / Lobi Oluştur</Link>
@@ -74,6 +80,6 @@ const Dashboard = () => {
       </div>
     </div>
   );
-}
+};
 
 export default Dashboard;
