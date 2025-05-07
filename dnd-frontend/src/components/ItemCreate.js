@@ -4,7 +4,6 @@ import api from "../services/api";
 import "./ItemCreate.css";
 
 /* ---------- Sabit listeler ---------- */
-
 const ITEM_TYPES = ["Weapon", "Shield", "Armor", "Consumable", "Misc"];
 
 const SUBTYPES_BY_TYPE = {
@@ -37,19 +36,28 @@ const SUBTYPES_BY_TYPE = {
 const RARITIES = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
 
 const EQUIP_SLOTS = [
-  "Head", "Chest", "Legs", "Feet",
-  "Main Hand", "Off Hand", "Neck", "Ring"
+  "HEAD",
+  "CHEST",
+  "LEGS",
+  "HAND",
+  "SHIELD",
+  "MAIN_HAND",
+  "OFF_HAND",
+  "NECKLACE",
+  "EARRING",
+  "RING"
 ];
 
 function ItemCreate() {
   const [form, setForm] = useState({
     name: "",
     description: "",
-    icon: null,        // artık icon alanı
+    icon: null,
     item_type: "",
     subtype: "",
     rarity: "",
     equip_slot: "",
+    weapon_kind: "",     // <-- melee or ranged
     damage_dice: "",
     damage_modifier: "",
     ac_bonus: ""
@@ -62,17 +70,35 @@ function ItemCreate() {
   const [allSpells, setAllSpells] = useState([]);
   const [selectedSpells, setSelectedSpells] = useState([]);
 
-  const handleChange = (e) => {
+  // Decide which extra fields to show based on item_type
+  const showWeaponOptions = form.item_type === "Weapon";
+  const showDamage        = form.item_type === "Weapon";
+  const showTwoHand       = form.item_type === "Weapon";
+  const showAC            = form.item_type === "Armor" || form.item_type === "Shield";
+
+  useEffect(() => {
+    async function fetchSpells() {
+      try {
+        const res = await api.get("spells/");
+        setAllSpells(res.data.results ?? res.data);
+      } catch (err) {
+        console.error("Spells alınamadı:", err);
+      }
+    }
+    fetchSpells();
+  }, []);
+
+  const handleChange = e => {
     const { name, value, type, checked } = e.target;
-    setForm((f) => ({
+    setForm(f => ({
       ...f,
       [name]: type === "checkbox" ? checked : value
     }));
   };
 
-  const handleIconChange = (e) => {
+  const handleIconChange = e => {
     const file = e.target.files[0] || null;
-    setForm((f) => ({ ...f, icon: file }));
+    setForm(f => ({ ...f, icon: file }));
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setIconPreview(reader.result);
@@ -87,85 +113,55 @@ function ItemCreate() {
     [form.item_type]
   );
 
-  const baseSlots = { weapon: false, armor: false, shield: false };
-  const equipSlots = useMemo(() => {
-    if (form.item_type === "Weapon")   return { ...baseSlots, weapon: true };
-    if (form.item_type === "Shield")   return { ...baseSlots, shield: true, armor: true };
-    if (form.item_type === "Armor")    return { ...baseSlots, armor: true };
-    return baseSlots;
-  }, [form.item_type]);
-
-  useEffect(() => {
-    async function fetchSpells() {
-      try {
-        const res = await api.get("spells/");
-        setAllSpells(res.data);
-      } catch (err) {
-        console.error("Spells alınamadı:", err);
-      }
-    }
-    fetchSpells();
-  }, []);
-
   const addBonus = () => {
     if (!newBonus.stat) return;
-    setBonuses((b) => [...b, newBonus]);
+    setBonuses(b => [...b, newBonus]);
     setNewBonus({ stat: "", type: "+", value: 0 });
   };
-
-  const removeBonus = (idx) => {
-    setBonuses((b) => b.filter((_, i) => i !== idx));
+  const removeBonus = idx => {
+    setBonuses(b => b.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name || !form.item_type) {
-      return alert("Name ve Type zorunlu!");
+  const handleSpellChange = e => {
+    const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+    if (opts.length <= 2) {
+      setSelectedSpells(opts);
+    } else {
+      alert("En fazla 2 büyü seçebilirsiniz");
     }
+  };
 
-    const data = new FormData();
-    // Dosya alanı doğru isimle ekleniyor
-    if (form.icon) {
-      data.append("icon", form.icon);
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!form.name || !form.item_type || !form.equip_slot) {
+      return alert("Name, Type ve Equip Slot zorunlu!");
     }
-    // Geri kalan alanlar ekleniyor
+    const data = new FormData();
+    if (form.icon) data.append("icon", form.icon);
     Object.entries(form).forEach(([k, v]) => {
       if (k === "icon") return;
-      if (v !== "" && v !== null) data.append(k, v);
+      if (v !== "" && v != null) data.append(k, v);
     });
-    if (form.item_type === "Weapon" || form.item_type === "Shield") {
-      data.append("two_handed", handed === "two");
-    }
-    if (bonuses.length)       data.append("bonuses", JSON.stringify(bonuses));
-    if (selectedSpells.length) data.append("spells", JSON.stringify(selectedSpells));
+    if (showTwoHand) data.append("two_handed", handed === "two");
+    if (bonuses.length) data.append("bonuses", JSON.stringify(bonuses));
+    selectedSpells.forEach(id => data.append("spells", id));
 
     try {
       await api.post("items/items/", data);
       alert("Eşya oluşturuldu!");
-      // Formu sıfırla
       setForm({
-        name: "",
-        description: "",
-        icon: null,
-        item_type: "",
-        subtype: "",
-        rarity: "",
-        equip_slot: "",
-        damage_dice: "",
-        damage_modifier: "",
-        ac_bonus: ""
+        name: "", description: "", icon: null,
+        item_type: "", subtype: "", rarity: "",
+        equip_slot: "", weapon_kind: "",
+        damage_dice: "", damage_modifier: "", ac_bonus: ""
       });
       setHanded("one");
       setBonuses([]);
       setSelectedSpells([]);
       setIconPreview(null);
     } catch (err) {
-      if (err.response && err.response.data) {
-        console.error("Validation errors:", err.response.data);
-        alert(JSON.stringify(err.response.data, null, 2));
-      } else {
-        console.error(err);
-      }
+      console.error("Validation errors:", err.response?.data);
+      alert(JSON.stringify(err.response?.data, null, 2));
     }
   };
 
@@ -212,7 +208,7 @@ function ItemCreate() {
           onChange={handleChange}
         >
           <option value="">—</option>
-          {ITEM_TYPES.map((t) => (
+          {ITEM_TYPES.map(t => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
@@ -228,7 +224,7 @@ function ItemCreate() {
             onChange={handleChange}
           >
             <option value="">—</option>
-            {subtypes.map((st) => (
+            {subtypes.map(st => (
               <option key={st.value} value={st.value}>{st.label}</option>
             ))}
           </select>
@@ -243,22 +239,57 @@ function ItemCreate() {
           onChange={handleChange}
         >
           <option value="">—</option>
-          {RARITIES.map((r) => (
+          {RARITIES.map(r => (
             <option key={r} value={r}>{r}</option>
           ))}
         </select>
       </label>
 
-      {equipSlots.weapon && (
-        <>
-          <label>
-            Two-Handed
-            <select value={handed} onChange={(e) => setHanded(e.target.value)}>
-              <option value="one">One-Handed</option>
-              <option value="two">Two-Handed</option>
-            </select>
-          </label>
+      <label>
+        Equip Slot
+        <select
+          required
+          name="equip_slot"
+          value={form.equip_slot}
+          onChange={handleChange}
+        >
+          <option value="">—</option>
+          {EQUIP_SLOTS.map(s => (
+            <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+          ))}
+        </select>
+      </label>
 
+      {showWeaponOptions && (
+        <label>
+          Weapon Kind
+          <select
+            required
+            name="weapon_kind"
+            value={form.weapon_kind}
+            onChange={handleChange}
+          >
+            <option value="">—</option>
+            <option value="melee">Melee</option>
+            <option value="ranged">Ranged</option>
+          </select>
+        </label>
+      )}
+
+      {showDamage && (
+        <>
+          {showTwoHand && (
+            <label>
+              Two-Handed
+              <select
+                value={handed}
+                onChange={e => setHanded(e.target.value)}
+              >
+                <option value="one">One-Handed</option>
+                <option value="two">Two-Handed</option>
+              </select>
+            </label>
+          )}
           <label>
             Damage Dice
             <input
@@ -268,7 +299,6 @@ function ItemCreate() {
               placeholder="e.g. 1d6"
             />
           </label>
-
           <label>
             Damage Modifier
             <input
@@ -281,7 +311,7 @@ function ItemCreate() {
         </>
       )}
 
-      {equipSlots.armor && (
+      {showAC && (
         <label>
           AC Bonus
           <input
@@ -300,7 +330,9 @@ function ItemCreate() {
             {bonuses.map((b, idx) => (
               <li key={idx}>
                 {b.stat} {b.type}{b.value}
-                <button type="button" onClick={() => removeBonus(idx)}>x</button>
+                <button type="button" onClick={() => removeBonus(idx)}>
+                  x
+                </button>
               </li>
             ))}
           </ul>
@@ -310,16 +342,21 @@ function ItemCreate() {
       <div className="new-bonus">
         <select
           value={newBonus.stat}
-          onChange={(e) => setNewBonus((b) => ({ ...b, stat: e.target.value }))}
+          onChange={e => setNewBonus(b => ({ ...b, stat: e.target.value }))}
         >
           <option value="">Stat</option>
           <option value="strength">Strength</option>
           <option value="dexterity">Dexterity</option>
           <option value="constitution">Constitution</option>
+          <option value="intelligence">Intelligence</option>
+          <option value="wisdom">Wisdom</option>
+          <option value="charisma">Charisma</option>
+          <option value="ac">AC</option>
+          <option value="damage">Damage</option>
         </select>
         <select
           value={newBonus.type}
-          onChange={(e) => setNewBonus((b) => ({ ...b, type: e.target.value }))}
+          onChange={e => setNewBonus(b => ({ ...b, type: e.target.value }))}
         >
           <option value="+">+</option>
           <option value="-">-</option>
@@ -327,41 +364,23 @@ function ItemCreate() {
         <input
           type="number"
           value={newBonus.value}
-          onChange={(e) => setNewBonus((b) => ({ ...b, value: +e.target.value }))}
+          onChange={e => setNewBonus(b => ({ ...b, value: +e.target.value }))}
         />
         <button type="button" onClick={addBonus}>Add Bonus</button>
       </div>
 
-      {equipSlots.shield && (
-        <label>
-          AC Bonus
-          <input
-            name="ac_bonus"
-            type="number"
-            value={form.ac_bonus}
-            onChange={handleChange}
-          />
-        </label>
-      )}
-
-      {equipSlots.shield && (
-        <label>
-          Spell
-          <select
-            multiple
-            value={selectedSpells}
-            onChange={(e) =>
-              setSelectedSpells(
-                Array.from(e.target.selectedOptions, (o) => o.value)
-              )
-            }
-          >
-            {allSpells.map((sp) => (
-              <option key={sp.id} value={sp.id}>{sp.name}</option>
-            ))}
-          </select>
-        </label>
-      )}
+      <label>
+        Spells (max 2)
+        <select
+          multiple
+          value={selectedSpells}
+          onChange={handleSpellChange}
+        >
+          {allSpells.map(sp => (
+            <option key={sp.id} value={sp.id}>{sp.name}</option>
+          ))}
+        </select>
+      </label>
 
       <button type="submit" className="submit-button">
         Eşyayı Oluştur

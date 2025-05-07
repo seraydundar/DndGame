@@ -54,7 +54,13 @@ class CreatureSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         spells = validated_data.pop('spells', [])
         user = self.context['request'].user
-        creature = Creature.objects.create(created_by=user, **validated_data)
+
+        # Eğer user anonim ise created_by atama, aksi halde kullanıcıyı kullan
+        if user and not user.is_anonymous:
+            creature = Creature.objects.create(created_by=user, **validated_data)
+        else:
+            creature = Creature.objects.create(**validated_data)
+
         creature.spells.set(spells)
         return creature
 

@@ -25,12 +25,26 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 # CharacterViewSet: Level up işlemleri vb.
 class CharacterViewSet(viewsets.ModelViewSet):
     authentication_classes = [CsrfExemptSessionAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = CharacterSerializer
+    permission_classes     = [IsAuthenticated]
+    serializer_class       = CharacterSerializer
 
     def get_queryset(self):
-        user_id = self.request.user.id
-        return Character.objects.filter(player_id=user_id)
+        user = self.request.user
+        qs   = Character.objects.filter(player_id=user.id)
+        # Eğer nested router kullanıldıysa, kwargs içinde lobby_pk olur
+        lobby_pk = self.kwargs.get('lobby_pk')
+        if lobby_pk is not None:
+            qs = qs.filter(lobby_id=lobby_pk)
+        return qs
+
+    def perform_create(self, serializer):
+        # Nested route'dan veya payload'tan gelmiş lobby_pk
+        lobby_pk = self.kwargs.get('lobby_pk') or self.request.data.get('lobby_id')
+        lobby    = get_object_or_404(Lobby, lobby_id=lobby_pk)
+        serializer.save(
+            player_id=self.request.user.id,
+            lobby_id = lobby.lobby_id
+        )
 
     @action(detail=True, methods=['get'], url_path='level-up-info')
     def level_up_info(self, request, pk=None):

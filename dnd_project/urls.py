@@ -30,7 +30,7 @@ urlpatterns = [
     path('api/creatures/', include('creature.urls')),    # Creatures API
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('', include(router.urls)),                      # DRF Routers
+    path('api/', include(router.urls)), # ← bu sayede /api/characters/ aktif olacak
 ]
 
 # Media files (spell icon uploads) will be served during development

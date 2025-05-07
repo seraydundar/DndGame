@@ -1,5 +1,3 @@
-# game/models.py
-
 from django.db import models
 import random
 
@@ -28,17 +26,6 @@ class Class(models.Model):
 
 
 class Character(models.Model):
-    """
-    characters tablosu:
-     - id (PK)
-     - player_id: Kullanıcıyı temsil eden id
-     - lobby_id: Karakterin ait olduğu lobi
-     - name: Karakterin ismi
-     - race: Irk (Race tablosuna FK)
-     - character_class: Sınıf (Class tablosuna FK)
-     - level, hp, stat alanları, gold, equipment, prepared_spells, class_features
-     - Ek bilgiler: xp, background, personality_traits, ideals, bonds, flaws
-    """
     id = models.AutoField(primary_key=True)
     player_id = models.IntegerField(null=True, blank=True)
     lobby_id = models.IntegerField(null=True, blank=True)
@@ -69,7 +56,45 @@ class Character(models.Model):
     wisdom = models.IntegerField(default=10)
     charisma = models.IntegerField(default=10)
     gold = models.IntegerField(default=10)
-    equipment = models.JSONField(default=dict, blank=True)
+
+    # Inventory replaces equipment list
+    inventory = models.JSONField(default=list, blank=True)
+
+    # Equipped items slots
+    head_armor = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    chest_armor = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    hand_armor = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    legs_armor = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    ring1 = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    ring2 = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    necklace = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    ear1 = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    ear2 = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    main_hand = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+    off_hand = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+')
+
     prepared_spells = models.JSONField(default=dict, blank=True)
     class_features = models.JSONField(default=dict, blank=True)
     background = models.CharField(max_length=100, null=True, blank=True)
@@ -99,10 +124,7 @@ class Character(models.Model):
 
     def level_up_info(self):
         hp_increase = (self.constitution // 2) + 3
-        return {
-            "hp_increase": hp_increase,
-            # Gelecekte büyü slotları, yetenek artışları gibi ek bilgiler eklenebilir.
-        }
+        return {"hp_increase": hp_increase}
 
     def confirm_level_up(self):
         if not self.can_level_up:
@@ -114,26 +136,15 @@ class Character(models.Model):
         self.save()
         return info
 
-    # Combat mekanikleri
-
     def roll_initiative(self):
-        """Initiative için d20 zar atışı (1-20 arası)."""
         return random.randint(1, 20)
 
     @property
     def movement_range(self):
-        """
-        Her tur için hareket mesafesi:
-        2 birim + dexterity bonusu (dexterity 10 ise 0, 12 ise 1, 14 ise 2, 16 ise 3 vb.)
-        """
         dex_bonus = (self.dexterity - 10) // 2 if self.dexterity >= 10 else 0
         return 2 + dex_bonus
 
     def normal_attack_damage(self):
-        """
-        Normal saldırı hasarı:
-         1d6 + strength bonusu (strength 10 ise 0, 12 ise 1, 14 ise 2, 16 ise 3, 18 ise 4 vb.)
-        """
         strength_mod = (self.strength - 10) // 2 if self.strength >= 10 else 0
         damage_roll = random.randint(1, 6)
         return damage_roll + strength_mod

@@ -7,7 +7,8 @@ import './Dashboard.css';
 import './CharacterCreation.css';
 
 const CharacterCreation = () => {
-  const { lobby_id } = useParams();
+   // URL param’ından almayacağız, sessionStorage’a kaydedilmiş lobby_id’yi okuyalım
+  const lobby_id = Number(sessionStorage.getItem('lobby_id'));
   const navigate = useNavigate();
   const currentUserId = parseInt(localStorage.getItem("user_id"), 10);
 
@@ -61,10 +62,16 @@ const CharacterCreation = () => {
   // --- Irk ve sınıf listelerini çek ---
   useEffect(() => {
     api.get('races/')
-      .then(res => setRaces(res.data))
+      .then(res => {
+        const list = res.data.results ?? res.data;
+        setRaces(list);
+      })
       .catch(console.error);
     api.get('classes/')
-      .then(res => setClasses(res.data))
+      .then(res => {
+        const list = res.data.results ?? res.data;
+        setClasses(list);
+      })
       .catch(console.error);
   }, []);
 
@@ -157,17 +164,10 @@ const CharacterCreation = () => {
   // --- Form gönderimi ---
   const handleSubmit = async e => {
     e.preventDefault();
-    const finalStats = {
-      strength:     strength + bonusAssignments.strength,
-      dexterity:    dexterity + bonusAssignments.dexterity,
-      constitution: constitution + bonusAssignments.constitution,
-      intelligence: intelligence + bonusAssignments.intelligence,
-      wisdom:       wisdom + bonusAssignments.wisdom,
-      charisma:     charisma + bonusAssignments.charisma
-    };
+    const finalStats = { /* … */ };
+  
     const payload = {
       player_id: currentUserId,
-      lobby_id:  Number(lobby_id),
       name:      characterName,
       race:      selectedRace,
       character_class: selectedClass,
@@ -176,18 +176,20 @@ const CharacterCreation = () => {
       hp:        10,
       ...finalStats,
       gold:      10,
-      equipment: [],                     // artık startItems yok
+      equipment: [],
       prepared_spells_input: selectedSpells.map(s => ({ id: s.id })),
       class_features: {},
       xp:        0,
       background,
       personality_traits: personalityTraits
     };
+  
     try {
-      await api.post('characters/', payload);
+      await api.post(`lobbies/${lobby_id}/characters/`, payload);
       alert('Karakter başarıyla oluşturuldu!');
       navigate(`/lobbies/${lobby_id}`);
-    } catch {
+    } catch (err) {
+      console.error('Karakter oluşturma hatası:', err.response || err);
       alert('Karakter oluşturulamadı.');
     }
   };

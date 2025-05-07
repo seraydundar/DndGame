@@ -1,34 +1,21 @@
-# game/serializers.py
-
 import json
 from rest_framework import serializers
 from .models import Character, Race, Class as CharacterClass, CharacterTemplate, Class
 from spells.models import Spell
 from spells.serializers import SpellSerializer
+from items.models import Item
+from items.serializers import ItemSerializer
 
 class CharacterTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CharacterTemplate
         fields = [
-            'template_id',
-            'name',
-            'class_name',  # veritabanında "class" sütunu olarak saklanır
-            'race',
-            'level',
-            'hp',
-            'strength',
-            'dexterity',
-            'constitution',
-            'intelligence',
-            'wisdom',
-            'charisma',
-            'equipment',
-            'spells',
-            'gold',
-            'created_at',
-            'updated_at'
+            'template_id', 'name', 'class_name', 'race', 'level', 'hp',
+            'strength', 'dexterity', 'constitution', 'intelligence',
+            'wisdom', 'charisma', 'equipment', 'spells', 'gold',
+            'created_at', 'updated_at'
         ]
-    
+
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['class'] = rep.pop('class_name')
@@ -52,6 +39,57 @@ class CharacterSerializer(serializers.ModelSerializer):
     character_class = serializers.SlugRelatedField(
         slug_field='class_name',
         queryset=CharacterClass.objects.all()
+    )
+
+    # Inventory replacing equipment
+    inventory = serializers.ListField(
+        child=serializers.IntegerField(), required=False, default=list
+    )
+
+    # Equipped item slots
+    head_armor = ItemSerializer(read_only=True)
+    head_armor_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='head_armor', write_only=True, required=False
+    )
+    chest_armor = ItemSerializer(read_only=True)
+    chest_armor_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='chest_armor', write_only=True, required=False
+    )
+    hand_armor = ItemSerializer(read_only=True)
+    hand_armor_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='hand_armor', write_only=True, required=False
+    )
+    legs_armor = ItemSerializer(read_only=True)
+    legs_armor_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='legs_armor', write_only=True, required=False
+    )
+    ring1 = ItemSerializer(read_only=True)
+    ring1_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='ring1', write_only=True, required=False
+    )
+    ring2 = ItemSerializer(read_only=True)
+    ring2_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='ring2', write_only=True, required=False
+    )
+    necklace = ItemSerializer(read_only=True)
+    necklace_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='necklace', write_only=True, required=False
+    )
+    ear1 = ItemSerializer(read_only=True)
+    ear1_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='ear1', write_only=True, required=False
+    )
+    ear2 = ItemSerializer(read_only=True)
+    ear2_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='ear2', write_only=True, required=False
+    )
+    main_hand = ItemSerializer(read_only=True)
+    main_hand_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='main_hand', write_only=True, required=False
+    )
+    off_hand = ItemSerializer(read_only=True)
+    off_hand_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source='off_hand', write_only=True, required=False
     )
 
     # 1) Okuma için nested serializer'ı tutarız
@@ -94,11 +132,19 @@ class CharacterSerializer(serializers.ModelSerializer):
             'level', 'hp',
             'strength', 'dexterity', 'constitution',
             'intelligence', 'wisdom', 'charisma',
-            'gold', 'equipment',
+            'gold',
+            'inventory',
+            'head_armor', 'head_armor_id',
+            'chest_armor', 'chest_armor_id',
+            'hand_armor', 'hand_armor_id',
+            'legs_armor', 'legs_armor_id',
+            'ring1', 'ring1_id', 'ring2', 'ring2_id',
+            'necklace', 'necklace_id',
+            'ear1', 'ear1_id', 'ear2', 'ear2_id',
+            'main_hand', 'main_hand_id', 'off_hand', 'off_hand_id',
             # Okuma ve yazma alanlarını ayrı tuttuk:
-            'prepared_spells',         # read-only nested list of SpellSerializer
-            'prepared_spells_input',   # write-only raw list of {id: ...}
+            'prepared_spells',
+            'prepared_spells_input',
             'class_features'
         ]
         read_only_fields = ['prepared_spells']
-

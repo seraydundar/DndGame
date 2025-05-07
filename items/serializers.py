@@ -12,11 +12,11 @@ class ItemSerializer(serializers.ModelSerializer):
     value            = serializers.IntegerField(required=False, allow_null=True)
     weight           = serializers.FloatField(required=False, allow_null=True)
     properties       = serializers.JSONField(required=False, allow_null=True)
-    bonuses          = serializers.ListField(
-        child=serializers.DictField(child=serializers.JSONField()),
+    bonuses = serializers.JSONField(
         required=False,
         allow_null=True,
-        default=list
+        default=list,
+        help_text="List of bonus objects { stat, type, value }"
     )
     damage_dice      = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     damage_modifier  = serializers.IntegerField(required=False, allow_null=True)

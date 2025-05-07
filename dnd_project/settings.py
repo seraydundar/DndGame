@@ -32,8 +32,8 @@ INSTALLED_APPS = [
      'lobbies',
      'items',
      'spells',
-    'creature.apps.CreatureConfig',    # ← creature app’i burada ekliyoruz :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
      'combat',
+     'creature',
 ]
 
 TEMPLATES = [

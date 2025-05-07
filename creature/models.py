@@ -3,17 +3,17 @@ from django.contrib.auth import get_user_model
 from spells.models import Spell
 
 class Creature(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
     icon = models.ImageField(
         upload_to='creatures/icons/',
         blank=True,
         null=True
     )
-    hit_points = models.IntegerField()
-    armor_class = models.IntegerField()
-    challenge_rating = models.FloatField()
-    tags = models.JSONField(default=list, blank=True)
+    hit_points = models.IntegerField(blank=True, null=True)
+    armor_class = models.IntegerField(blank=True, null=True)
+    challenge_rating = models.FloatField(blank=True, null=True)
+    tags = models.JSONField(default=list, blank=True, null=True)
     spells = models.ManyToManyField(
         Spell,
         blank=True,
@@ -37,8 +37,8 @@ class Creature(models.Model):
         null=True,
         blank=True
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
-        return self.name
+        return self.name or ''

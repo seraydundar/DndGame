@@ -1,184 +1,206 @@
-import React, { useEffect, useState } from 'react';
+// src/components/PlayerPage.js
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import socket from '../services/socket';
 
+const SLOT_FIELD_MAP = {
+  HEAD:       'head_armor_id',
+  CHEST:      'chest_armor_id',
+  LEGS:       'legs_armor_id',
+  HAND:       'hand_armor_id',
+  MAIN_HAND:  'main_hand_id',
+  OFF_HAND:   'off_hand_id',
+  NECKLACE:   'necklace_id',
+  EARRING:    'ear1_id',
+  RING:       'ring1_id',
+  SHIELD:     'hand_armor_id'  // or map to chest_armor_id if you prefer
+};
+
+const EQUIP_SLOTS = Object.keys(SLOT_FIELD_MAP);
+
+const slotLabel = slot => slot.replace(/_/g, ' ').toLowerCase();
+
 const PlayerPage = () => {
   const [character, setCharacter] = useState(null);
-  const [levelUpInfo, setLevelUpInfo] = useState(null);
-  const currentUserId = parseInt(localStorage.getItem("user_id") || '0', 10);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const currentUserId = +localStorage.getItem("user_id") || 0;
   const navigate = useNavigate();
-const lobbyId = sessionStorage.getItem('lobby_id');
+  const lobbyId = sessionStorage.getItem('lobby_id');
 
-
+  // fetch character
   useEffect(() => {
-    const fetchCharacter = async () => {
+    (async () => {
       try {
-        const response = await api.get('characters/');
-        const myChars = response.data.filter(ch => ch.player_id === currentUserId);
-        if (myChars && myChars.length > 0) {
-          setCharacter(myChars[0]);
-        }
-      } catch (error) {
-        console.error("Karakter verileri alınırken hata:", error);
-      }
-    };
-
-    fetchCharacter();
+        const res = await api.get('characters/');
+        const mine = res.data.find(c => c.player_id === currentUserId);
+        if (mine) setCharacter(mine);
+      } catch (e) { console.error(e) }
+    })();
   }, [currentUserId]);
 
-  // Karakter güncellemelerini websocket üzerinden alıyoruz.
+  // subscribe websocket for character updates
   useEffect(() => {
-    const characterUpdateHandler = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.event === "characterUpdate" && data.character.player_id === currentUserId) {
-          setCharacter(data.character);
-        }
-      } catch (error) {
-        console.error("Karakter güncelleme mesajı ayrıştırma hatası:", error);
+    const handler = ev => {
+      const msg = JSON.parse(ev.data);
+      if (msg.event === 'characterUpdate' && msg.character.player_id === currentUserId) {
+        setCharacter(msg.character);
       }
     };
-
-    socket.addEventListener("message", characterUpdateHandler);
-    return () => {
-      socket.removeEventListener("message", characterUpdateHandler);
-    };
+    socket.addEventListener('message', handler);
+    return () => void socket.removeEventListener('message', handler);
   }, [currentUserId]);
 
-  // GM yönlendirmelerini websocket üzerinden dinliyoruz.
+  // fetch inventory item details whenever character.inventory changes
   useEffect(() => {
-    const redirectHandler = (event) => {
+    if (!character?.inventory?.length) {
+      setInventoryItems([]);
+      return;
+    }
+    (async () => {
       try {
-        const data = JSON.parse(event.data);
-        if (data.event === "redirect") {
-          if (data.target === "battle") {
-            navigate(`/battle/${lobbyId}`);
-          } else if (data.target === "trade") {
-            navigate('/trade');
-          }
-        }
-      } catch (error) {
-        console.error("Redirect mesajı ayrıştırma hatası:", error);
+        const details = await Promise.all(
+          character.inventory.map(id =>
+            api.get(`items/items/${id}/`).then(r => r.data)
+          )
+        );
+        setInventoryItems(details);
+      } catch (e) {
+        console.error("Envanter itemleri alınamadı", e);
       }
-    };
+    })();
+  }, [character?.inventory]);
 
-    socket.addEventListener("message", redirectHandler);
-    return () => {
-      socket.removeEventListener("message", redirectHandler);
-    };
-  }, [navigate]);
-
-  if (!character) {
-    return <div style={{ padding: '20px' }}>Karakter verileri yükleniyor...</div>;
-  }
-
-  // XP eşiğini hesaplayalım: seviye 1 için 100, seviye 2 için 200, seviye 3 için 400, vb.
-  const xpThreshold = character.level >= 20 ? Infinity : 100 * Math.pow(2, character.level - 1);
-
-  // Level up bilgilerini almak için API çağrısı
-  const fetchLevelUpInfo = async () => {
-    try {
-      const response = await api.get(`characters/${character.id}/level-up-info/`);
-      setLevelUpInfo(response.data.level_up_info);
-    } catch (error) {
-      console.error("Level up bilgileri alınırken hata:", error);
-    }
+  // drag handlers
+  const onDragStart = (e, itemId) => {
+    e.dataTransfer.setData('text/plain', itemId);
   };
+  const onDragOver = e => e.preventDefault();
 
-  // Level up işlemini onaylamak için API çağrısı
-  const confirmLevelUp = async () => {
+  // equip handler
+  const handleDrop = useCallback(async (e, slot) => {
+    e.preventDefault();
+    const itemId = e.dataTransfer.getData('text/plain');
+    const field = SLOT_FIELD_MAP[slot];
     try {
-      const response = await api.post(`characters/${character.id}/confirm-level-up/`);
-      setLevelUpInfo(null);
-      setCharacter(prev => ({
-        ...prev,
-        level: response.data.new_level,
-        xp: 0,
-        hp: prev.hp + response.data.level_up_info.hp_increase
-      }));
-      // WebSocket üzerinden güncellemeyi yayınlayabilirsiniz.
-      socket.send(JSON.stringify({ event: "characterUpdate", character: { ...character, level: response.data.new_level, xp: 0 } }));
-    } catch (error) {
-      console.error("Level up işlemi onaylanırken hata:", error);
+      // PATCH character
+      await api.patch(`characters/${character.id}/`, { [field]: itemId });
+      // update locally
+      setCharacter(ch => {
+        const prevEquippedId = ch[field.replace(/_id$/,'')];
+        return {
+          ...ch,
+          [field.replace(/_id$/,'')]: Number(itemId),
+          inventory: prevEquippedId
+            ? [...ch.inventory.filter(i=>i!==Number(itemId)), prevEquippedId]
+            : ch.inventory.filter(i=>i!==Number(itemId))
+        };
+      });
+    } catch (err) {
+      console.error("Equip hatası", err);
     }
-  };
+  }, [character]);
+
+  if (!character) return <div>Karakter yükleniyor…</div>;
 
   return (
-    <div style={{
-      padding: '20px',
-      maxWidth: '800px',
-      margin: '20px auto',
-      backgroundColor: '#f8f8f8',
-      borderRadius: '8px',
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
-    }}>
-      <h1>{character.name}</h1>
-      <p><strong>HP:</strong> {character.hp}</p>
-      <p><strong>Level:</strong> {character.level}</p>
-      <p><strong>XP:</strong> {character.xp} / {xpThreshold}</p>
+    <div style={{ display: 'flex', gap: 24, padding: 24 }}>
+      {/* Left: Character card */}
+      <div style={{
+        flex: '0 0 300px',
+        padding: 16,
+        background: '#fff',
+        borderRadius: 8,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <h2>{character.name}</h2>
+        <p><strong>Level:</strong> {character.level}</p>
+        <p><strong>HP:</strong> {character.hp}</p>
+        <p><strong>XP:</strong> {character.xp} / {character.xp_for_next_level}</p>
+        <section>
+          <h4>Stats</h4>
+          <ul>
+            <li>STR: {character.strength}</li>
+            <li>DEX: {character.dexterity}</li>
+            <li>CON: {character.constitution}</li>
+            <li>INT: {character.intelligence}</li>
+            <li>WIS: {character.wisdom}</li>
+            <li>CHA: {character.charisma}</li>
+          </ul>
+        </section>
+      </div>
 
-      {/* Eğer XP eşiği aşıldıysa Level Up butonu göster */}
-      {character.xp >= xpThreshold && (
-        <div style={{ margin: '20px 0', padding: '10px', border: '1px solid #4CAF50', borderRadius: '4px', backgroundColor: '#e8f5e9' }}>
-          <h3>Level Up!</h3>
-          {!levelUpInfo ? (
-            <button onClick={fetchLevelUpInfo} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
-              Level Up Bilgilerini Getir
-            </button>
-          ) : (
-            <div>
-              <p><strong>Beklenen HP Artışı:</strong> {levelUpInfo.hp_increase}</p>
-              {/* İleride ek artışlar eklenebilir: büyü slotları, yetenekler vs. */}
-              <button onClick={confirmLevelUp} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
-                Level Up Onayla
-              </button>
-            </div>
-          )}
+      {/* Right: Inventory & Equip */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Equip Slots */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 8,
+          padding: 8,
+          background: '#f0f0f0',
+          borderRadius: 8
+        }}>
+          {EQUIP_SLOTS.map(slot => {
+            const field = SLOT_FIELD_MAP[slot].replace(/_id$/,'');
+            const equippedItem = character[field] || null;
+            return (
+              <div key={slot}
+                   onDragOver={onDragOver}
+                   onDrop={e => handleDrop(e, slot)}
+                   style={{
+                     width: 64,
+                     height: 64,
+                     background: '#fff',
+                     border: '2px dashed #ccc',
+                     borderRadius: 4,
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center'
+                   }}>
+                {equippedItem
+                  ? <img
+                      src={equippedItem.icon}
+                      alt={equippedItem.name}
+                      style={{ maxWidth: '100%', maxHeight: '100%' }}
+                    />
+                  : <span style={{ fontSize:12, color:'#888', textAlign:'center' }}>
+                      {slotLabel(slot)}
+                    </span>
+                }
+              </div>
+            );
+          })}
         </div>
-      )}
 
-      <section style={{ marginTop: '20px' }}>
-        <h3>Statlar</h3>
-        <ul>
-          <li><strong>Strength:</strong> {character.strength}</li>
-          <li><strong>Dexterity:</strong> {character.dexterity}</li>
-          <li><strong>Constitution:</strong> {character.constitution}</li>
-          <li><strong>Intelligence:</strong> {character.intelligence}</li>
-          <li><strong>Wisdom:</strong> {character.wisdom}</li>
-          <li><strong>Charisma:</strong> {character.charisma}</li>
-        </ul>
-      </section>
-      <section style={{ marginTop: '20px' }}>
-        <h3>Envanter (Eşyalar)</h3>
-        {character.equipment && character.equipment.length > 0 ? (
-          <ul>
-            {character.equipment.map((item, index) => (
-              <li key={index}>
-                <strong>{item.name}</strong> - {item.description}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Envanter boş.</p>
-        )}
-      </section>
-      <section style={{ marginTop: '20px' }}>
-        <h3>Büyüler</h3>
-        {character.prepared_spells && character.prepared_spells.length > 0 ? (
-          <ul>
-            {character.prepared_spells.map((spell, index) => (
-              <li key={index}>
-                <strong>{spell.name}</strong> (Seviye: {spell.spell_level})<br />
-                <em>{spell.description}</em><br />
-                <small>Efekt: {spell.effect && spell.effect.text}</small>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Hazır büyü bulunmuyor.</p>
-        )}
-      </section>
+        {/* Inventory */}
+        <div style={{
+          flex: 1,
+          padding: 8,
+          background: '#fafafa',
+          border: '1px solid #ddd',
+          borderRadius: 8,
+          overflowY: 'auto',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8
+        }}>
+          {inventoryItems.map(item => (
+            <div key={item.id}
+                 draggable
+                 onDragStart={e => onDragStart(e, item.id)}
+                 style={{ width:64, height:64, cursor:'grab' }}>
+              <img
+                src={item.icon}
+                alt={item.name}
+                title={item.name}
+                style={{ maxWidth:'100%', maxHeight:'100%' }}
+              />
+            </div>
+          ))}
+          {inventoryItems.length === 0 && <p>Envanter boş.</p>}
+        </div>
+      </div>
     </div>
   );
 };
