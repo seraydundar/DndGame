@@ -21548,3 +21548,6 @@ Not Found: /api/races/
 Not Found: /api/classes/
 Not Found: /api/races/
 Not Found: /api/classes/
+Not Found: /api/trade_area_items/
+Bad Request: /api/combat/initiate/
+Not Found: /api/spells/undefined/cast/

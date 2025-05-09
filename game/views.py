@@ -29,13 +29,18 @@ class CharacterViewSet(viewsets.ModelViewSet):
     serializer_class       = CharacterSerializer
 
     def get_queryset(self):
-        user = self.request.user
-        qs   = Character.objects.filter(player_id=user.id)
-        # Eğer nested router kullanıldıysa, kwargs içinde lobby_pk olur
         lobby_pk = self.kwargs.get('lobby_pk')
+
         if lobby_pk is not None:
-            qs = qs.filter(lobby_id=lobby_pk)
-        return qs
+            # Nested route: /api/lobbies/<lobby_pk>/characters/
+            # Bu lobiye ait TÜM karakterleri döndür
+            return Character.objects.filter(lobby_id=lobby_pk)
+
+        # Aksi halde /api/characters/ çağrısı: 
+        # GM değilse kendi karakterlerini, GM ise tüm karakterleri döndür
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            return Character.objects.all()
+        return Character.objects.filter(player_id=self.request.user.id)
 
     def perform_create(self, serializer):
         # Nested route'dan veya payload'tan gelmiş lobby_pk
