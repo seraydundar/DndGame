@@ -1,7 +1,7 @@
 // src/pages/Login.js
 
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../contexts/AuthContext';
 
@@ -95,10 +95,10 @@ const Login = () => {
           zIndex: 1,
         }}
       >
-        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>Giriş Yap</h2>
+        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>Login</h2>
 
         <div style={{ marginBottom: '24px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Kullanıcı Adı</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>Username</label>
           <input
             type="text"
             value={username}
@@ -116,7 +116,7 @@ const Login = () => {
         </div>
 
         <div style={{ marginBottom: '32px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Şifre</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>Password</label>
           <input
             type="password"
             value={password}
@@ -150,8 +150,15 @@ const Login = () => {
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8d662f')}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#a57c3c')}
         >
-          Giriş Yap
+          Login
         </button>
+        {/* added register link */}
+       <div style={{ marginTop: 20, textAlign: 'center' }}>
+         Don’t have an account?{' '}
+         <Link to="/register" style={{ color: '#a57c3c', textDecoration: 'none' }}>
+           Register
+         </Link>
+       </div>
       </form>
     </div>
   );
