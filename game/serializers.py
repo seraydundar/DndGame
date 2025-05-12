@@ -43,53 +43,99 @@ class CharacterSerializer(serializers.ModelSerializer):
 
     # Inventory replacing equipment
     inventory = serializers.ListField(
-        child=serializers.IntegerField(), required=False, default=list
+        child=serializers.IntegerField(),
+        required=False,
+        default=list
     )
 
     # Equipped item slots
     head_armor = ItemSerializer(read_only=True)
     head_armor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='head_armor', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='head_armor',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     chest_armor = ItemSerializer(read_only=True)
     chest_armor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='chest_armor', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='chest_armor',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     hand_armor = ItemSerializer(read_only=True)
     hand_armor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='hand_armor', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='hand_armor',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     legs_armor = ItemSerializer(read_only=True)
     legs_armor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='legs_armor', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='legs_armor',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     ring1 = ItemSerializer(read_only=True)
     ring1_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='ring1', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='ring1',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     ring2 = ItemSerializer(read_only=True)
     ring2_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='ring2', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='ring2',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     necklace = ItemSerializer(read_only=True)
     necklace_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='necklace', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='necklace',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     ear1 = ItemSerializer(read_only=True)
     ear1_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='ear1', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='ear1',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     ear2 = ItemSerializer(read_only=True)
     ear2_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='ear2', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='ear2',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     main_hand = ItemSerializer(read_only=True)
     main_hand_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='main_hand', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='main_hand',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     off_hand = ItemSerializer(read_only=True)
     off_hand_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='off_hand', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='off_hand',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
 
     # 1) Okuma için nested serializer'ı tutarız

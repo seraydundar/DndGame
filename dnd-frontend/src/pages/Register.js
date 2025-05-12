@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 
 const Register = () => {
@@ -80,10 +80,10 @@ const Register = () => {
           zIndex: 1,
         }}
       >
-        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>Kayıt Ol</h2>
+        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>Sign Up</h2>
 
         <div style={{ marginBottom: '24px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Kullanıcı Adı</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>Username</label>
           <input
             type="text"
             value={username}
@@ -101,7 +101,7 @@ const Register = () => {
         </div>
 
         <div style={{ marginBottom: '24px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>E-posta</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>Email</label>
           <input
             type="email"
             value={email}
@@ -119,7 +119,7 @@ const Register = () => {
         </div>
 
         <div style={{ marginBottom: '32px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Şifre</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>Password</label>
           <input
             type="password"
             value={password}
@@ -153,8 +153,15 @@ const Register = () => {
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8d662f')}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#a57c3c')}
         >
-          Kayıt Ol
+          Sign Up
         </button>
+        {/* added login link */}
+       <div style={{ marginTop: 20, textAlign: 'center' }}>
+         Already have an account?{' '}
+         <Link to="/login" style={{ color: '#a57c3c', textDecoration: 'none' }}>
+           Login
+         </Link>
+       </div>
       </form>
     </div>
   );
