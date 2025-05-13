@@ -1,4 +1,3 @@
-// src/pages/BattlePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams }                  from 'react-router-dom';
 import api                            from '../services/api';
@@ -13,28 +12,33 @@ import './BattlePage.css';
 const GRID_SIZE   = 20;
 const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
 
-
 export default function BattlePage() {
   const { id } = useParams();
   const currentUserId = +localStorage.getItem('user_id') || 0;
 
   // --- State’ler ---
-  const [lobbyId, setLobbyId]                   = useState(null);
-  const [lobbyData, setLobbyData]               = useState(null);
-  const [isGM, setIsGM]                         = useState(false);
-  const [allCharacters, setAllCharacters]       = useState([]);
+  const [lobbyId, setLobbyId]                     = useState(null);
+  const [lobbyData, setLobbyData]                 = useState(null);
+  const [isGM, setIsGM]                           = useState(false);
+  const [allCharacters, setAllCharacters]         = useState([]);
   const [availableCharacters, setAvailableCharacters] = useState([]);
-  const [placements, setPlacements]             = useState({});
-  const [battleStarted, setBattleStarted]       = useState(false);
-  const [initiativeOrder, setInitiativeOrder]   = useState([]);
-  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
-  const [selectedAttacker, setSelectedAttacker] = useState(null);
-  const [attackMode, setAttackMode]             = useState(false);
-  const [spellMode, setSpellMode]               = useState(false);
-  const [selectedSpell, setSelectedSpell]       = useState(null);
-  const [reachableCells, setReachableCells]     = useState(new Set());
-  const [moving, setMoving]                     = useState(false);
-  const [chatLog, setChatLog]                   = useState([]);
+  const [placements, setPlacements]               = useState({});
+  const [battleStarted, setBattleStarted]         = useState(false);
+  const [initiativeOrder, setInitiativeOrder]     = useState([]);
+  const [currentTurnIndex, setCurrentTurnIndex]   = useState(0);
+  const [selectedAttacker, setSelectedAttacker]   = useState(null);
+  const [attackMode, setAttackMode]               = useState(false);
+  const [attackType, setAttackType]               = useState(null);
+  const [spellMode, setSpellMode]                 = useState(false);
+  const [selectedSpell, setSelectedSpell]         = useState(null);
+
+  const [movementMode, setMovementMode]           = useState(false);  // ← Yeni
+  const [reachableCells, setReachableCells]       = useState(new Set());
+  const [moving, setMoving]                       = useState(false);
+  const [chatLog, setChatLog]                     = useState([]);
+  const [actionUsed, setActionUsed]               = useState(false);
+  const [movementRemaining, setMovementRemaining] = useState(3);
+  const [rangedReachableCells, setRangedReachableCells] = useState(new Set());
 
   // --- lobbyId’yi belirle / sakla ---
   useEffect(() => {
@@ -59,7 +63,7 @@ export default function BattlePage() {
       .catch(err => console.error("Lobi verisi hata:", err));
   }, [lobbyId, currentUserId]);
 
-  // --- Karakterleri nested route üzerinden çek ---
+  // --- Karakterleri çek ---
   useEffect(() => {
     if (!lobbyId) return;
     api.get(`lobbies/${lobbyId}/characters/`)
@@ -67,13 +71,13 @@ export default function BattlePage() {
       .catch(err => console.error("Karakterler çekme hata:", err));
   }, [lobbyId]);
 
-  // --- Henüz yerleştirilmemiş karakterleri availableCharacters olarak ayarla ---
+  // --- Available hesapla ---
   useEffect(() => {
     const placedIds = Object.values(placements).filter(Boolean).map(c => c.id);
     setAvailableCharacters(allCharacters.filter(c => !placedIds.includes(c.id)));
   }, [allCharacters, placements]);
 
-  // --- WebSocket joinLobby listener ---
+  // --- joinLobby listener ---
   useEffect(() => {
     const sock = getBattleSocket();
     if (!sock) return;
@@ -91,7 +95,7 @@ export default function BattlePage() {
     return () => sock.removeEventListener('message', onMsg);
   }, []);
 
-  // --- Battle-state polling her 3s’de bir (chatLog’u merge et) ---
+  // --- Polling battle-state ---
   useEffect(() => {
     if (!battleStarted) return;
     const iv = setInterval(() => {
@@ -103,7 +107,6 @@ export default function BattlePage() {
           setCurrentTurnIndex(d.current_turn_index || 0);
           if (Array.isArray(d.chat_log)) {
             setChatLog(prev => {
-              // sadece yeni mesajları ekle
               const news = d.chat_log.filter(m => !prev.includes(m));
               return prev.concat(news);
             });
@@ -114,24 +117,57 @@ export default function BattlePage() {
     return () => clearInterval(iv);
   }, [lobbyId, battleStarted]);
 
-  // --- WebSocket battle event listener (chatLog’u merge et) ---
+  // --- WebSocket battle events ---
   useEffect(() => {
     if (!lobbyId) return;
     const handler = e => {
       try {
         const d = JSON.parse(e.data);
         if (String(d.lobbyId) !== String(lobbyId)) return;
-        // güncellemeleri işle
         switch (d.event) {
+
           case 'battleStart':
             setBattleStarted(true);
+            // Tur başında seçili değilse movementMode kapat
+            setMovementMode(false);
+            setAttackMode(false);
+            setSpellMode(false);
+            // Eğer sırası sizde ise haklarınızı setleyin
+            const turn0 = d.initiativeOrder?.[0];
+            if (turn0?.character_id === selectedAttacker?.id) {
+              const dexMod = Math.floor((selectedAttacker.dexterity - 10)/2) || 0;
+              setMovementRemaining(2 + dexMod);
+              setActionUsed(false);
+            }
             break;
+
           case 'battleEnd':
             setBattleStarted(false);
             break;
+
           case 'battleUpdate':
             if (d.placements)      setPlacements(d.placements);
             if (d.initiativeOrder) setInitiativeOrder(d.initiativeOrder);
+
+            // Eğer yeni tur gelmişse
+            if (d.current_turn_index !== undefined && d.current_turn_index !== currentTurnIndex) {
+              setCurrentTurnIndex(d.current_turn_index);
+              // Tüm modları kapat
+              setMovementMode(false);
+              setAttackMode(false);
+              setSpellMode(false);
+              // Eğer yeni kişinin sırası sizde ise hakları setle
+              const entry = d.initiativeOrder[d.current_turn_index];
+              if (entry?.character_id === selectedAttacker?.id) {
+                const dexMod = Math.floor((selectedAttacker.dexterity - 10)/2) || 0;
+                setMovementRemaining(2 + dexMod);
+                setActionUsed(false);
+              } else {
+                setMovementRemaining(0);
+              }
+            }
+
+            // chatLog merge
             const msgs = d.chatLog || d.chat_log;
             if (Array.isArray(msgs)) {
               setChatLog(prev => {
@@ -147,12 +183,40 @@ export default function BattlePage() {
     };
     const sock = createBattleSocket(lobbyId, handler);
     return () => {
-      try {
-        sock.removeEventListener('message', handler);
-        sock.close();
-      } catch {}
+      sock.removeEventListener('message', handler);
+      sock.close();
     };
-  }, [lobbyId]);
+  }, [lobbyId, selectedAttacker, currentTurnIndex]);
+
+  // --- Ranged saldırı menzil hesaplama ---
+useEffect(() => {
+  if (!attackMode || attackType !== 'ranged' || !selectedAttacker) {
+    setRangedReachableCells(new Set());
+    return;
+  }
+  const entry = Object.entries(placements)
+    .find(([_, c]) => c?.id === selectedAttacker.id);
+  if (!entry) {
+    setRangedReachableCells(new Set());
+    return;
+  }
+  const origin   = Number(entry[0]);
+  const row      = Math.floor(origin / GRID_SIZE);
+  const col      = origin % GRID_SIZE;
+  const baseRange= 2;
+  const dexMod   = Math.floor((selectedAttacker.dexterity - 10) / 2) || 0;
+  const range    = baseRange + dexMod;
+
+  const cells = new Set();
+  for (let i = 0; i < TOTAL_CELLS; i++) {
+    const r = Math.floor(i / GRID_SIZE), c = i % GRID_SIZE;
+    if (Math.abs(r - row) + Math.abs(c - col) <= range) {
+      cells.add(i);
+    }
+  }
+  setRangedReachableCells(cells);
+}, [attackMode, attackType, selectedAttacker, placements]);
+
 
   // --- Savaş başlat (GM) ---
   const handleStartBattle = async () => {
@@ -204,46 +268,64 @@ export default function BattlePage() {
     }));
   };
 
-  // --- Hücre tıklama: saldırı/büyü önce, sonra hareket ---
+  // --- Hücre tıklama: önce saldırı/büyü then hareket ---
   const handleCellClick = (cellIndex, cellCharacter) => {
-    if (attackMode && selectedAttacker && cellCharacter) {
+    // 1) Melee
+    if (attackMode && attackType === 'melee' && selectedAttacker && cellCharacter) {
       handleMeleeAttack(cellCharacter);
       return;
     }
+    // 2) Ranged
+    if (attackMode && attackType === 'ranged' && selectedAttacker && cellCharacter) {
+      handleRangedAttack(cellCharacter);
+      return;
+    }
+    // 3) Spell
     if (spellMode && selectedAttacker && selectedSpell && cellCharacter) {
       handleSpellCast(selectedSpell.id, [cellCharacter.id]);
       return;
     }
-    if (selectedAttacker && reachableCells.has(cellIndex)) {
+    // 4) Move
+    if (movementMode && selectedAttacker && reachableCells.has(cellIndex)) {
       handleMoveCharacter(cellIndex);
       return;
     }
+    // 5) Select character (sira kontrolu)
     if (cellCharacter?.player_id === currentUserId) {
-      if (
-        initiativeOrder.length > 0 &&
-        cellCharacter.id === initiativeOrder[currentTurnIndex]?.character_id
-      ) {
-        setSelectedAttacker(cellCharacter);
-      } else {
+      const turn = initiativeOrder[currentTurnIndex];
+      if (!turn || cellCharacter.id !== turn.character_id) {
         alert('Sıra sizde değil!');
+        return;
       }
+      // sadece seçimi yap, modları bozmadan
+      setSelectedAttacker(cellCharacter);
     }
   };
 
   // --- Karakteri hareket ettir ---
   const handleMoveCharacter = async targetCell => {
-    const next = { ...placements };
-    const currentEntry = Object.entries(placements)
+    const entry = Object.entries(placements)
       .find(([_, ch]) => ch?.id === selectedAttacker.id);
-    if (currentEntry) next[currentEntry[0]] = undefined;
+    if (!entry) return;
+    const origin = Number(entry[0]);
+    const or = Math.floor(origin/GRID_SIZE), oc = origin%GRID_SIZE;
+    const tr = Math.floor(targetCell/GRID_SIZE), tc = targetCell%GRID_SIZE;
+    const dist = Math.abs(or - tr) + Math.abs(oc - tc);
+    if (dist > movementRemaining) {
+      alert(`En fazla ${movementRemaining} kare gidebilirsin.`);
+      return;
+    }
+    // kalan azalt
+    setMovementRemaining(prev => prev - dist);
+
+    // yerleştir
+    const next = { ...placements };
+    next[origin] = undefined;
     next[targetCell] = selectedAttacker;
     setPlacements(next);
     setMoving(true);
     try {
-      await api.post('combat/move/', {
-        lobby_id: lobbyId,
-        placements: next
-      });
+      await api.post('combat/move/', { lobby_id: lobbyId, placements: next });
       getBattleSocket().send(JSON.stringify({
         event: 'battleUpdate',
         lobbyId,
@@ -254,174 +336,247 @@ export default function BattlePage() {
     } finally {
       setMoving(false);
     }
-    setSelectedAttacker(null);
-    setReachableCells(new Set());
+    // seçimi koru, böylece useEffect vurguyu günceller
   };
 
-  // --- Yakın dövüş saldırısı ---
+  // --- Melee Attack ---
+   // --- Melee Attack ---
   const handleMeleeAttack = async targetCharacter => {
     if (!selectedAttacker || !targetCharacter) return;
+
     try {
       const res = await api.post('combat/melee-attack/', {
         attacker_id: selectedAttacker.id,
-        target_id: targetCharacter.id,
-        lobby_id: lobbyId
+        target_id:   targetCharacter.id,
+        lobby_id:    lobbyId,
       });
-      const dmg    = res.data.damage;
-      const leftHp = res.data.target_remaining_hp;
-      const msg    = `${selectedAttacker.name} yakın dövüşte ${targetCharacter.name}'e ${dmg} hasar verdi (Kalan HP: ${leftHp}).`;
-      console.log('[BattlePage] Melee attack:', msg);
-      // chatLog’a ekle ve socket’le bildir
+      const {
+        message: apiMsg,
+        damage: dmg,
+        target_remaining_hp: leftHp,
+        chat_log: chatLogRes
+      } = res.data;
+
+      // Mesajı zenginleştir
+      const weapon = selectedAttacker.main_hand || selectedAttacker.off_hand;
+      const strMod = Math.floor((selectedAttacker.strength - 10) / 2);
+      const isCrit = apiMsg.includes('Kritik');
+      const diceTotal = isCrit
+        ? (dmg / 2 - strMod)
+        : (dmg - strMod);
+
+      const enrichedMsg = 
+        `${apiMsg} (Silah: ${weapon.name}, Zar Dice: ${weapon.damage_dice}, Zar Toplamı: ${diceTotal}) (Kalan HP: ${leftHp})`;
+
+      // Chat log’u güncelle
       setChatLog(prev => {
-        const next = [...prev, msg];
+        const next = [...chatLogRes.slice(0, -1), enrichedMsg];
         getBattleSocket().send(JSON.stringify({
-          event: 'battleUpdate',
+          event:   'battleUpdate',
           lobbyId,
           chatLog: next
         }));
         return next;
       });
-      // state’i yenile
+
+      // Son durumu çek ve render et
       const state = await api.get(`battle-state/${lobbyId}/`);
       setInitiativeOrder(state.data.initiative_order);
       setPlacements(state.data.placements);
       setCurrentTurnIndex(state.data.current_turn_index || 0);
-    } catch(err) {
-      console.error("Yakın dövüş hata:", err);
+
+    } catch (err) {
+      if (err.response?.status === 400 && err.response.data?.error) {
+        console.log('[BattlePage] Yakın dövüş hatası:', err.response.data.error);
+      } else {
+        console.error('Yakın dövüş hata:', err);
+      }
     }
+
+    // Modları sıfırla, yeniden saldırıya izin versin
     setAttackMode(false);
+    setAttackType(null);
     setSelectedAttacker(null);
   };
 
-  // --- Büyü kullan ---
-  const handleSpellCast = async (spellId, targetIds, extra = {}) => {
+
+  // --- Ranged Attack ---
+  const handleRangedAttack = async targetCharacter => {
+    if (!selectedAttacker || !targetCharacter) return;
+
+    try {
+      const res = await api.post('combat/ranged-attack/', {
+        attacker_id: selectedAttacker.id,
+        target_id:   targetCharacter.id,
+        lobby_id:    lobbyId,
+      });
+      const {
+        message: apiMsg,
+        damage: dmg,
+        target_remaining_hp: leftHp,
+        chat_log: chatLogRes
+      } = res.data;
+
+      // Mesajı zenginleştir
+      const weapon = selectedAttacker.main_hand || selectedAttacker.off_hand;
+      const dexMod = Math.floor((selectedAttacker.dexterity - 10) / 2);
+      const isCrit = apiMsg.includes('Kritik');
+      const diceTotal = isCrit
+        ? (dmg / 2 - dexMod)
+        : (dmg - dexMod);
+
+      const enrichedMsg =
+        `${apiMsg} (Silah: ${weapon.name}, Zar Dice: ${weapon.damage_dice}, Zar Toplamı: ${diceTotal}) (Kalan HP: ${leftHp})`;
+
+      // Chat log’u güncelle
+      setChatLog(prev => {
+        const next = [...chatLogRes.slice(0, -1), enrichedMsg];
+        getBattleSocket().send(JSON.stringify({
+          event:   'battleUpdate',
+          lobbyId,
+          chatLog: next
+        }));
+        return next;
+      });
+
+      // Son durumu çek ve render et
+      const state = await api.get(`battle-state/${lobbyId}/`);
+      setInitiativeOrder(state.data.initiative_order);
+      setPlacements(state.data.placements);
+      setCurrentTurnIndex(state.data.current_turn_index || 0);
+
+    } catch (err) {
+      if (err.response?.status === 400 && err.response.data?.error) {
+        console.log('[BattlePage] Menzilli saldırı hatası:', err.response.data.error);
+      } else {
+        console.error('Menzilli saldırı hata:', err);
+      }
+    }
+
+    // Modları sıfırla, yeniden saldırıya izin versin
+    setAttackMode(false);
+    setAttackType(null);
+    setSelectedAttacker(null);
+  };
+
+  // --- Spell Cast ---
+  const handleSpellCast = async (spellId, targetIds, extra={}) => {
     if (!selectedAttacker || !targetIds.length) return;
     try {
       const res = await api.post(`spells/${spellId}/cast/`, {
         attacker_id: selectedAttacker.id,
         targets: targetIds,
         lobby_id: lobbyId,
+        spell_id: spellId,
+        spell_level: selectedSpell.level,
         ...extra
       });
-      const message = res.data.message;
-      const results = res.data.results;
-  
+      const message = res.data.message, results = res.data.results;
       console.log('[BattlePage] Spell cast:', message);
       setChatLog(prev => {
         const next = [...prev, message];
         getBattleSocket().send(JSON.stringify({
-          event: 'battleUpdate',
+          event:'battleUpdate',
           lobbyId,
-          chatLog: next
+          chatLog:next
         }));
         return next;
       });
-  
-      // Eğer sonuçlar geldiyse, hücrelerdeki HP değerlerini güncelle
       if (results) {
         setPlacements(prev => {
-          const next = { ...prev };
-          Object.entries(results).forEach(([charId, hp]) => {
-            const entry = Object.entries(prev).find(([_, char]) => char?.id === Number(charId));
-            if (entry) {
-              const [cellIdx, char] = entry;
-              next[cellIdx] = { ...char, current_hp: hp };
-            }
+          const next = {...prev};
+          Object.entries(results).forEach(([cid,hp]) => {
+            const e = Object.entries(prev).find(([_,c])=>c?.id===+cid);
+            if (e) next[e[0]] = {...e[1], current_hp: hp};
           });
           return next;
         });
       }
-  
-      // Güncel battle-state’i yeniden çek ve state’leri güncelle
-      const state = await api.get(`battle-state/${lobbyId}/`);
+      const state=await api.get(`battle-state/${lobbyId}/`);
       setInitiativeOrder(state.data.initiative_order);
       setPlacements(state.data.placements);
-      setCurrentTurnIndex(state.data.current_turn_index || 0);
-  
-    } catch(err) {
+      setCurrentTurnIndex(state.data.current_turn_index||0);
+      setActionUsed(true);
+    } catch(err){
       console.error("Büyü kullanım hata:", err);
     }
-  
     setSpellMode(false);
     setSelectedSpell(null);
     setSelectedAttacker(null);
   };
 
-  // --- Büyü seç ---
+  // --- Spell select ---
   const handleSelectSpell = spell => {
     setSelectedSpell(spell);
     setAttackMode(false);
+    setAttackType(null);
   };
 
-  // --- Tur sonlandır ---
   const handleEndTurn = async () => {
-    try {
-      const res = await api.post('combat/end-turn/', { lobby_id: lobbyId });
-      const newOrder     = res.data.initiative_order;
-      const newPlacements = res.data.placements;
-      getBattleSocket().send(JSON.stringify({
-        event: 'battleUpdate',
-        lobbyId,
-        initiativeOrder: newOrder,
-        placements: newPlacements
-      }));
-      setInitiativeOrder(newOrder);
-      setPlacements(newPlacements);
-    } catch(err) {
-      console.error("Tur sonlandırma hata:", err);
-    }
-    setAttackMode(false);
-    setSpellMode(false);
-    setSelectedAttacker(null);
-    setSelectedSpell(null);
-  };
+  try {
+    const res = await api.post('combat/end-turn/', { lobby_id: lobbyId });
+    const newOrder = res.data.initiative_order;
+    const newPlac  = res.data.placements;
+    const newIdx   = res.data.current_turn_index ?? currentTurnIndex + 1;
 
-  // --- Savaşı sonlandır (GM) ---
-  const handleEndBattle = () => {
-    getBattleSocket().send(JSON.stringify({ event: 'battleEnd', lobbyId }));
-  };
-
-  // --- Mesaj gönder ---
-  const handleSendMessage = message => {
-    const newLog = [...chatLog, message];
-    setChatLog(newLog);
+    // Sunucuya güncellemeyi bildir
     getBattleSocket().send(JSON.stringify({
       event: 'battleUpdate',
       lobbyId,
-      chatLog: newLog
+      initiativeOrder: newOrder,
+      placements: newPlac
     }));
+
+    // State’leri güncelle
+    setInitiativeOrder(newOrder);
+    setPlacements(newPlac);
+    setCurrentTurnIndex(newIdx);
+
+    // **YENİ EKLENECEK SATIR:** Hareket haklarını başa döndür
+    setMovementRemaining(3);
+
+  } catch (err) {
+    console.error("Tur sonlandırma hata:", err);
+  } finally {
+    // Modları kapat
+    setAttackMode(false);
+    setAttackType(null);
+    setSpellMode(false);
+    setMovementMode(false);
+    setSelectedAttacker(null);
+    setSelectedSpell(null);
+  }
+};
+
+  // --- End battle ---
+  const handleEndBattle = () => {
+    getBattleSocket().send(JSON.stringify({ event:'battleEnd', lobbyId }));
   };
 
-  // --- Reachable hücreleri hesapla (dolu hücreleri eledik) ---
+  // --- Reachable hesapla ---
   useEffect(() => {
-    if (!selectedAttacker) {
+    if (!movementMode || !selectedAttacker || movementRemaining <= 0) {
       setReachableCells(new Set());
       return;
     }
     const entry = Object.entries(placements)
-      .find(([_, c]) => c?.id === selectedAttacker.id);
-    if (!entry) return;
+      .find(([_,c])=>c?.id===selectedAttacker.id);
+    if (!entry) { setReachableCells(new Set()); return; }
     const originIdx = Number(entry[0]);
-    const row = Math.floor(originIdx / GRID_SIZE);
-    const col = originIdx % GRID_SIZE;
-    const dex = selectedAttacker.dexterity || 10;
-    const range = 2 + Math.floor((dex - 10) / 2);
+    const row = Math.floor(originIdx/GRID_SIZE), col = originIdx%GRID_SIZE;
+    const range = movementRemaining;
     const cells = new Set();
-    for (let i = 0; i < TOTAL_CELLS; i++) {
-      const r = Math.floor(i / GRID_SIZE);
-      const c = i % GRID_SIZE;
-      const manh = Math.abs(r - row) + Math.abs(c - col);
-      if (manh <= range && !placements[i]) {
-        cells.add(i);
-      }
+    for (let i=0; i<TOTAL_CELLS; i++){
+      if (placements[i]) continue;
+      const r=Math.floor(i/GRID_SIZE), c=i%GRID_SIZE;
+      if (Math.abs(r-row)+Math.abs(c-col) <= range) cells.add(i);
     }
     setReachableCells(cells);
-  }, [selectedAttacker, placements]);
+  }, [movementMode, selectedAttacker, placements, movementRemaining]);
 
   if (!lobbyData) {
     return <div className="battle-container">Lobi bilgileri yükleniyor…</div>;
   }
-
   if (!battleStarted) {
     return (
       <div className="battle-container">
@@ -439,19 +594,17 @@ export default function BattlePage() {
             onStartBattle={handleStartBattle}
           />
         ) : (
-          <div className="waiting">
-            GM karakterleri yerleştiriyor, lütfen bekleyin…
-          </div>
+          <div className="waiting">GM karakterleri yerleştiriyor, lütfen bekleyin…</div>
         )}
       </div>
     );
   }
-
   return (
     <div className="battle-container">
       <BattleMap
         placements={placements}
         reachableCells={reachableCells}
+        rangedReachableCells={rangedReachableCells}  // ← bu satırı ekleyin
         gridSize={GRID_SIZE}
         totalCells={TOTAL_CELLS}
         moving={moving}
@@ -464,17 +617,24 @@ export default function BattlePage() {
       <BattleActions
         selectedAttacker={selectedAttacker}
         attackMode={attackMode}
+        attackType={attackType}
         spellMode={spellMode}
         selectedSpell={selectedSpell}
         availableSpells={selectedAttacker?.prepared_spells}
-        onChooseMelee={() => { setAttackMode(true); setSpellMode(false); }}
-        onChooseSpell={() => { setSpellMode(true); setAttackMode(false); }}
+        movementRemaining={movementRemaining}
+        actionUsed={actionUsed}
+        onChooseMelee={() => { setAttackMode(true); setAttackType('melee'); setSpellMode(false); setMovementMode(false); }}
+        onChooseRanged={() => { setAttackMode(true); setAttackType('ranged'); setSpellMode(false); setMovementMode(false); }}
+        onChooseSpell={() => { setSpellMode(true); setAttackMode(false); setAttackType(null); setMovementMode(false); }}
+        onChooseMove={() => { setMovementMode(true); setAttackMode(false); setSpellMode(false); setAttackType(null); }}
         onSelectSpell={handleSelectSpell}
         onCancel={() => {
           setSelectedAttacker(null);
           setAttackMode(false);
+          setAttackType(null);
           setSpellMode(false);
           setSelectedSpell(null);
+          setMovementMode(false);
         }}
         onEndTurn={handleEndTurn}
         onEndBattle={handleEndBattle}
@@ -484,7 +644,14 @@ export default function BattlePage() {
         initiativeOrder={initiativeOrder}
         currentTurnIndex={currentTurnIndex}
         chatLog={chatLog}
-        onSendMessage={handleSendMessage}
+        onSendMessage={msg => {
+          setChatLog(prev => [...prev, msg]);
+          getBattleSocket().send(JSON.stringify({
+            event:'battleUpdate',
+            lobbyId,
+            chatLog: [...chatLog, msg]
+          }));
+        }}
       />
     </div>
   );

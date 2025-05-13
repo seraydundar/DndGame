@@ -4,6 +4,7 @@ import React from 'react';
 export default function BattleMap({
   placements,
   reachableCells,
+  rangedReachableCells={rangedReachableCells},
   gridSize,
   totalCells,
   moving,
@@ -27,7 +28,8 @@ export default function BattleMap({
           display:'flex',
           alignItems:'center',
           justifyContent:'center',
-          backgroundColor: reachableCells.has(i) ? '#e0ffe0' : '#fff',
+          backgroundColor: reachableCells.has(i) ? '#e0ffe0' : '#fff', 
+          borderColor: rangedReachableCells.has(i) ? '#ff9800' : '#ccc',
           cursor: ch ? 'pointer' : 'default'
         }}
       >

@@ -178,6 +178,8 @@ class CharacterSerializer(serializers.ModelSerializer):
             'level', 'hp',
             'strength', 'dexterity', 'constitution',
             'intelligence', 'wisdom', 'charisma',
+            'ac',
+            'xp',
             'gold',
             'inventory',
             'head_armor', 'head_armor_id',

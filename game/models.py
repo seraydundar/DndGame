@@ -55,7 +55,9 @@ class Character(models.Model):
     intelligence = models.IntegerField(default=10)
     wisdom = models.IntegerField(default=10)
     charisma = models.IntegerField(default=10)
+    ac = models.IntegerField(default=0)
     gold = models.IntegerField(default=10)
+    action_points = models.IntegerField(default=1)
 
     # Inventory replaces equipment list
     inventory = models.JSONField(default=list, blank=True)

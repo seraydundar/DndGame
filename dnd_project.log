@@ -21604,3 +21604,153 @@ Bad Request: /api/characters/2/
 Bad Request: /api/characters/2/
 Bad Request: /api/characters/2/
 Bad Request: /api/characters/2/
+Forbidden: /api/accounts/login/
+Forbidden: /api/accounts/login/
+Forbidden: /api/accounts/login/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Internal Server Error: /api/combat/initiate/
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\game\views.py", line 124, in post
+    character.save(update_fields=["action_points"])
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\base.py", line 871, in save
+    raise ValueError(
+ValueError: The following fields do not exist in this model, are m2m fields, or are non-concrete fields: action_points
+Internal Server Error: /api/combat/initiate/
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\game\views.py", line 124, in post
+    character.save(update_fields=["action_points"])
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\base.py", line 871, in save
+    raise ValueError(
+ValueError: The following fields do not exist in this model, are m2m fields, or are non-concrete fields: action_points
+Internal Server Error: /api/combat/initiate/
+Traceback (most recent call last):
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 518, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\core\handlers\base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 468, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\asgiref\sync.py", line 522, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Oðuzhan\Projects\DndGame\game\views.py", line 124, in post
+    character.save(update_fields=["action_points"])
+  File "C:\Users\Oðuzhan\Projects\DndGame\venv\Lib\site-packages\django\db\models\base.py", line 871, in save
+    raise ValueError(
+ValueError: The following fields do not exist in this model, are m2m fields, or are non-concrete fields: action_points
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/

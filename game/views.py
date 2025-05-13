@@ -97,6 +97,7 @@ class InitiateCombatView(APIView):
         available_characters = request.data.get("available_characters", [])
         if not lobby_id or not character_ids:
             return Response({"error": "lobby_id ve character_ids gereklidir."}, status=status.HTTP_400_BAD_REQUEST)
+
         combatants = Character.objects.filter(id__in=character_ids)
         initiative_list = []
         for character in combatants:
@@ -107,6 +108,8 @@ class InitiateCombatView(APIView):
                 "initiative": roll
             })
         initiative_list.sort(key=lambda x: x["initiative"], reverse=True)
+
+        # --- Mevcut battle state güncelle ---
         BATTLE_STATE[str(lobby_id)] = {
             "initiative_order": initiative_list,
             "placements": placements,
@@ -114,175 +117,281 @@ class InitiateCombatView(APIView):
             "current_turn_index": 0,
             "chat_log": []
         }
+
+        # --- Her combatant'ın action_points'ını 1'e resetle ---
+        for character in combatants:
+            character.action_points = 1
+            character.save(update_fields=["action_points"])
+
         return Response({
             "message": "Initiative order oluşturuldu.",
             "initiative_order": initiative_list
         })
 
 class MeleeAttackView(APIView):
-    """
-    Yakın Dövüş Saldırısı endpoint'i:
-    Saldırıyı yapabilmek için saldırgan ile hedefin bulunduğu kareler arasında
-    sadece bitişik (aynı satırda ve sütun farkı 1 ya da aynı sütunda ve satır farkı 1) mesafe olmalıdır.
-    Saldırı, 1d6 + strength bonusu üzerinden hesaplanır.
-    İstek payload'unda attacker_id, target_id ve lobby_id gönderilmelidir.
-    """
     authentication_classes = [CsrfExemptSessionAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
+        # 1) Gerekli parametreler
         attacker_id = request.data.get("attacker_id")
-        target_id = request.data.get("target_id")
-        lobby_id = request.data.get("lobby_id")
+        target_id   = request.data.get("target_id")
+        lobby_id    = request.data.get("lobby_id")
         if not attacker_id or not target_id or not lobby_id:
-            return Response({"error": "attacker_id, target_id ve lobby_id gereklidir."},
-                            status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {"error": "attacker_id, target_id ve lobby_id gereklidir."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         attacker = get_object_or_404(Character, id=attacker_id)
-        target = get_object_or_404(Character, id=target_id)
-        
-        # Grid boyutu: 20x20
-        gridSize = 20
-        
-        # Global battle state'den placements bilgisini alalım
-        battle_state = BATTLE_STATE.get(str(lobby_id))
-        if not battle_state or "placements" not in battle_state:
-            return Response({"error": "Battle state bulunamadı."},
-                            status=status.HTTP_400_BAD_REQUEST)
-        placements = battle_state["placements"]
-        
-        # Saldırgan ve hedefin hangi hücrelerde yer aldığını tespit edelim
-        attacker_cell = None
-        target_cell = None
-        for key, value in placements.items():
-            if value:
-                if value.get("id") == attacker.id:
-                    attacker_cell = int(key)
-                if value.get("id") == target.id:
-                    target_cell = int(key)
-        if attacker_cell is None or target_cell is None:
-            return Response({"error": "Saldırgan veya hedefin konumu bulunamadı."},
-                            status=status.HTTP_400_BAD_REQUEST)
-        
-        # Hücre konumlarını satır ve sütunlara ayıralım
-        attacker_row, attacker_col = divmod(attacker_cell, gridSize)
-        target_row, target_col = divmod(target_cell, gridSize)
-        
-        # Sadece bitişik hücreler (aynı satırda ve sütun farkı 1 ya da aynı sütunda ve satır farkı 1) saldırıya izin verilir.
-        if not ((attacker_row == target_row and abs(attacker_col - target_col) == 1) or 
-                (attacker_col == target_col and abs(attacker_row - target_row) == 1)):
-            return Response({"error": "Hedef, saldırıya uygun mesafede değil. Yakın dövüş saldırısı yalnızca bitişik karelere yapılabilir."},
-                            status=status.HTTP_400_BAD_REQUEST)
-        
-        # Mesafe uygunsa hasarı hesapla (örneğin normal_attack_damage() metodu üzerinden)
-        damage = attacker.normal_attack_damage()
+        target   = get_object_or_404(Character, id=target_id)
+
+        # --- Aksiyon puanı kontrolü ---
+        if attacker.action_points < 1:
+            return Response({"error": "Bu turda aksiyon hakkın kalmadı."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2) Placement kontrolü (aynı satır/sütun farkı 1)
+        gridSize    = 20
+        battle_state = BATTLE_STATE.get(str(lobby_id), {})
+        placements  = battle_state.get("placements", {})
+        # hücreleri bul
+        def find_cell(char_id):
+            for key, val in placements.items():
+                if val and val.get("id") == char_id:
+                    return int(key)
+            return None
+
+        a_cell = find_cell(attacker.id)
+        t_cell = find_cell(target.id)
+        if a_cell is None or t_cell is None:
+            return Response(
+                {"error": "Saldırgan veya hedef konumu bulunamadı."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        a_row, a_col = divmod(a_cell, gridSize)
+        t_row, t_col = divmod(t_cell, gridSize)
+        if not ((a_row == t_row and abs(a_col - t_col) == 1) or
+                (a_col == t_col and abs(a_row - t_row) == 1)):
+            return Response(
+                {"error": "Hedef, bitişik karede değil."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3) Attack roll
+        roll    = random.randint(1, 20)
+        str_mod = (attacker.strength - 10) // 2
+        lvl     = attacker.level  # doğrudan level-based bonus
+
+        # fumble?
+        if roll == 1:
+            chat_msg = f"{attacker.name} zar attı: 1 → Otomatik kaçırma!"
+            damage   = 0
+
+        else:
+            attack_score = roll + str_mod + lvl
+            # kritik?
+            is_critical = (roll == 20)
+            # hit/miss
+            hit = is_critical or (attack_score >= target.ac)
+
+            # 4) Hasar hesaplama
+            if hit:
+                # silahı al
+                weapon = attacker.main_hand or attacker.off_hand
+                # dice parsing: "XdY"
+                try:
+                    num, die = map(int, weapon.damage_dice.split('d'))
+                except Exception:
+                    num, die = 1, 6  # fallback
+
+                # dice roll
+                dice_total = sum(random.randint(1, die) for _ in range(num))
+                base_damage = dice_total + str_mod
+
+                # kritik ise çift
+                damage = base_damage * 2 if is_critical else base_damage
+
+                # mesaj
+                if is_critical:
+                    chat_msg = (
+                        f"{attacker.name} zar attı: 20 → Kritik! "
+                        f"Dice {weapon.damage_dice} toplamı {dice_total}, "
+                        f"STR mod {str_mod} → Hasar = {damage}"
+                    )
+                else:
+                    chat_msg = (
+                        f"Roll: {roll} + STR mod {str_mod} + LVL {lvl} = {attack_score} "
+                        f"vs AC {target.ac} → İsabet! Hasar = {damage}"
+                    )
+            else:
+                damage = 0
+                chat_msg = (
+                    f"Roll: {roll} + STR mod {str_mod} + LVL {lvl} = {attack_score} "
+                    f"vs AC {target.ac} → Kaçırma!"
+                )
+
+        # 5) HP güncelle ve kaydet
         target.hp = max(0, target.hp - damage)
-        target.save()
-        
-        new_message = f"{attacker.name} {target.name}'e yakın dövüş saldırısı yaptı ve {damage} hasar verdi (Kalan HP: {target.hp})."
+        target.save(update_fields=["hp"])
+
+        # 6) Chat log güncelle
         chat_log = battle_state.get("chat_log", [])
-        chat_log.append(new_message)
+        chat_log.append(chat_msg + f" (Kalan HP: {target.hp})")
         battle_state["chat_log"] = chat_log
         BATTLE_STATE[str(lobby_id)] = battle_state
 
-        # Güncellemeyi tüm oyunculara yayınla
+        # --- Aksiyon puanını düşür ---
+        attacker.action_points -= 1
+        attacker.save(update_fields=["action_points"])
+
+        # 7) Yayınla
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"lobby_{lobby_id}",
-            {
-                'type': 'game_message',
-                'message': battle_state
-            }
+            {"type": "game_message", "message": battle_state}
         )
 
+        # 8) Response
         return Response({
-            "message": f"{attacker.name} yakın dövüş saldırısı yaptı.",
+            "message": chat_msg,
             "damage": damage,
             "target_remaining_hp": target.hp,
             "chat_log": chat_log
-        })
+        }, status=status.HTTP_200_OK)
 
 
 class RangedAttackView(APIView):
-    """
-    Ranged (Dexterity) Attack endpoint:
-    Bu saldırı, saldırgan ile hedef arasındaki mesafenin 5x5 birim karelik alanda olmasına bağlıdır.
-    Hasar, 1d6 + saldırganın dexterity değeri ile hesaplanır.
-    İstek payload’unda attacker_id, target_id ve lobby_id gönderilmelidir.
-    """
     authentication_classes = [CsrfExemptSessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
+        # 1) Parametre kontrolü
         attacker_id = request.data.get("attacker_id")
-        target_id = request.data.get("target_id")
-        lobby_id = request.data.get("lobby_id")
+        target_id   = request.data.get("target_id")
+        lobby_id    = request.data.get("lobby_id")
         if not attacker_id or not target_id or not lobby_id:
             return Response({"error": "attacker_id, target_id ve lobby_id gereklidir."},
                             status=status.HTTP_400_BAD_REQUEST)
+
         attacker = get_object_or_404(Character, id=attacker_id)
-        target = get_object_or_404(Character, id=target_id)
+        target   = get_object_or_404(Character, id=target_id)
 
-        gridSize = 20  # 20x20 grid
+        # --- Aksiyon puanı kontrolü ---
+        if attacker.action_points < 1:
+            return Response({"error": "Bu turda aksiyon hakkın kalmadı."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Global battle state'den placements bilgisini alıyoruz
-        battle_state = BATTLE_STATE.get(str(lobby_id))
-        if not battle_state or "placements" not in battle_state:
-            return Response({"error": "Battle state bulunamadı."},
-                            status=status.HTTP_400_BAD_REQUEST)
-        placements = battle_state["placements"]
+        # 2) Silah kontrolü
+        weapon = attacker.main_hand or attacker.off_hand
+        if not weapon or weapon.subtype != 'bow':
+            return Response(
+                {"error": "Menzilli saldırı için bow kuşanmanız gerekiyor."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # Saldırgan ve hedefin hangi hücrelerde yer aldığını tespit ediyoruz.
-        attacker_cell = None
-        target_cell = None
-        for key, value in placements.items():
-            if value:
-                if value.get("id") == attacker.id:
-                    attacker_cell = int(key)
-                if value.get("id") == target.id:
-                    target_cell = int(key)
-        if attacker_cell is None or target_cell is None:
-            return Response({"error": "Saldırgan veya hedefin konumu bulunamadı."},
-                            status=status.HTTP_400_BAD_REQUEST)
+        # 3) Placement kontrolü
+        gridSize     = 20
+        battle_state = BATTLE_STATE.get(str(lobby_id), {})
+        placements   = battle_state.get("placements", {})
 
-        # Hücre konumlarını satır ve sütunlara ayırıyoruz.
-        attacker_row, attacker_col = divmod(attacker_cell, gridSize)
-        target_row, target_col = divmod(target_cell, gridSize)
+        def find_cell(char_id):
+            for k, v in placements.items():
+                if v and v.get("id") == char_id:
+                    return int(k)
+            return None
 
-        # Saldırının 5x5 alan içinde olup olmadığını kontrol ediyoruz.
-        # Yani saldırganın bulunduğu hücreye göre, satır ve sütun farkı en fazla 2 olmalıdır.
-        if not (abs(attacker_row - target_row) <= 2 and abs(attacker_col - target_col) <= 2):
-            return Response({"error": "Hedef, saldırıya uygun mesafede değil. Ranged saldırı 5x5 alanda yapılabilir."},
-                            status=status.HTTP_400_BAD_REQUEST)
+        a_cell = find_cell(attacker.id)
+        t_cell = find_cell(target.id)
+        if a_cell is None or t_cell is None:
+            return Response(
+                {"error": "Saldırgan veya hedef konumu bulunamadı."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # Hasarı hesapla: 1d6 + attacker.dexterity
-        roll = random.randint(1, 6)
-        damage = roll + (attacker.dexterity if hasattr(attacker, 'dexterity') else 0)
+        a_row, a_col = divmod(a_cell, gridSize)
+        t_row, t_col = divmod(t_cell, gridSize)
+        manhattan = abs(a_row - t_row) + abs(a_col - t_col)
+
+        # 4) Menzil + DEX mod hesapla
+        base_range = 2
+        dex_mod    = (attacker.dexterity - 10) // 2
+        effective_range = base_range + dex_mod
+        if manhattan > effective_range:
+            return Response(
+                {"error": f"Hedef, menzil ({effective_range}) dışında."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 5) Attack roll
+        roll    = random.randint(1, 20)
+        lvl     = attacker.level
+
+        # 6) Fumble?
+        if roll == 1:
+            chat_msg = f"{attacker.name} zar attı: 1 → Otomatik kaçırma!"
+            damage   = 0
+
+        else:
+            attack_score = roll + dex_mod + lvl
+            is_crit      = (roll == 20)
+            hit          = is_crit or (attack_score >= target.ac)
+
+            if hit:
+                # dice parsing
+                try:
+                    num, die = map(int, weapon.damage_dice.split('d'))
+                except:
+                    num, die = 1, 6
+
+                dice_total  = sum(random.randint(1, die) for _ in range(num))
+                base_damage = dice_total + dex_mod
+                damage      = base_damage * 2 if is_crit else base_damage
+
+                if is_crit:
+                    chat_msg = (
+                        f"{attacker.name} zar attı: 20 → Kritik! "
+                        f"Dice {weapon.damage_dice} toplamı {dice_total}, "
+                        f"DEX mod {dex_mod} → Hasar = {damage}"
+                    )
+                else:
+                    chat_msg = (
+                        f"Roll: {roll} + DEX mod {dex_mod} + LVL {lvl} = {attack_score} "
+                        f"vs AC {target.ac} → İsabet! Hasar = {damage}"
+                    )
+            else:
+                damage   = 0
+                chat_msg = (
+                    f"Roll: {roll} + DEX mod {dex_mod} + LVL {lvl} = {attack_score} "
+                    f"vs AC {target.ac} → Kaçırma!"
+                )
+
+        # 7) HP güncelle
         target.hp = max(0, target.hp - damage)
-        target.save()
+        target.save(update_fields=["hp"])
 
-        new_message = f"{attacker.name} {target.name}'e ranged saldırısı yaptı ve {damage} hasar verdi (Kalan HP: {target.hp})."
+        # 8) Chat log güncelle
         chat_log = battle_state.get("chat_log", [])
-        chat_log.append(new_message)
+        chat_log.append(f"{chat_msg} (Kalan HP: {target.hp})")
         battle_state["chat_log"] = chat_log
         BATTLE_STATE[str(lobby_id)] = battle_state
 
-        # Güncellenen battle state'i tüm oyunculara yayınla.
+        # --- Aksiyon puanını düşür ---
+        attacker.action_points -= 1
+        attacker.save(update_fields=["action_points"])
+
+        # 9) Yayınla
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"lobby_{lobby_id}",
-            {
-                'type': 'game_message',
-                'message': battle_state
-            }
+            {"type": "game_message", "message": battle_state}
         )
 
+        # 10) Response
         return Response({
-            "message": f"{attacker.name} ranged saldırısı yaptı.",
+            "message": chat_msg,
             "damage": damage,
             "target_remaining_hp": target.hp,
             "chat_log": chat_log
-        })
+        }, status=status.HTTP_200_OK)
     
 class MoveCharacterView(APIView):
     authentication_classes = [CsrfExemptSessionAuthentication]
@@ -316,7 +425,6 @@ class MoveCharacterView(APIView):
         )
 
         return Response({"status": "ok"}, status=status.HTTP_200_OK)
-
 
 
 # EndTurn endpoint: Sadece GM güncellemesi yapar.
@@ -357,10 +465,19 @@ class EndTurnView(APIView):
         new_initiative = [entry for i, entry in enumerate(initiative_order) if i != current_turn_index]
         if character and character.hp > 0:
             new_initiative.append(current_entry)
+
+        # --- Turn değiştiği için yeni sıradaki karakterin AP'sini resetle ---
         battle_state["initiative_order"] = new_initiative
         battle_state["current_turn_index"] = 0
         battle_state["placements"] = placements
         BATTLE_STATE[str(lobby_id)] = battle_state
+
+        # Reset action_points
+        if new_initiative:
+            next_id = new_initiative[0]["character_id"]
+            next_char = get_object_or_404(Character, id=next_id)
+            next_char.action_points = 1
+            next_char.save(update_fields=["action_points"])
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
