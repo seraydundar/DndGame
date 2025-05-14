@@ -84,19 +84,23 @@ class CharacterViewSet(viewsets.ModelViewSet):
 # Initiative order hesaplaması
 class InitiateCombatView(APIView):
     """
-    GM savaşı başlattığında, grid’deki karakterlerin initiative sırasını hesaplar.
-    İstek payload'unda lobby_id, character_ids, placements ve available_characters gönderilmelidir.
+    GM savaşı başlattığında, grid’deki karakterlerin initiative sırasını,
+    engelleri ve arkaplanı da alır.
     """
     authentication_classes = [CsrfExemptSessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes     = [IsAuthenticated]
 
     def post(self, request, format=None):
-        lobby_id = request.data.get("lobby_id")
-        character_ids = request.data.get("character_ids", [])
-        placements = request.data.get("placements", {})
-        available_characters = request.data.get("available_characters", [])
+        lobby_id            = request.data.get("lobby_id")
+        character_ids       = request.data.get("character_ids", [])
+        placements          = request.data.get("placements", {})
+        available_characters= request.data.get("available_characters", [])
+        obstacles           = request.data.get("obstacles", [])
+        background          = request.data.get("background", "forest")
+
         if not lobby_id or not character_ids:
-            return Response({"error": "lobby_id ve character_ids gereklidir."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "lobby_id ve character_ids gereklidir."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         combatants = Character.objects.filter(id__in=character_ids)
         initiative_list = []
@@ -104,28 +108,30 @@ class InitiateCombatView(APIView):
             roll = character.roll_initiative()
             initiative_list.append({
                 "character_id": character.id,
-                "name": character.name,
-                "initiative": roll
+                "name":         character.name,
+                "initiative":   roll
             })
         initiative_list.sort(key=lambda x: x["initiative"], reverse=True)
 
-        # --- Mevcut battle state güncelle ---
+        # Tek battle-state
         BATTLE_STATE[str(lobby_id)] = {
-            "initiative_order": initiative_list,
-            "placements": placements,
+            "initiative_order":     initiative_list,
+            "placements":           placements,
             "available_characters": available_characters,
-            "current_turn_index": 0,
-            "chat_log": []
+            "obstacles":            obstacles,
+            "background":           background,
+            "current_turn_index":   0,
+            "chat_log":             []
         }
 
-        # --- Her combatant'ın action_points'ını 1'e resetle ---
+        # Action points reset
         for character in combatants:
             character.action_points = 1
             character.save(update_fields=["action_points"])
 
         return Response({
-            "message": "Initiative order oluşturuldu.",
-            "initiative_order": initiative_list
+          "message": "Initiative order ve harita hazır.",
+          "initiative_order": initiative_list
         })
 
 class MeleeAttackView(APIView):
