@@ -21759,3 +21759,7 @@ Bad Request: /api/combat/ranged-attack/
 Bad Request: /api/combat/melee-attack/
 Unauthorized: /api/accounts/login/
 Unauthorized: /api/accounts/login/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/

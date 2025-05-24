@@ -1,61 +1,142 @@
-/* src/pages/BattlePage.css */
+/* =====================================================================
+   BattlePage.css — FINAL v5 (banner px ile sabit üstte, grid aşağıda)
+   ---------------------------------------------------------------------
+   - Combat-banner sabit 738px genişlik, 80px yükseklik, piksele dayalı konum
+   - Game-wrapper padding-top: 80px (banner yüksekliği) ile grid’in altını aç
+   - Board-wrapper’ın margin-top’u kaldırıldı, otomatik ortalanır
+   ------------------------------------------------------------------ */
 
-.battle-container {
-    max-width: 960px;
-    margin: 40px auto;
-    padding: 20px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  }
-  
-  .battle-container h2,
-  .battle-container h3 {
-    margin-bottom: 12px;
-    color: #333;
-  }
-  
-  .battle-container button {
-    cursor: pointer;
-    padding: 6px 14px;
-    border-radius: 4px;
-    border: none;
-    background-color: #4caf50;
-    color: #fff;
-    transition: background-color .2s;
-  }
-  
-  .battle-container button:hover {
-    background-color: #45a049;
-  }
-  
-  .battle-container .battle-grid {
-    display: grid;
-    gap: 2px;
-    background: #444;
-    padding: 4px;
-    border-radius: 4px;
-  }
-  
-  .battle-container .battle-grid .cell {
-    width: 35px;
-    height: 35px;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #ccc;
-  }
-  
-  .battle-container .battle-actions {
-    margin: 20px 0;
-    padding: 12px;
-    background: #e8f5e9;
-    border: 1px solid #4caf50;
-    border-radius: 4px;
-  }
-  
-  .battle-container .battle-chat {
-    margin-top: 20px;
-  }
-  
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+:root {
+  --cols: 20;
+  --cell: 35px;
+  --gap: 2px;
+  --board-w: calc(var(--cols) * var(--cell) + (var(--cols) - 1) * var(--gap)); /* ≃738px */
+  --banner-h: 80px;     /* banner’ın gerçek yüksekliği */
+  --edge: #5b4a2f;
+  --bg-parch: url('../assets/ui/parchment_tile.jpg');
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  color: #322810;
+  overflow-x: hidden;
+  position: relative;    /* banner absolute için referans */
+}
+
+/* ---------- BANNER (px ile sabit üstte) ------------------------- */
+.combat-banner {
+  position: absolute;
+  top: -150px;
+  left: 50%;
+  margin-left: -369px;       /* yarısı kadar negatif kaydırma */
+  width: 800px;              /* var(--board-w) sabit px */
+  height: 400px;              /* var(--banner-h) */
+  background: url('../assets/ui/banner.png') center/contain no-repeat;
+  z-index: 10;
+}
+
+/* ---------- GAME WRAPPER (banner’ın altını aç) ------------------ */
+.game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: calc(38% - var(--board-w) / 2 + 20px);
+  gap: 40px;                  /* grid ile panel arası boşluk */
+  padding-top: 80px;          /* banner yüksekliği kadar boşluk */
+}
+
+/* ---------- BOARD WRAPPER (otomatik ortada) --------------------- */
+.board-wrapper {
+  position: relative;
+  width: var(--board-w);
+  max-width: 100%;
+  margin: 0 auto;             /* yatayda ortala */
+  background: none;      /* parşömen kafasını kapatır */
+  border: 0px solid var(--edge);
+  box-shadow: 0 0px 0px rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- ROZET BADGES ---------------------------------------- */
+.badge {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 800px;
+  height: 800px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+.badge-eye    { left: -500px;  background-image: url('../assets/ui/eye_badge.png'); }
+.badge-shield { right: -500px; background-image: url('../assets/ui/shield_badge.png'); }
+
+/* ---------- GRID ------------------------------------------------ */
+.battle-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  gap: var(--gap);
+  background: #8c764f;
+}
+.battle-grid .cell {
+  width: var(--cell);
+  height: var(--cell);
+  background: #efe5cf;
+  border: 2px solid #c9b48a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cell.reachable { background: #d4f2d4; }
+.cell.ranged    { border-color: #ff9800; }
+
+/* ---------- PANEL (Actions + Chat) ------------------------------ */
+.panel {
+  position: relative;
+  margin: 0 auto;
+  width: var(--board-w);
+  max-width: 100%;
+  background: var(--bg-parch) repeat;
+  border: 3px solid var(--edge);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  padding: 24px;
+  z-index: 1;
+}
+.panel h3 {
+  margin: 0 0 12px;
+}
+.panel input,
+.panel textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 15px;
+  background: #fbf7ef;
+  border: 2px solid #d2c1a0;
+}
+.panel button {
+  margin-top: 12px;
+  float: right;
+  padding: 8px 26px;
+  background: #184d28;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+button:hover {
+  filter: brightness(1.1);
+}
+
+/* ---------- RESPONSIVE TWEAKS ----------------------------------- */
+@media (max-width: 860px) {
+  :root { --cell: 28px; }
+  .badge { display: none; }
+}
+@media (max-width: 600px) {
+  :root { --cell: 22px; }
+}

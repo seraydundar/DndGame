@@ -8,9 +8,12 @@ import BattleMap                     from './BattleMap';
 import BattleActions                 from './BattleActions';
 import BattleChat                    from './BattleChat';
 import './BattlePage.css';
+import bannerPng     from '../assets/ui/banner.png';
+import eyeBadge   from '../assets/ui/eye_badge.png';
+import shieldBadge from '../assets/ui/shield_badge.png';
 
 const GRID_SIZE   = 20;
-const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
+const TOTAL_CELLS = GRID_SIZE * 15;
 
 export default function BattlePage() {
   const { id } = useParams();
@@ -256,9 +259,7 @@ useEffect(() => {
     );
     const next = { ...placements };
     if (source === 'grid') next[sourceIndex] = undefined;
-    if (next[cellIndex]) {
-      setAvailableCharacters(prev => [...prev, next[cellIndex]]);
-    }
+    if (next[cellIndex]) setAvailableCharacters(prev => [...prev, next[cellIndex]]);
     next[cellIndex] = character;
     setPlacements(next);
     getBattleSocket().send(JSON.stringify({
@@ -555,104 +556,166 @@ useEffect(() => {
 
   // --- Reachable hesapla ---
   useEffect(() => {
-    if (!movementMode || !selectedAttacker || movementRemaining <= 0) {
-      setReachableCells(new Set());
-      return;
-    }
-    const entry = Object.entries(placements)
-      .find(([_,c])=>c?.id===selectedAttacker.id);
-    if (!entry) { setReachableCells(new Set()); return; }
-    const originIdx = Number(entry[0]);
-    const row = Math.floor(originIdx/GRID_SIZE), col = originIdx%GRID_SIZE;
-    const range = movementRemaining;
-    const cells = new Set();
-    for (let i=0; i<TOTAL_CELLS; i++){
-      if (placements[i]) continue;
-      const r=Math.floor(i/GRID_SIZE), c=i%GRID_SIZE;
-      if (Math.abs(r-row)+Math.abs(c-col) <= range) cells.add(i);
-    }
-    setReachableCells(cells);
-  }, [movementMode, selectedAttacker, placements, movementRemaining]);
+  if (!movementMode || !selectedAttacker || movementRemaining <= 0) {
+    setReachableCells(new Set());
+    return;
+  }
+  const entry = Object.entries(placements)
+    .find(([_, c]) => c?.id === selectedAttacker.id);
+  if (!entry) { setReachableCells(new Set()); return; }
 
-  if (!lobbyData) {
-    return <div className="battle-container">Lobi bilgileri yükleniyor…</div>;
+  const originIdx = Number(entry[0]);
+  const row = Math.floor(originIdx / GRID_SIZE);
+  const col = originIdx % GRID_SIZE;
+  const range = movementRemaining;
+
+  const cells = new Set();
+  for (let i = 0; i < TOTAL_CELLS; i++) {
+    if (placements[i]) continue;            // dolu kareler hariç
+    const r = Math.floor(i / GRID_SIZE), c = i % GRID_SIZE;
+    if (Math.abs(r - row) + Math.abs(c - col) <= range) cells.add(i);
   }
-  if (!battleStarted) {
-    return (
-      <div className="battle-container">
-        {isGM ? (
-          <BattleSetup
-            isGM={isGM}
-            characters={allCharacters}
-            placements={placements}
-            availableCharacters={availableCharacters}
-            gridSize={GRID_SIZE}
-            totalCells={TOTAL_CELLS}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onStartBattle={handleStartBattle}
-          />
-        ) : (
-          <div className="waiting">GM karakterleri yerleştiriyor, lütfen bekleyin…</div>
-        )}
-      </div>
-    );
+  setReachableCells(cells);
+}, [movementMode, selectedAttacker, placements, movementRemaining]);
+
+/* ---------------------- RENDER ---------------------- */
+if (!lobbyData) {
+  return <div className="battle-container">Lobi bilgileri yükleniyor…</div>;
+}
+ if (!battleStarted) {
+    if (isGM) {
+      return (
+        <BattleSetup
+          isGM={isGM}
+          characters={allCharacters}
+          placements={placements}
+          availableCharacters={availableCharacters}
+          gridSize={GRID_SIZE}
+          totalCells={TOTAL_CELLS}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onStartBattle={handleStartBattle}
+        />
+      );
+    } else {
+      return (
+        <div className="waiting-message">
+          <p>Savaş henüz başlamadı. GM’in başlatmasını bekleyin.</p>
+        </div>
+      );
+    }
   }
+
+  // Savaş başladıysa gerçek savaş alanını göster
   return (
-    <div className="battle-container">
-      <BattleMap
-        placements={placements}
-        reachableCells={reachableCells}
-        rangedReachableCells={rangedReachableCells}  // ← bu satırı ekleyin
-        gridSize={GRID_SIZE}
-        totalCells={TOTAL_CELLS}
-        moving={moving}
-        currentUserId={currentUserId}
-        onCellClick={handleCellClick}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      />
-      <BattleActions
-        selectedAttacker={selectedAttacker}
-        attackMode={attackMode}
-        attackType={attackType}
-        spellMode={spellMode}
-        selectedSpell={selectedSpell}
-        availableSpells={selectedAttacker?.prepared_spells}
-        movementRemaining={movementRemaining}
-        actionUsed={actionUsed}
-        onChooseMelee={() => { setAttackMode(true); setAttackType('melee'); setSpellMode(false); setMovementMode(false); }}
-        onChooseRanged={() => { setAttackMode(true); setAttackType('ranged'); setSpellMode(false); setMovementMode(false); }}
-        onChooseSpell={() => { setSpellMode(true); setAttackMode(false); setAttackType(null); setMovementMode(false); }}
-        onChooseMove={() => { setMovementMode(true); setAttackMode(false); setSpellMode(false); setAttackType(null); }}
-        onSelectSpell={handleSelectSpell}
-        onCancel={() => {
-          setSelectedAttacker(null);
-          setAttackMode(false);
-          setAttackType(null);
-          setSpellMode(false);
-          setSelectedSpell(null);
-          setMovementMode(false);
-        }}
-        onEndTurn={handleEndTurn}
-        onEndBattle={handleEndBattle}
-        isGM={isGM}
-      />
-      <BattleChat
-        initiativeOrder={initiativeOrder}
-        currentTurnIndex={currentTurnIndex}
-        chatLog={chatLog}
-        onSendMessage={msg => {
-          setChatLog(prev => [...prev, msg]);
-          getBattleSocket().send(JSON.stringify({
-            event:'battleUpdate',
-            lobbyId,
-            chatLog: [...chatLog, msg]
-          }));
-        }}
-      />
+  <>
+    {/* ---------- Banner (ekranın üstü, bağımsız) ---------- */}
+    <img
+      src={bannerPng}
+      alt="Battle Banner"
+      className="combat-banner"
+    />
+
+    {/* ---------- Tüm oyun alanını saran flex-wrapper ---------- */}
+    <div className="game-wrapper">
+
+      {/* ---------- Pano (grid) + yan rozetler ---------- */}
+      <div className="board-wrapper">
+        <img
+          src={eyeBadge}
+          alt="Eye Badge"
+          className="badge badge-eye"
+        />
+        <img
+          src={shieldBadge}
+          alt="Shield Badge"
+          className="badge badge-shield"
+        />
+
+        <BattleMap
+          placements={placements}
+          reachableCells={reachableCells}
+          rangedReachableCells={rangedReachableCells}
+          gridSize={GRID_SIZE}
+          totalCells={TOTAL_CELLS}
+          moving={moving}
+          currentUserId={currentUserId}
+          onCellClick={handleCellClick}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        />
+      </div>
+
+      {/* ---------- Alt parşömen panel (actions + chat) ---------- */}
+      <div className="panel">
+        <BattleActions
+          selectedAttacker={selectedAttacker}
+          attackMode={attackMode}
+          attackType={attackType}
+          spellMode={spellMode}
+          selectedSpell={selectedSpell}
+          availableSpells={selectedAttacker?.prepared_spells}
+          movementRemaining={movementRemaining}
+          actionUsed={actionUsed}
+
+          onChooseMelee={() => {
+            setAttackMode(true);
+            setAttackType('melee');
+            setSpellMode(false);
+            setMovementMode(false);
+          }}
+          onChooseRanged={() => {
+            setAttackMode(true);
+            setAttackType('ranged');
+            setSpellMode(false);
+            setMovementMode(false);
+          }}
+          onChooseSpell={() => {
+            setSpellMode(true);
+            setAttackMode(false);
+            setAttackType(null);
+            setMovementMode(false);
+          }}
+          onChooseMove={() => {
+            setMovementMode(true);
+            setAttackMode(false);
+            setSpellMode(false);
+            setAttackType(null);
+          }}
+
+          onSelectSpell={handleSelectSpell}
+          onCancel={() => {
+            setSelectedAttacker(null);
+            setAttackMode(false);
+            setAttackType(null);
+            setSpellMode(false);
+            setSelectedSpell(null);
+            setMovementMode(false);
+          }}
+          onEndTurn={handleEndTurn}
+          onEndBattle={handleEndBattle}
+
+          isGM={isGM}
+        />
+
+        <BattleChat
+          initiativeOrder={initiativeOrder}
+          currentTurnIndex={currentTurnIndex}
+          chatLog={chatLog}
+          onSendMessage={msg => {
+            const updatedLog = [...chatLog, msg];
+            setChatLog(updatedLog);
+            getBattleSocket().send(JSON.stringify({
+              event: 'battleUpdate',
+              lobbyId,
+              chatLog: updatedLog,
+            }));
+          }}
+        />
+      </div>
     </div>
-  );
+  </>
+);
 }

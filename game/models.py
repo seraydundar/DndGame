@@ -47,7 +47,11 @@ class Character(models.Model):
         blank=True
     )
     level = models.IntegerField(default=1)
+
+    # Current and maximum HP
     hp = models.IntegerField(default=10)
+    max_hp = models.IntegerField(default=10)
+
     xp = models.IntegerField(default=0)
     strength = models.IntegerField(default=10)
     dexterity = models.IntegerField(default=10)
@@ -59,43 +63,62 @@ class Character(models.Model):
     gold = models.IntegerField(default=10)
     action_points = models.IntegerField(default=1)
 
+    # Icon for character portrait
+    icon = models.ImageField(
+        upload_to='character_icons/',
+        null=True,
+        blank=True,
+        help_text='PNG or JPG image for character icon (64×64 recommended)'
+    )
+
     # Inventory replaces equipment list
     inventory = models.JSONField(default=list, blank=True)
 
     # Equipped items slots
     head_armor = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     chest_armor = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     hand_armor = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     legs_armor = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     ring1 = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     ring2 = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     necklace = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     ear1 = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     ear2 = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     main_hand = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     off_hand = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
 
     prepared_spells = models.JSONField(default=dict, blank=True)
     class_features = models.JSONField(default=dict, blank=True)
@@ -110,6 +133,13 @@ class Character(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # Ensure hp does not exceed max_hp
+        if self.max_hp is not None:
+            # If max_hp was lowered below current hp, clamp hp
+            self.hp = min(self.hp, self.max_hp)
+        return super().save(*args, **kwargs)
 
     def xp_for_next_level(self):
         if self.level >= 20:
@@ -133,7 +163,8 @@ class Character(models.Model):
             raise ValueError("Level up için yeterli XP yok.")
         info = self.level_up_info()
         self.level += 1
-        self.hp += info["hp_increase"]
+        self.max_hp += info["hp_increase"]
+        self.hp = self.max_hp
         self.xp = 0
         self.save()
         return info
