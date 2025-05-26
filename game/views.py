@@ -283,7 +283,7 @@ class MeleeAttackView(APIView):
             )
 
         # 3) Placement kontrolü (bitisik kare mi)
-        gridSize     = 20
+        grid_size    = 20
         battle_state = BATTLE_STATE.get(str(lobby_id), {})
         placements   = battle_state.get("placements", {})
 
@@ -300,8 +300,8 @@ class MeleeAttackView(APIView):
                 {"error": "Saldırgan veya hedef konumu bulunamadı."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        a_row, a_col = divmod(a_cell, gridSize)
-        t_row, t_col = divmod(t_cell, gridSize)
+        a_row, a_col = divmod(a_cell, grid_size)
+        t_row, t_col = divmod(t_cell, grid_size)
         if not ((a_row == t_row and abs(a_col - t_col) == 1) or
                 (a_col == t_col and abs(a_row - t_row) == 1)):
             return Response(
@@ -320,23 +320,23 @@ class MeleeAttackView(APIView):
             damage   = 0
         else:
             attack_score = roll + str_mod + lvl
-            is_critical  = (roll == 20)
-            hit          = is_critical or (attack_score >= target.ac)
+            is_crit      = (roll == 20)
+            hit          = is_crit or (attack_score >= target.ac)
 
             if hit:
                 # 5) Hasar hesaplama: temporary mı, değil mi kontrolü
                 try:
                     dice_str = get_melee_dice(attacker)
-                    num, die = map(int, dice_str.split('d'))
+                    num, die  = map(int, dice_str.split('d'))
                 except Exception:
                     num, die = 1, 6  # fallback
 
-                dice_total = sum(random.randint(1, die) for _ in range(num))
+                dice_total  = sum(random.randint(1, die) for _ in range(num))
                 base_damage = dice_total + str_mod
-                damage     = base_damage * 2 if is_critical else base_damage
+                damage      = base_damage * 2 if is_crit else base_damage
 
                 # Mesaj oluşturma
-                if is_critical:
+                if is_crit:
                     chat_msg = (
                         f"{attacker.name} zar attı: 20 → Kritik! "
                         f"Dice {dice_str} toplamı {dice_total}, "
@@ -358,29 +358,57 @@ class MeleeAttackView(APIView):
         target.hp = max(0, target.hp - damage)
         target.save(update_fields=["hp"])
 
-        # 7) Chat log
+        # 7) Ölüm anında grid ve inisiyatiften temizle
+        if target.hp <= 0:
+            # grid’den temizle
+            for cell, unit in list(placements.items()):
+                if unit and unit.get("id") == target.id:
+                    placements[cell] = None
+
+            # initiative_order listesinden çıkar
+            old_list = battle_state.get("initiative_order", [])
+            new_list = [e for e in old_list if e["character_id"] != target.id]
+
+            # current_turn_index düzeltmesi
+            cur_idx = battle_state.get("current_turn_index", 0)
+            old_idx = next((i for i, e in enumerate(old_list) if e["character_id"] == target.id), None)
+            if old_idx is not None and old_idx < cur_idx:
+                cur_idx -= 1
+
+            battle_state["initiative_order"]   = new_list
+            battle_state["current_turn_index"] = max(cur_idx, 0)
+        else:
+            # eğer ölmediyse, aynen bırak
+            battle_state["initiative_order"]   = battle_state.get("initiative_order", [])
+            battle_state["current_turn_index"] = battle_state.get("current_turn_index", 0)
+
+        # 8) Chat log güncelle
         chat_log = battle_state.get("chat_log", [])
         chat_log.append(f"{chat_msg} (Kalan HP: {target.hp})")
         battle_state["chat_log"] = chat_log
-        BATTLE_STATE[str(lobby_id)] = battle_state
 
-        # 8) Aksiyon puanı azalt
+        # 9) Aksiyon puanı azalt
         attacker.action_points -= 1
         attacker.save(update_fields=["action_points"])
 
-        # 9) Broadcast
+        # 10) Güncel battle_state’i kaydet ve publish et
+        battle_state["placements"] = placements
+        BATTLE_STATE[str(lobby_id)] = battle_state
+
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"lobby_{lobby_id}",
             {"type": "game_message", "message": battle_state}
         )
 
-        # 10) Response
+        # 11) Response (placements ve initiative_order dahil)
         return Response({
-            "message": chat_msg,
-            "damage": damage,
+            "message":             chat_msg,
+            "damage":              damage,
             "target_remaining_hp": target.hp,
-            "chat_log": chat_log
+            "chat_log":            chat_log,
+            "placements":          placements,
+            "initiative_order":    battle_state["initiative_order"],
         }, status=status.HTTP_200_OK)
 
 
@@ -430,7 +458,7 @@ class RangedAttackView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         # 4) Placement kontrolü
-        gridSize     = 20
+        grid_size    = 20
         battle_state = BATTLE_STATE.get(str(lobby_id), {})
         placements   = battle_state.get("placements", {})
 
@@ -448,12 +476,12 @@ class RangedAttackView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        a_row, a_col = divmod(a_cell, gridSize)
-        t_row, t_col = divmod(t_cell, gridSize)
-        manhattan = abs(a_row - t_row) + abs(a_col - t_col)
+        a_row, a_col = divmod(a_cell, grid_size)
+        t_row, t_col = divmod(t_cell, grid_size)
+        manhattan    = abs(a_row - t_row) + abs(a_col - t_col)
 
-        base_range = 2
-        dex_mod    = (attacker.dexterity - 10) // 2
+        base_range      = 2
+        dex_mod         = (attacker.dexterity - 10) // 2
         effective_range = base_range + dex_mod
         if manhattan > effective_range:
             return Response(
@@ -462,8 +490,8 @@ class RangedAttackView(APIView):
             )
 
         # 5) Attack roll
-        roll = random.randint(1, 20)
-        lvl  = attacker.level
+        roll    = random.randint(1, 20)
+        lvl     = attacker.level
 
         # 6) Fumble?
         if roll == 1:
@@ -507,29 +535,52 @@ class RangedAttackView(APIView):
         target.hp = max(0, target.hp - damage)
         target.save(update_fields=["hp"])
 
-        # 9) Chat log güncelle
+        # 9) Ölüm anında grid ve inisiyatiften temizle
+        if target.hp <= 0:
+            # grid’den temizle
+            for cell, unit in list(placements.items()):
+                if unit and unit.get("id") == target.id:
+                    placements[cell] = None
+
+            # initiative_order listesinden çıkar
+            old_list = battle_state.get("initiative_order", [])
+            new_list = [e for e in old_list if e["character_id"] != target.id]
+
+            # current_turn_index düzeltmesi
+            cur_idx = battle_state.get("current_turn_index", 0)
+            old_idx = next((i for i, e in enumerate(old_list) if e["character_id"] == target.id), None)
+            if old_idx is not None and old_idx < cur_idx:
+                cur_idx -= 1
+
+            battle_state["initiative_order"]   = new_list
+            battle_state["current_turn_index"] = max(cur_idx, 0)
+
+        # 10) Chat log güncelle
         chat_log = battle_state.get("chat_log", [])
         chat_log.append(f"{chat_msg} (Kalan HP: {target.hp})")
         battle_state["chat_log"] = chat_log
-        BATTLE_STATE[str(lobby_id)] = battle_state
 
-        # 10) Aksiyon puanını düşür
+        # 11) Aksiyon puanını düşür
         attacker.action_points -= 1
         attacker.save(update_fields=["action_points"])
 
-        # 11) Broadcast
+        # 12) State kaydet ve publish et
+        battle_state["placements"] = placements
+        BATTLE_STATE[str(lobby_id)] = battle_state
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"lobby_{lobby_id}",
             {"type": "game_message", "message": battle_state}
         )
 
-        # 12) Response
+        # 13) Response (placements ve initiative_order dahil)
         return Response({
-            "message": chat_msg,
-            "damage": damage,
+            "message":             chat_msg,
+            "damage":              damage,
             "target_remaining_hp": target.hp,
-            "chat_log": chat_log
+            "chat_log":            chat_log,
+            "placements":          placements,
+            "initiative_order":    battle_state["initiative_order"],
         }, status=status.HTTP_200_OK)
     
 class MoveCharacterView(APIView):
@@ -582,37 +633,47 @@ class EndTurnView(APIView):
         if not lobby_id:
             return Response({"error": "lobby_id gereklidir."}, status=status.HTTP_400_BAD_REQUEST)
 
-        lobby = get_object_or_404(Lobby, lobby_id=lobby_id)
-        battle_state = BATTLE_STATE.get(str(lobby_id), {})
-        initiative_order = battle_state.get("initiative_order", [])
-        current_turn_index = battle_state.get("current_turn_index", 0)
+        lobby             = get_object_or_404(Lobby, lobby_id=lobby_id)
+        battle_state      = BATTLE_STATE.get(str(lobby_id), {})
+        initiative_order  = battle_state.get("initiative_order", [])
+        current_turn_index= battle_state.get("current_turn_index", 0)
 
         if not initiative_order:
             return Response({"error": "Initiative order boş."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Şu anki karakter
         current_entry = initiative_order[current_turn_index]
         try:
-            character = Character.objects.get(id=current_entry["character_id"])
+            current_char = Character.objects.get(id=current_entry["character_id"])
         except Character.DoesNotExist:
-            character = None
+            current_char = None
 
+        # Grid'deki ölüleri temizle
         placements = battle_state.get("placements", {})
-        # Grid'den HP<=0 karakterleri temizle
-        for key, char_data in list(placements.items()):
-            if char_data:
+        for cell, unit in list(placements.items()):
+            if unit:
                 try:
-                    char_obj = Character.objects.get(id=char_data["id"])
-                    if char_obj.hp <= 0:
-                        placements[key] = None
+                    c = Character.objects.get(id=unit["id"])
+                    if c.hp <= 0:
+                        placements[cell] = None
                 except Character.DoesNotExist:
-                    placements[key] = None
+                    placements[cell] = None
 
-        # Yeni initiative sırası oluştur
-        new_initiative = [
-            entry for i, entry in enumerate(initiative_order)
-            if i != current_turn_index
-        ]
-        if character and character.hp > 0:
+        # Yeni inisiyatif sırasını oluştururken yalnızca hp>0 olanları ekle
+        new_initiative = []
+        for idx, entry in enumerate(initiative_order):
+            if idx == current_turn_index:
+                # bu turu atlıyoruz, yeniden eklenecekse aşağıda eklenir
+                continue
+            try:
+                c = Character.objects.get(id=entry["character_id"])
+            except Character.DoesNotExist:
+                continue
+            if c.hp > 0:
+                new_initiative.append(entry)
+
+        # Şu anki karakter hayattaysa en sona ekle
+        if current_char and current_char.hp > 0:
             new_initiative.append(current_entry)
 
         # Battle-state güncelle
@@ -621,15 +682,15 @@ class EndTurnView(APIView):
         battle_state["placements"]         = placements
         BATTLE_STATE[str(lobby_id)]        = battle_state
 
-        # Reset action_points
+        # Sıradaki karakterin action_points'unu resetle
         if new_initiative:
             next_id   = new_initiative[0]["character_id"]
             next_char = get_object_or_404(Character, id=next_id)
             next_char.action_points = 1
             next_char.save(update_fields=["action_points"])
 
-        # Temporary & ölü karakterleri DB'den sil
-        deleted_count, _ = Character.objects.filter(
+        # Ölü temporary karakterleri DB'den sil
+        Character.objects.filter(
             lobby_id=lobby_id,
             is_temporary=True,
             hp__lte=0
@@ -646,10 +707,9 @@ class EndTurnView(APIView):
         )
 
         return Response({
-            "message":            "Turn ended.",
-            "initiative_order":   new_initiative,
-            "placements":         placements,
-            "deleted_temp":       deleted_count
+            "message":           "Turn ended.",
+            "initiative_order":  new_initiative,
+            "placements":        placements
         })
 
 # BattleState endpoint: Global battle state'i döner.

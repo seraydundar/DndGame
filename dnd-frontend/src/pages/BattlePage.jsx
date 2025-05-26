@@ -292,9 +292,7 @@ const handleDrop = async (e, cellIndex) => {
       // Yeni Character objesini yerleştir
       nextPlacements[cellIndex] = { ...res.data, type: 'creature' };
       // availableCreatures listesinden kaldır
-      setAvailableCreatures(prev =>
-        prev.filter(c => c.id !== unit.id)
-      );
+      
     } catch (err) {
       console.error('Monster spawn hatası:', err);
       return;
