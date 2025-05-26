@@ -120,6 +120,12 @@ class Character(models.Model):
         null=True, blank=True, related_name='+'
     )
 
+    # ——— Yeni Alanlar: Geçici monster karakterleri için ———
+    is_temporary = models.BooleanField(default=False)
+    melee_dice  = models.CharField(max_length=20, blank=True, null=True)
+    ranged_dice = models.CharField(max_length=20, blank=True, null=True)
+    # ——————————————————————————————————————————————
+
     prepared_spells = models.JSONField(default=dict, blank=True)
     class_features = models.JSONField(default=dict, blank=True)
     background = models.CharField(max_length=100, null=True, blank=True)
@@ -137,7 +143,6 @@ class Character(models.Model):
     def save(self, *args, **kwargs):
         # Ensure hp does not exceed max_hp
         if self.max_hp is not None:
-            # If max_hp was lowered below current hp, clamp hp
             self.hp = min(self.hp, self.max_hp)
         return super().save(*args, **kwargs)
 
@@ -178,6 +183,7 @@ class Character(models.Model):
         return 2 + dex_bonus
 
     def normal_attack_damage(self):
+        # Bu metot artık yalnızca player saldırıları için fallback olabilir
         strength_mod = (self.strength - 10) // 2 if self.strength >= 10 else 0
         damage_roll = random.randint(1, 6)
         return damage_roll + strength_mod

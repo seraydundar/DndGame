@@ -37,7 +37,11 @@ export default function BattleSetup({
       {placements[i] && (
         <>
           <img
-            src={placements[i].icon || '/placeholder.png'}
+            src={
+              placements[i].icon
+              || placements[i].icon_url
+              || '/placeholder.png'
+            }
             alt={placements[i].name}
             style={{ width: ICON_SIZE, height: ICON_SIZE, borderRadius: '50%' }}
           />
@@ -70,7 +74,7 @@ export default function BattleSetup({
           <div
             key={ch.id}
             draggable={isGM}
-            onDragStart={e => onDragStart(e, ch, 'character')}
+            onDragStart={e => onDragStart(e, ch, 'player')}
             style={{
               width: 60,
               height: 60,
@@ -120,7 +124,11 @@ export default function BattleSetup({
             }}
           >
             <img
-              src={cr.icon_url || '/placeholder.png'}
+              src={
+                cr.icon
+                || cr.icon_url
+                || '/placeholder.png'
+              }
               alt={cr.name}
               style={{ width: 40, height: 40, borderRadius: '50%' }}
             />

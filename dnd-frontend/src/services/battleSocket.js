@@ -13,7 +13,10 @@ export function createBattleSocket(lobbyId, onMessageCallback) {
   }
 
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  const socketUrl = `${protocol}://${window.location.host}/ws/battle/${lobbyId}/`;
+  // React dev server 3000, Django Channels genellikle 8000 portunda
+  const backendHost = window.location.hostname; // örn. "localhost"
+  const backendPort = 8000;                     // Django’nun çalıştığı port
+  const socketUrl = `${protocol}://${backendHost}:${backendPort}/ws/battle/${lobbyId}/`;
   console.log("🛰  WebSocket bağlantısı başlatılıyor:", socketUrl);
 
   let socket;
@@ -25,7 +28,7 @@ export function createBattleSocket(lobbyId, onMessageCallback) {
   }
 
   socket.onopen = () => {
-    console.log("✅ WebSocket açıldı.");
+    console.log("✅ WebSocket açıldı:", socketUrl);
   };
 
   socket.onerror = e => {
@@ -33,7 +36,11 @@ export function createBattleSocket(lobbyId, onMessageCallback) {
   };
 
   socket.onclose = e => {
-    console.warn("⚠️ WebSocket bağlantısı kapandı.", "code=", e.code, "reason=", e.reason);
+    console.warn(
+      "⚠️ WebSocket bağlantısı kapandı.",
+      "code=", e.code,
+      "reason=", e.reason
+    );
   };
 
   socket.onmessage = event => {

@@ -256,108 +256,110 @@ useEffect(() => {
 }, [attackMode, attackType, selectedAttacker, placements]);
 
 
-  // --- Savaş başlat (GM) ---
-  const handleStartBattle = async () => {
-  if (!isGM) return;
-
-  try {
-    // 1) Yalnızca grid’de yer alan oyuncu karakterlerinin ID’lerini al
-    const placedPlayerIds = Object.values(placements)
-      .filter(unit => unit?.type === 'player')
-      .map(unit => unit.id);
-
-    if (placedPlayerIds.length === 0) {
-      return alert("Haritaya en az bir karakter yerleştirmelisiniz.");
-    }
-
-    // 2) Sunucuda inisiyatif sırasını oluştur
-    const res = await api.post('combat/initiate/', {
-      lobby_id:             lobbyId,
-      character_ids:        placedPlayerIds,
-      placements,
-      available_characters: availableCharacters.map(c => c.id),
-    });
-    const initOrder = res.data.initiative_order;
-
-    // 3) WebSocket hâlâ açık mı kontrol et, sonra startBattle event’i gönder
-    const sock = getBattleSocket();
-    if (sock?.readyState === WebSocket.OPEN) {
-      sock.send(JSON.stringify({
-        event: 'startBattle',
-        data:  { lobbyId }
-      }));
-    } else {
-      console.warn(
-        'startBattle gönderilemedi, WebSocket durumu:',
-        sock?.readyState
-      );
-    }
-
-    // 4) Yerelde battleStarted ve sıra ayarları
-    setBattleStarted(true);
-    setInitiativeOrder(initOrder);
-    setCurrentTurnIndex(0);
-    setMovementMode(false);
-    setAttackMode(false);
-    setSpellMode(false);
-
-  } catch (err) {
-    console.error("Savaş başlatma hata:", err);
-  }
-};
+  
 
 // --- Drag & Drop ---
-const handleDragStart = (e, character, source, sourceIndex) => {
+const handleDragStart = (e, unit, source, sourceIndex) => {
   e.dataTransfer.setData(
     'text/plain',
-    JSON.stringify({ character, source, sourceIndex })
+    JSON.stringify({ unit, source, sourceIndex })
   );
 };
 
-const handleDragOver = e => e.preventDefault();
-
-const handleDrop = (e, cellIndex) => {
+const handleDragOver = e => {
   e.preventDefault();
-  const { character, source, sourceIndex } = JSON.parse(
-    e.dataTransfer.getData('text/plain')
-  );
+};
 
-  // Mevcut yerleşimleri kopyala
-  const next = { ...placements };
+const handleDrop = async (e, cellIndex) => {
+  e.preventDefault();
+  const raw = e.dataTransfer.getData('text/plain');
+  if (!raw) return;
+  const { unit, source, sourceIndex } = JSON.parse(raw);
 
-  // Eğer grid’den sürükleme ise eski yerden kaldır
-  if (source === 'grid') {
-    next[sourceIndex] = undefined;
+  // Kopya state
+  const nextPlacements = { ...placements };
+
+  if (source === 'creature') {
+    // 1) Monster spawn
+    const gridY = Math.floor(cellIndex / GRID_SIZE);
+    const gridX = cellIndex % GRID_SIZE;
+    try {
+      const res = await api.post('characters/spawn-monster/', {
+        monster_id: unit.id,
+        lobby_id:   lobbyId,
+        position:   { x: gridX, y: gridY }
+      });
+      // Yeni Character objesini yerleştir
+      nextPlacements[cellIndex] = { ...res.data, type: 'creature' };
+      // availableCreatures listesinden kaldır
+      setAvailableCreatures(prev =>
+        prev.filter(c => c.id !== unit.id)
+      );
+    } catch (err) {
+      console.error('Monster spawn hatası:', err);
+      return;
+    }
+  } else {
+    // 2) Oyuncu karakterini grid’den veya available’den taşı
+    if (source === 'grid') {
+      nextPlacements[sourceIndex] = undefined;
+    }
+    if (nextPlacements[cellIndex]) {
+      setAvailableCharacters(prev => [
+        ...prev,
+        nextPlacements[cellIndex]
+      ]);
+    }
+    nextPlacements[cellIndex] = {
+      ...unit,
+      type: unit.type || 'player'
+    };
   }
-
-  // Eğer hedef hücrede zaten bir birim varsa, availableCharacters’a geri ekle
-  if (next[cellIndex]) {
-    setAvailableCharacters(prev => [...prev, next[cellIndex]]);
-  }
-
-  // Karakteri/yaratığı yerleştirirken type alanını kesinlikle ekle
-  const unit = {
-    ...character,
-    type: character.type || 'player'   // eğer karakter objesinde type yoksa varsayılan 'player'
-  };
-  next[cellIndex] = unit;
 
   // State’i güncelle
-  setPlacements(next);
+  setPlacements(nextPlacements);
 
-  // WebSocket hâlâ açık mı kontrol et, sonra gönder
+  // 3) WebSocket ile diğer oyunculara bildir
   const sock = getBattleSocket();
   if (sock?.readyState === WebSocket.OPEN) {
     sock.send(JSON.stringify({
-      event: 'battleUpdate',
+      event:      'battleUpdate',
       lobbyId,
-      placements: next
+      placements: nextPlacements
     }));
-  } else {
-    console.warn(
-      'battleUpdate gönderilemedi, WebSocket durumu:',
-      sock?.readyState
-    );
+  }
+};
+
+// --- Savaş başlat (GM) ---
+const handleStartBattle = async () => {
+  if (!isGM) return;
+
+  try {
+    // 1) Grid’deki tüm birimlerin ID’lerini al
+    const placedIds = Object.values(placements)
+      .map(unit => unit?.id)
+      .filter(id => id != null);
+
+    if (placedIds.length === 0) {
+      return alert("Haritaya en az bir birim yerleştirmelisiniz.");
+    }
+
+    // 2) REST ile inisiyatif sırasını oluştur
+    await api.post('combat/initiate/', {
+      lobby_id:             lobbyId,
+      character_ids:        placedIds,
+      placements,
+      available_characters: availableCharacters.map(c => c.id),
+    });
+
+    // 2a) Server’ın WS broadcast hazırlığı için kısa bir gecikme
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // (BattleStart mesajı server’dan WS üzerinden geleceği için
+    // burada hiçbir şey yapmaya gerek yok.)
+
+  } catch (err) {
+    console.error("Savaş başlatma hata:", err);
   }
 };
 
@@ -469,7 +471,7 @@ const handleMoveCreature = async targetCell => {
 
   try {
     // creature hareket endpoint’inizi çağırın
-    await api.post('combat/move-creature/', {
+    await api.post('combat/move/', {
       lobby_id: lobbyId,
       creature_id: selectedAttacker.id,
       grid_x:  Math.floor(targetCell / GRID_SIZE),
@@ -492,70 +494,76 @@ const handleMoveCreature = async targetCell => {
 };
 
   // --- Melee Attack ---
-   // --- Melee Attack ---
-  const handleMeleeAttack = async targetCharacter => {
-    if (!selectedAttacker || !targetCharacter) return;
+const handleMeleeAttack = async targetCharacter => {
+  if (!selectedAttacker || !targetCharacter) return;
 
-    try {
-      const res = await api.post('combat/melee-attack/', {
-        attacker_id: selectedAttacker.id,
-        target_id:   targetCharacter.id,
-        lobby_id:    lobbyId,
-      });
-      const {
-        message: apiMsg,
-        damage: dmg,
-        target_remaining_hp: leftHp,
-        chat_log: chatLogRes
-      } = res.data;
+  try {
+    // 1) API çağrısı
+    const res = await api.post('combat/melee-attack/', {
+      attacker_id: selectedAttacker.id,
+      target_id:   targetCharacter.id,
+      lobby_id:    lobbyId,
+    });
+    const {
+      message: apiMsg,
+      damage: dmg,
+      target_remaining_hp: leftHp,
+      chat_log: chatLogRes
+    } = res.data;
 
-      // Mesajı zenginleştir
+    // 2) Mesajı zenginleştir
+    let enrichedMsg = apiMsg;
+    if (selectedAttacker.is_temporary) {
+      // Monster için kendi melee_dice değerini kullan
+      const diceStr = selectedAttacker.melee_dice || "1d4";
+      enrichedMsg += ` (Canavar Zar: ${diceStr}) (Kalan HP: ${leftHp})`;
+    } else {
+      // Normal karakter: silah ve STR mod hesapla
       const weapon = selectedAttacker.main_hand || selectedAttacker.off_hand;
       const strMod = Math.floor((selectedAttacker.strength - 10) / 2);
-      const isCrit = apiMsg.includes('Kritik');
+      const isCrit  = apiMsg.includes('Kritik');
       const diceTotal = isCrit
         ? (dmg / 2 - strMod)
         : (dmg - strMod);
 
-      const enrichedMsg = 
-        `${apiMsg} (Silah: ${weapon.name}, Zar Dice: ${weapon.damage_dice}, Zar Toplamı: ${diceTotal}) (Kalan HP: ${leftHp})`;
-
-      // Chat log’u güncelle
-      setChatLog(prev => {
-        const next = [...chatLogRes.slice(0, -1), enrichedMsg];
-        getBattleSocket().send(JSON.stringify({
-          event:   'battleUpdate',
-          lobbyId,
-          chatLog: next
-        }));
-        return next;
-      });
-
-      // Son durumu çek ve render et
-      const state = await api.get(`battle-state/${lobbyId}/`);
-      setInitiativeOrder(state.data.initiative_order);
-      setPlacements(state.data.placements);
-      setCurrentTurnIndex(state.data.current_turn_index || 0);
-
-    } catch (err) {
-      if (err.response?.status === 400 && err.response.data?.error) {
-        console.log('[BattlePage] Yakın dövüş hatası:', err.response.data.error);
-      } else {
-        console.error('Yakın dövüş hata:', err);
-      }
+      enrichedMsg += ` (Silah: ${weapon.name}, Zar Dice: ${weapon.damage_dice}, Zar Toplamı: ${diceTotal}) (Kalan HP: ${leftHp})`;
     }
 
-    // Modları sıfırla, yeniden saldırıya izin versin
-    setAttackMode(false);
-    setAttackType(null);
-    setSelectedAttacker(null);
-  };
+    // 3) Chat log’u güncelle ve yayınla
+    setChatLog(prev => {
+      const next = [...chatLogRes.slice(0, -1), enrichedMsg];
+      getBattleSocket().send(JSON.stringify({
+        event:   'battleUpdate',
+        lobbyId,
+        chatLog: next
+      }));
+      return next;
+    });
 
+    // 4) Son durumu çek ve ekranı güncelle
+    const state = await api.get(`battle-state/${lobbyId}/`);
+    setInitiativeOrder(state.data.initiative_order);
+    setPlacements(state.data.placements);
+    setCurrentTurnIndex(state.data.current_turn_index || 0);
+
+  } catch (err) {
+    if (err.response?.status === 400 && err.response.data?.error) {
+      console.log('[BattlePage] Yakın dövüş hatası:', err.response.data.error);
+    } else {
+      console.error('Yakın dövüş hata:', err);
+    }
+  }
+
+  // 5) Modları sıfırla
+  setAttackMode(false);
+  setAttackType(null);
+  setSelectedAttacker(null);
+};
   // --- Canavarın yakın dövüş saldırısı ---
 const handleCreatureAttack = async targetCharacter => {
   if (!selectedAttacker || !targetCharacter) return;
   try {
-    const res = await api.post('combat/creature-attack/', {
+    const res = await api.post('combat/melee-attack/', {
       lobby_id: lobbyId,
       attacker_type: 'creature',
       attacker_id: selectedAttacker.id,

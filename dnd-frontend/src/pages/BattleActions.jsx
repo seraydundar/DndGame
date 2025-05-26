@@ -20,10 +20,13 @@ export default function BattleActions({
 }) {
   if (!selectedAttacker) return null;
 
-  // Ekipman bazlı koşullar
+  // Ekipman bazlı koşullar; geçici yaratıklar her zaman melee yapabilir
   const weapon = selectedAttacker.main_hand || selectedAttacker.off_hand || {};
   const subtype = weapon.subtype;
-  const hasMeleeWeapon  = subtype === 'sword' || subtype === 'axe';
+  const hasMeleeWeapon  =
+    selectedAttacker.is_temporary ||
+    subtype === 'sword' ||
+    subtype === 'axe';
   const hasRangedWeapon = subtype === 'bow';
   const hasSpells       = Array.isArray(availableSpells) && availableSpells.length > 0;
   const canMove         = movementRemaining > 0;
@@ -37,65 +40,41 @@ export default function BattleActions({
       backgroundColor: '#e8f5e9'
     }}>
       <h3>{selectedAttacker.name} – Aksiyon Seçimi</h3>
-
       <p><strong>Hareket Hakkı:</strong> {movementRemaining}</p>
 
-      {/* Karakter için seçim butonları */}
+      {/* 1. Seçim blokları */}
       {!attackMode && !spellMode && (
-        <>
+        <div style={{ marginBottom: 10 }}>
           {hasMeleeWeapon && (
-            <>
-              <button onClick={onChooseMelee} style={{ marginRight: 8 }}>
-                Yakın Dövüş
-              </button>
-              <button onClick={onCancel} style={{ marginRight: 8 }}>
-                İptal
-              </button>
-            </>
+            <button onClick={onChooseMelee} style={{ marginRight: 8 }}>
+              Yakın Dövüş
+            </button>
           )}
-
           {hasRangedWeapon && (
-            <>
-              <button onClick={onChooseRanged} style={{ marginRight: 8 }}>
-                Menzilli Saldırı
-              </button>
-              <button onClick={onCancel} style={{ marginRight: 8 }}>
-                İptal
-              </button>
-            </>
+            <button onClick={onChooseRanged} style={{ marginRight: 8 }}>
+              Menzilli Saldırı
+            </button>
           )}
-
           {hasSpells && (
             <button onClick={onChooseSpell} style={{ marginRight: 8 }}>
               Büyü Kullan
             </button>
           )}
-
-          {canMove
-            ? <button onClick={onChooseMove} style={{ marginRight: 8 }}>Hareket Et</button>
-            : <button disabled style={{ marginRight: 8 }}>Hareket (Bitti)</button>
-          }
-
-          <button onClick={onCancel}>İptal</button>
-        </>
+          {canMove && (
+            <button onClick={onChooseMove} style={{ marginRight: 8 }}>
+              Hareket Et
+            </button>
+          )}
+        </div>
       )}
 
-      {/* Karakter saldırı açıklamaları */}
+      {/* 2. Hangi moda girdiysek ona özel açıklama */}
       {attackMode && attackType === 'melee' && !spellMode && (
-        <>
-          <p>Hedef karaktere tıklayarak yakın dövüş saldırını gerçekleştir.</p>
-          <button onClick={onCancel} style={{ marginLeft: 8 }}>İptal</button>
-        </>
+        <p>Hedef karaktere tıklayarak yakın dövüş saldırını gerçekleştir.</p>
       )}
-
       {attackMode && attackType === 'ranged' && !spellMode && (
-        <>
-          <p>Hedef karaktere tıklayarak menzilli saldırını gerçekleştir.</p>
-          <button onClick={onCancel} style={{ marginLeft: 8 }}>İptal</button>
-        </>
+        <p>Hedef karaktere tıklayarak menzilli saldırını gerçekleştir.</p>
       )}
-
-      {/* Karakter büyü seçimleri */}
       {spellMode && !selectedSpell && (
         <>
           <p>Kullanmak istediğin büyüyü seç:</p>
@@ -104,36 +83,18 @@ export default function BattleActions({
               {sp.name}
             </button>
           ))}
-          <button onClick={onCancel} style={{ marginLeft: 8 }}>Geri</button>
         </>
       )}
-
       {spellMode && selectedSpell && (
-        <>
-          <p>“{selectedSpell.name}” için hedef seç ve üzerine tıkla.</p>
-          <button onClick={onCancel} style={{ marginLeft: 8 }}>İptal</button>
-        </>
+        <p>“{selectedSpell.name}” için hedef seç ve üzerine tıkla.</p>
       )}
 
-      {/* Tur sonu ve GM savaş bitir */}
+      {/* 3. Genel Kontroller */}
       <div style={{ marginTop: 10 }}>
+        <button onClick={onCancel} style={{ marginRight: 8 }}>İptal</button>
         <button onClick={onEndTurn} style={{ marginRight: 8 }}>Tur Sonu</button>
         {isGM && <button onClick={onEndBattle}>Savaşı Bitir</button>}
       </div>
-
-      {/* ——— Canavarları GM yönetebilsin ——— */}
-      {selectedAttacker.type === 'creature' && isGM && (
-        <div style={{
-          marginTop: 20,
-          padding: 10,
-          borderTop: '1px dashed #666'
-        }}>
-          <h4>GM: Canavarı Yönetin</h4>
-          <button onClick={onChooseMove} style={{ marginRight: 8 }}>Hareket Et</button>
-          <button onClick={onChooseMelee} style={{ marginRight: 8 }}>Saldırı Yap</button>
-          <button onClick={onEndTurn}>Tur Sonu</button>
-        </div>
-      )}
     </div>
   );
 }
