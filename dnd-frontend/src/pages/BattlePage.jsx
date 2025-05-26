@@ -34,6 +34,7 @@ export default function BattlePage() {
   const [attackType, setAttackType]               = useState(null);
   const [spellMode, setSpellMode]                 = useState(false);
   const [selectedSpell, setSelectedSpell]         = useState(null);
+  const [availableCreatures, setAvailableCreatures] = useState([]);
 
   const [movementMode, setMovementMode]           = useState(false);  // ← Yeni
   const [reachableCells, setReachableCells]       = useState(new Set());
@@ -72,6 +73,16 @@ export default function BattlePage() {
     api.get(`lobbies/${lobbyId}/characters/`)
       .then(res => setAllCharacters(res.data))
       .catch(err => console.error("Karakterler çekme hata:", err));
+  }, [lobbyId]);
+
+  useEffect(() => {
+    if (!lobbyId) return;  // istersen kaldırabilirsiniz, global de çekebilir
+    api.get('creatures/')
+      .then(res => {
+        const data = res.data.results ?? res.data;
+        setAvailableCreatures(data);
+      })
+      .catch(err => console.error("Yaratıklar çekme hata:", err));
   }, [lobbyId]);
 
   // --- Available hesapla ---
@@ -120,76 +131,100 @@ export default function BattlePage() {
     return () => clearInterval(iv);
   }, [lobbyId, battleStarted]);
 
-  // --- WebSocket battle events ---
+// --- WebSocket handler ---
+
   useEffect(() => {
-    if (!lobbyId) return;
-    const handler = e => {
-      try {
-        const d = JSON.parse(e.data);
-        if (String(d.lobbyId) !== String(lobbyId)) return;
-        switch (d.event) {
+  if (!lobbyId) return;
 
-          case 'battleStart':
-            setBattleStarted(true);
-            // Tur başında seçili değilse movementMode kapat
-            setMovementMode(false);
-            setAttackMode(false);
-            setSpellMode(false);
-            // Eğer sırası sizde ise haklarınızı setleyin
-            const turn0 = d.initiativeOrder?.[0];
-            if (turn0?.character_id === selectedAttacker?.id) {
-              const dexMod = Math.floor((selectedAttacker.dexterity - 10)/2) || 0;
-              setMovementRemaining(2 + dexMod);
-              setActionUsed(false);
-            }
-            break;
+  // handler’a artık doğrudan parse edilmiş mesaj objesi geliyor
+  const handler = d => {
+    if (String(d.lobbyId) !== String(lobbyId)) return;
 
-          case 'battleEnd':
-            setBattleStarted(false);
-            break;
+    switch (d.event) {
 
-          case 'battleUpdate':
-            if (d.placements)      setPlacements(d.placements);
-            if (d.initiativeOrder) setInitiativeOrder(d.initiativeOrder);
+      case 'battleStart':
+        // 1) Savaş başladı
+        setBattleStarted(true);
+        setMovementMode(false);
+        setAttackMode(false);
+        setSpellMode(false);
 
-            // Eğer yeni tur gelmişse
-            if (d.current_turn_index !== undefined && d.current_turn_index !== currentTurnIndex) {
-              setCurrentTurnIndex(d.current_turn_index);
-              // Tüm modları kapat
-              setMovementMode(false);
-              setAttackMode(false);
-              setSpellMode(false);
-              // Eğer yeni kişinin sırası sizde ise hakları setle
-              const entry = d.initiativeOrder[d.current_turn_index];
-              if (entry?.character_id === selectedAttacker?.id) {
-                const dexMod = Math.floor((selectedAttacker.dexterity - 10)/2) || 0;
-                setMovementRemaining(2 + dexMod);
-                setActionUsed(false);
-              } else {
-                setMovementRemaining(0);
-              }
-            }
+        // 2) Gelen oyuncu ve yaratıkları state’e yükle
+        const players   = (d.players   || []).map(p => ({ ...p, type: 'player'  }));
+        const creatures = (d.creatures || []).map(c => ({ ...c, type: 'creature' }));
 
-            // chatLog merge
-            const msgs = d.chatLog || d.chat_log;
-            if (Array.isArray(msgs)) {
-              setChatLog(prev => {
-                const news = msgs.filter(m => !prev.includes(m));
-                return prev.concat(news);
-              });
-            }
-            break;
+        // 3) placements objesini oluştur
+        const allUnits = {};
+        players.concat(creatures).forEach(unit => {
+          const idx = unit.grid_y * GRID_SIZE + unit.grid_x;
+          allUnits[idx] = unit;
+        });
+        setPlacements(allUnits);
+
+        // 4) İnisiyatif sırasını sıraya koy
+        setInitiativeOrder(d.turnQueue || []);
+        setCurrentTurnIndex(0);
+        break;
+
+      case 'battleEnd':
+        setBattleStarted(false);
+        break;
+
+      case 'battleUpdate':
+        if (d.placements) {
+          setPlacements(d.placements);
+        } else if (d.creatures) {
+          setPlacements(prev => {
+            const next = { ...prev };
+            d.creatures.forEach(c => {
+              const oldEntry = Object.entries(prev)
+                .find(([_, u]) => u?.type === 'creature' && u.id === c.id);
+              if (oldEntry) delete next[oldEntry[0]];
+              const idx = c.grid_y * GRID_SIZE + c.grid_x;
+              next[idx] = { ...c, type: 'creature' };
+            });
+            return next;
+          });
         }
-      } catch(err) {
-        console.error("Socket mesaj işleme hata:", err);
-      }
-    };
-    const sock = createBattleSocket(lobbyId, handler);
-    return () => {
-      sock.removeEventListener('message', handler);
-      sock.close();
-    };
-  }, [lobbyId, selectedAttacker, currentTurnIndex]);
+        if (d.initiativeOrder) setInitiativeOrder(d.initiativeOrder);
+
+        // Yeni tur kontrolü
+        if (d.current_turn_index !== undefined && d.current_turn_index !== currentTurnIndex) {
+          setCurrentTurnIndex(d.current_turn_index);
+          setMovementMode(false);
+          setAttackMode(false);
+          setSpellMode(false);
+
+          const entry = d.initiativeOrder[d.current_turn_index];
+          if (entry?.character_id === selectedAttacker?.id) {
+            const dexMod = Math.floor((selectedAttacker.dexterity - 10) / 2) || 0;
+            setMovementRemaining(2 + dexMod);
+            setActionUsed(false);
+          } else {
+            setMovementRemaining(0);
+          }
+        }
+
+        // chatLog merge
+        const msgs = d.chatLog || d.chat_log;
+        if (Array.isArray(msgs)) {
+          setChatLog(prev => {
+            const news = msgs.filter(m => !prev.includes(m));
+            return prev.concat(news);
+          });
+        }
+        break;
+    }
+  };
+
+  // WebSocket’i aç ve handler’ı ata
+  const sock = createBattleSocket(lobbyId, handler);
+
+  // cleanup: sadece socket.close()
+  return () => {
+    sock.close();
+  };
+}, [lobbyId, selectedAttacker, currentTurnIndex]);
 
   // --- Ranged saldırı menzil hesaplama ---
 useEffect(() => {
@@ -223,54 +258,123 @@ useEffect(() => {
 
   // --- Savaş başlat (GM) ---
   const handleStartBattle = async () => {
-    if (!isGM) return;
-    try {
-      const res = await api.post('combat/initiate/', {
-        lobby_id: lobbyId,
-        character_ids: allCharacters.map(c => c.id),
-        placements,
-        available_characters: availableCharacters.map(c => c.id)
-      });
-      const init = res.data.initiative_order;
-      getBattleSocket().send(JSON.stringify({
-        event: 'battleStart',
-        lobbyId,
-        placements,
-        initiativeOrder: init
-      }));
-      setInitiativeOrder(init);
-      setCurrentTurnIndex(0);
-      setBattleStarted(true);
-    } catch(err) {
-      console.error("Savaş başlatma hata:", err);
-    }
-  };
+  if (!isGM) return;
 
-  // --- Drag & Drop ---
-  const handleDragStart = (e, character, source, sourceIndex) => {
-    e.dataTransfer.setData('text/plain',
-      JSON.stringify({ character, source, sourceIndex }));
+  try {
+    // 1) Yalnızca grid’de yer alan oyuncu karakterlerinin ID’lerini al
+    const placedPlayerIds = Object.values(placements)
+      .filter(unit => unit?.type === 'player')
+      .map(unit => unit.id);
+
+    if (placedPlayerIds.length === 0) {
+      return alert("Haritaya en az bir karakter yerleştirmelisiniz.");
+    }
+
+    // 2) Sunucuda inisiyatif sırasını oluştur
+    const res = await api.post('combat/initiate/', {
+      lobby_id:             lobbyId,
+      character_ids:        placedPlayerIds,
+      placements,
+      available_characters: availableCharacters.map(c => c.id),
+    });
+    const initOrder = res.data.initiative_order;
+
+    // 3) WebSocket hâlâ açık mı kontrol et, sonra startBattle event’i gönder
+    const sock = getBattleSocket();
+    if (sock?.readyState === WebSocket.OPEN) {
+      sock.send(JSON.stringify({
+        event: 'startBattle',
+        data:  { lobbyId }
+      }));
+    } else {
+      console.warn(
+        'startBattle gönderilemedi, WebSocket durumu:',
+        sock?.readyState
+      );
+    }
+
+    // 4) Yerelde battleStarted ve sıra ayarları
+    setBattleStarted(true);
+    setInitiativeOrder(initOrder);
+    setCurrentTurnIndex(0);
+    setMovementMode(false);
+    setAttackMode(false);
+    setSpellMode(false);
+
+  } catch (err) {
+    console.error("Savaş başlatma hata:", err);
+  }
+};
+
+// --- Drag & Drop ---
+const handleDragStart = (e, character, source, sourceIndex) => {
+  e.dataTransfer.setData(
+    'text/plain',
+    JSON.stringify({ character, source, sourceIndex })
+  );
+};
+
+const handleDragOver = e => e.preventDefault();
+
+const handleDrop = (e, cellIndex) => {
+  e.preventDefault();
+  const { character, source, sourceIndex } = JSON.parse(
+    e.dataTransfer.getData('text/plain')
+  );
+
+  // Mevcut yerleşimleri kopyala
+  const next = { ...placements };
+
+  // Eğer grid’den sürükleme ise eski yerden kaldır
+  if (source === 'grid') {
+    next[sourceIndex] = undefined;
+  }
+
+  // Eğer hedef hücrede zaten bir birim varsa, availableCharacters’a geri ekle
+  if (next[cellIndex]) {
+    setAvailableCharacters(prev => [...prev, next[cellIndex]]);
+  }
+
+  // Karakteri/yaratığı yerleştirirken type alanını kesinlikle ekle
+  const unit = {
+    ...character,
+    type: character.type || 'player'   // eğer karakter objesinde type yoksa varsayılan 'player'
   };
-  const handleDragOver = e => e.preventDefault();
-  const handleDrop = (e, cellIndex) => {
-    e.preventDefault();
-    const { character, source, sourceIndex } = JSON.parse(
-      e.dataTransfer.getData('text/plain')
-    );
-    const next = { ...placements };
-    if (source === 'grid') next[sourceIndex] = undefined;
-    if (next[cellIndex]) setAvailableCharacters(prev => [...prev, next[cellIndex]]);
-    next[cellIndex] = character;
-    setPlacements(next);
-    getBattleSocket().send(JSON.stringify({
+  next[cellIndex] = unit;
+
+  // State’i güncelle
+  setPlacements(next);
+
+  // WebSocket hâlâ açık mı kontrol et, sonra gönder
+  const sock = getBattleSocket();
+  if (sock?.readyState === WebSocket.OPEN) {
+    sock.send(JSON.stringify({
       event: 'battleUpdate',
       lobbyId,
       placements: next
     }));
-  };
+  } else {
+    console.warn(
+      'battleUpdate gönderilemedi, WebSocket durumu:',
+      sock?.readyState
+    );
+  }
+};
 
   // --- Hücre tıklama: önce saldırı/büyü then hareket ---
   const handleCellClick = (cellIndex, cellCharacter) => {
+
+          // --- GM yaratık kontrolü (movement) ---
+      if (selectedAttacker?.type === 'creature' && movementMode && reachableCells.has(cellIndex)) {
+        // tıpkı karakter gibi hareket ettir
+      handleMoveCreature(cellIndex);
+        return;
+      }
+      // --- GM yaratık kontrolü (attack) ---
+      if (selectedAttacker?.type === 'creature' && attackMode && cellCharacter) {
+        handleCreatureAttack(cellCharacter);
+        return;
+      }
     // 1) Melee
     if (attackMode && attackType === 'melee' && selectedAttacker && cellCharacter) {
       handleMeleeAttack(cellCharacter);
@@ -340,6 +444,53 @@ useEffect(() => {
     // seçimi koru, böylece useEffect vurguyu günceller
   };
 
+  // --- Canavarı hareket ettir ---
+const handleMoveCreature = async targetCell => {
+  if (!selectedAttacker) return;
+  // distance hesabı (handleMoveCharacter ile aynı)
+  const entry = Object.entries(placements)
+    .find(([_, u]) => u?.id === selectedAttacker.id && u?.type === 'creature');
+  if (!entry) return;
+  const origin = Number(entry[0]);
+  const or = Math.floor(origin / GRID_SIZE), oc = origin % GRID_SIZE;
+  const tr = Math.floor(targetCell / GRID_SIZE), tc = targetCell % GRID_SIZE;
+  const dist = Math.abs(or - tr) + Math.abs(oc - tc);
+  if (dist > movementRemaining) {
+    alert(`Canavar en fazla ${movementRemaining} kare gidebilir.`);
+    return;
+  }
+
+  setMovementRemaining(prev => prev - dist);
+  const next = { ...placements };
+  delete next[origin];
+  next[targetCell] = selectedAttacker;
+  setPlacements(next);
+  setMoving(true);
+
+  try {
+    // creature hareket endpoint’inizi çağırın
+    await api.post('combat/move-creature/', {
+      lobby_id: lobbyId,
+      creature_id: selectedAttacker.id,
+      grid_x:  Math.floor(targetCell / GRID_SIZE),
+      grid_y:  targetCell % GRID_SIZE,
+    });
+    getBattleSocket().send(JSON.stringify({
+      event: 'battleUpdate',
+      lobbyId,
+      creatures: [ {
+        ...selectedAttacker,
+        grid_x: Math.floor(targetCell / GRID_SIZE),
+        grid_y: targetCell % GRID_SIZE
+      }]
+    }));
+  } catch (err) {
+    console.error("Canavar hareket hatası:", err);
+  } finally {
+    setMoving(false);
+  }
+};
+
   // --- Melee Attack ---
    // --- Melee Attack ---
   const handleMeleeAttack = async targetCharacter => {
@@ -399,6 +550,38 @@ useEffect(() => {
     setAttackType(null);
     setSelectedAttacker(null);
   };
+
+  // --- Canavarın yakın dövüş saldırısı ---
+const handleCreatureAttack = async targetCharacter => {
+  if (!selectedAttacker || !targetCharacter) return;
+  try {
+    const res = await api.post('combat/creature-attack/', {
+      lobby_id: lobbyId,
+      attacker_type: 'creature',
+      attacker_id: selectedAttacker.id,
+      target_id:   targetCharacter.id,
+    });
+    // server’dan dönen chat_log / placements vb.
+    const { chat_log: chatLogRes, placements: newPlacements } = res.data;
+    setChatLog(prev => {
+      const merged = [...chatLogRes];
+      getBattleSocket().send(JSON.stringify({
+        event: 'battleUpdate',
+        lobbyId,
+        chatLog: merged
+      }));
+      return merged;
+    });
+    setPlacements(newPlacements);
+  } catch (err) {
+    console.error("Canavar saldırı hatası:", err);
+  } finally {
+    // saldırıyı bitir
+    setAttackMode(false);
+    setAttackType(null);
+    setSelectedAttacker(null);
+  }
+};
 
 
   // --- Ranged Attack ---
@@ -590,6 +773,7 @@ if (!lobbyData) {
           characters={allCharacters}
           placements={placements}
           availableCharacters={availableCharacters}
+          availableCreatures={availableCreatures}
           gridSize={GRID_SIZE}
           totalCells={TOTAL_CELLS}
           onDragStart={handleDragStart}

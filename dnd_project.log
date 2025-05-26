@@ -21763,3 +21763,18 @@ Bad Request: /api/combat/ranged-attack/
 Bad Request: /api/combat/melee-attack/
 Bad Request: /api/combat/ranged-attack/
 Bad Request: /api/combat/ranged-attack/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Not Found: /api/api/creatures/
+Unauthorized: /api/accounts/login/
