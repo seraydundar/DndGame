@@ -1,5 +1,3 @@
-# DndGame/spells/serializers.py
-
 from rest_framework import serializers
 from .models import Spell
 
@@ -25,25 +23,39 @@ class SpellSerializer(serializers.ModelSerializer):
             'duration',
             'concentration',
             'ritual',
-            'effect',
+            # Yeni alanlar
+            'effect_type',
+            'scope',
+            'damage_type',
+            'dice_num',
+            'dice_size',
+            'dice_modifier',
+            # Zaman damgaları
             'created_at',
             'updated_at',
         ]
 
-    def validate_effect(self, value):
-        # Temel kontrol: 'type' ve dice alanları mutlaka olmalı
-        if 'type' not in value:
-            raise serializers.ValidationError("Effect JSON must include a 'type' field.")
-        dice = value.get('dice')
-        if not dice or any(k not in dice for k in ('num', 'size', 'modifier')):
-            raise serializers.ValidationError(
-                "Effect.dice must have 'num', 'size' and 'modifier'."
-            )
-        return value
+    def validate(self, attrs):
+        # damage type kontrolü
+        effect_type = attrs.get(
+            'effect_type',
+            self.instance.effect_type if self.instance else None
+        )
+        damage_type = attrs.get(
+            'damage_type',
+            self.instance.damage_type if self.instance else None
+        )
+        if effect_type == 'damage' and not damage_type:
+            raise serializers.ValidationError({
+                'damage_type': "Hasar büyüleri için damage_type zorunlu."
+            })
+        if effect_type != 'damage' and damage_type:
+            raise serializers.ValidationError({
+                'damage_type': "Sadece hasar büyüleri için damage_type tanımlanabilir."
+            })
+        return super().validate(attrs)
 
     def create(self, validated_data):
-        # Eğer kullanıcı authenticated ise created_by ataması yap,
-        # aksi halde anonymous olarak bırak.
         user = self.context['request'].user
         if hasattr(user, 'is_authenticated') and user.is_authenticated:
             validated_data['created_by'] = user
