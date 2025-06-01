@@ -48,6 +48,12 @@ class Character(models.Model):
     )
     level = models.IntegerField(default=1)
 
+    # ---- Combat Stats (yeni) ----
+    damage_dealt   = models.IntegerField(default=0)   # verdiği toplam hasar
+    damage_taken   = models.IntegerField(default=0)   # aldığı toplam hasar
+    healing_done   = models.IntegerField(default=0)   # yaptığı toplam iyileştirme
+    kills          = models.IntegerField(default=0)
+
     # Current and maximum HP
     hp = models.IntegerField(default=10)
     max_hp = models.IntegerField(default=10)

@@ -101,8 +101,9 @@ export default function App() {
                         <Route path="/lobbies/:id"      element={<RequireAuth><Lobby /></RequireAuth>} />
 
                         {/* Battle */}
-                        <Route path="/battle/:id"       element={<RequireAuth><BattlePage /></RequireAuth>} />
-                        <Route path="/endbattle/:lobby_id"
+                        <Route path="/battle/:id"
+                               element={<RequireAuth><BattlePage /></RequireAuth>} />
+                        <Route path="/endbattle/:lobbyId"        
                                element={<RequireAuth><EndBattle /></RequireAuth>} />
 
                         {/* Trade & Chat */}

@@ -10,6 +10,10 @@ from rest_framework.generics import ListAPIView
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import random
+import base64
+from django.core.files.uploadedfile import File 
+from django.utils import timezone
+from django.db.models import F 
 
 from .models import Character, Race, Class, CharacterTemplate
 from lobbies.models import Lobby, LobbyPlayer
@@ -191,6 +195,13 @@ class InitiateCombatView(APIView):
                 {"error": "lobby_id ve yerleştirilmiş karakterler gereklidir."},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        Character.objects.filter(lobby_id=lobby_id).update(
+            damage_dealt   = 0,
+            damage_taken   = 0,
+            healing_done   = 0,
+            kills          = 0,
+        )
 
         # Seçilen karakterler için inisiyatif rolleri
         combatants = Character.objects.filter(id__in=character_ids)
@@ -282,133 +293,148 @@ class MeleeAttackView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 3) Placement kontrolü (bitisik kare mi)
+        # 3) Placement kontrolü (bitişik kare mi?)
         grid_size    = 20
         battle_state = BATTLE_STATE.get(str(lobby_id), {})
         placements   = battle_state.get("placements", {})
 
         def find_cell(char_id):
-            for key, val in placements.items():
-                if val and val.get("id") == char_id:
-                    return int(key)
+            for k, v in placements.items():
+                if v and v.get("id") == char_id:
+                    return int(k)
             return None
 
         a_cell = find_cell(attacker.id)
         t_cell = find_cell(target.id)
         if a_cell is None or t_cell is None:
-            return Response(
-                {"error": "Saldırgan veya hedef konumu bulunamadı."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Konum bulunamadı."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         a_row, a_col = divmod(a_cell, grid_size)
         t_row, t_col = divmod(t_cell, grid_size)
         if not ((a_row == t_row and abs(a_col - t_col) == 1) or
                 (a_col == t_col and abs(a_row - t_row) == 1)):
-            return Response(
-                {"error": "Hedef, bitişik karede değil."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Hedef bitişik karede değil."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         # 4) Attack roll
         roll    = random.randint(1, 20)
         str_mod = (attacker.strength - 10) // 2
         lvl     = attacker.level
 
-        # Fumble
         if roll == 1:
             chat_msg = f"{attacker.name} zar attı: 1 → Otomatik kaçırma!"
             damage   = 0
+            is_crit  = False
         else:
             attack_score = roll + str_mod + lvl
-            is_crit      = (roll == 20)
-            hit          = is_crit or (attack_score >= target.ac)
+            is_crit      = roll == 20
+            hit          = is_crit or attack_score >= target.ac
 
             if hit:
-                # 5) Hasar hesaplama: temporary mı, değil mi kontrolü
                 try:
                     dice_str = get_melee_dice(attacker)
-                    num, die  = map(int, dice_str.split('d'))
+                    num, die = map(int, dice_str.split('d'))
                 except Exception:
-                    num, die = 1, 6  # fallback
+                    num, die = 1, 6
 
                 dice_total  = sum(random.randint(1, die) for _ in range(num))
                 base_damage = dice_total + str_mod
                 damage      = base_damage * 2 if is_crit else base_damage
 
-                # Mesaj oluşturma
                 if is_crit:
-                    chat_msg = (
-                        f"{attacker.name} zar attı: 20 → Kritik! "
-                        f"Dice {dice_str} toplamı {dice_total}, "
-                        f"STR mod {str_mod} → Hasar = {damage}"
-                    )
+                    chat_msg = (f"{attacker.name} zar attı: 20 → Kritik! "
+                                f"Dice {dice_str} toplamı {dice_total}, "
+                                f"STR mod {str_mod} → Hasar = {damage}")
                 else:
-                    chat_msg = (
-                        f"Roll: {roll} + STR mod {str_mod} + LVL {lvl} = {attack_score} "
-                        f"vs AC {target.ac} → İsabet! Hasar = {damage}"
-                    )
+                    chat_msg = (f"Roll: {roll} + STR {str_mod} + LVL {lvl} = "
+                                f"{attack_score} vs AC {target.ac} → İsabet! "
+                                f"Hasar = {damage}")
             else:
                 damage   = 0
-                chat_msg = (
-                    f"Roll: {roll} + STR mod {str_mod} + LVL {lvl} = {attack_score} "
-                    f"vs AC {target.ac} → Kaçırma!"
-                )
+                chat_msg = (f"Roll: {roll} + STR {str_mod} + LVL {lvl} = "
+                            f"{attack_score} vs AC {target.ac} → Kaçırma!")
 
-        # 6) HP güncelleme
+        # -------- İSTATİSTİK GÜNCELLEME --------
+        if damage > 0:
+            attacker.damage_dealt = (attacker.damage_dealt or 0) + damage
+            target.damage_taken   = (target.damage_taken   or 0) + damage
+            if target.hp - damage <= 0:
+                attacker.kills = (attacker.kills or 0) + 1
+            attacker.save(update_fields=["damage_dealt", "kills"])
+            target.save(update_fields=["damage_taken"])
+        # ---------------------------------------
+
+        # -------- EVENT-LOG (bellek) -----------
+        log_event = {
+            "type":       "damage",
+            "source_id":  attacker.id,
+            "target_id":  target.id,
+            "amount":     damage,
+            "hp_after":   max(0, target.hp - damage),
+            "critical":   is_crit,
+            "timestamp":  timezone.now().isoformat(),
+        }
+        battle_state.setdefault("events", []).append(log_event)
+        # ---------------------------------------
+
+        # 6) HP güncelle
         target.hp = max(0, target.hp - damage)
         target.save(update_fields=["hp"])
 
-        # 7) Ölüm anında grid ve inisiyatiften temizle
+        # 7) Ölen hedefi grid ve inisiyatiften çıkar
         if target.hp <= 0:
-            # grid’den temizle
             for cell, unit in list(placements.items()):
                 if unit and unit.get("id") == target.id:
                     placements[cell] = None
 
-            # initiative_order listesinden çıkar
-            old_list = battle_state.get("initiative_order", [])
-            new_list = [e for e in old_list if e["character_id"] != target.id]
+            old_order = battle_state.get("initiative_order", [])
+            new_order = [e for e in old_order if e["character_id"] != target.id]
 
-            # current_turn_index düzeltmesi
             cur_idx = battle_state.get("current_turn_index", 0)
-            old_idx = next((i for i, e in enumerate(old_list) if e["character_id"] == target.id), None)
-            if old_idx is not None and old_idx < cur_idx:
+            dead_idx = next((i for i, e in enumerate(old_order)
+                             if e["character_id"] == target.id), None)
+            if dead_idx is not None and dead_idx < cur_idx:
                 cur_idx -= 1
 
-            battle_state["initiative_order"]   = new_list
+            battle_state["initiative_order"]   = new_order
             battle_state["current_turn_index"] = max(cur_idx, 0)
-        else:
-            # eğer ölmediyse, aynen bırak
-            battle_state["initiative_order"]   = battle_state.get("initiative_order", [])
-            battle_state["current_turn_index"] = battle_state.get("current_turn_index", 0)
 
-        # 8) Chat log güncelle
+        # 8) Chat log
         chat_log = battle_state.get("chat_log", [])
         chat_log.append(f"{chat_msg} (Kalan HP: {target.hp})")
         battle_state["chat_log"] = chat_log
 
-        # 9) Aksiyon puanı azalt
+        # 9) Action point
         attacker.action_points -= 1
         attacker.save(update_fields=["action_points"])
 
-        # 10) Güncel battle_state’i kaydet ve publish et
+        # 10) State kaydet & WS yayını
         battle_state["placements"] = placements
         BATTLE_STATE[str(lobby_id)] = battle_state
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"lobby_{lobby_id}",
-            {"type": "game_message", "message": battle_state}
+            f"battle_{lobby_id}",
+            {
+                "type": "battle.update",          # consumer’da battle_update
+                "data": {
+                    "lobbyId":   lobby_id,
+                    "placements": placements,
+                    "chatLog":    chat_log,
+                    "logEvent":   log_event,      # ⬅️ event’i ilet
+                }
+            }
         )
 
-        # 11) Response (placements ve initiative_order dahil)
+        # 11) REST cevabı
         return Response({
             "message":             chat_msg,
             "damage":              damage,
             "target_remaining_hp": target.hp,
             "chat_log":            chat_log,
             "placements":          placements,
-            "initiative_order":    battle_state["initiative_order"],
+            "initiative_order":    battle_state.get("initiative_order", [])
         }, status=status.HTTP_200_OK)
 
 
@@ -444,143 +470,147 @@ class RangedAttackView(APIView):
         attacker = get_object_or_404(Character, id=attacker_id)
         target   = get_object_or_404(Character, id=target_id)
 
-        # 2) Aksiyon puanı kontrolü
+        # 2) Aksiyon puanı
         if attacker.action_points < 1:
-            return Response(
-                {"error": "Bu turda aksiyon hakkın kalmadı."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Bu turda aksiyon hakkın kalmadı."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        # 3) Menzil için dice_str al (is_temporary kontrolü burada)
+        # 3) Menzil & zar bilgisi
         try:
             dice_str = get_ranged_dice(attacker)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 4) Placement kontrolü
         grid_size    = 20
         battle_state = BATTLE_STATE.get(str(lobby_id), {})
         placements   = battle_state.get("placements", {})
 
-        def find_cell(char_id):
-            for key, val in placements.items():
-                if val and val.get("id") == char_id:
-                    return int(key)
+        def find_cell(cid):
+            for k, v in placements.items():
+                if v and v.get("id") == cid:
+                    return int(k)
             return None
 
-        a_cell = find_cell(attacker.id)
-        t_cell = find_cell(target.id)
+        a_cell, t_cell = find_cell(attacker.id), find_cell(target.id)
         if a_cell is None or t_cell is None:
-            return Response(
-                {"error": "Saldırgan veya hedef konumu bulunamadı."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Konum bulunamadı."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        a_row, a_col = divmod(a_cell, grid_size)
-        t_row, t_col = divmod(t_cell, grid_size)
-        manhattan    = abs(a_row - t_row) + abs(a_col - t_col)
+        a_r, a_c = divmod(a_cell, grid_size)
+        t_r, t_c = divmod(t_cell, grid_size)
+        dist     = abs(a_r - t_r) + abs(a_c - t_c)
 
-        base_range      = 2
-        dex_mod         = (attacker.dexterity - 10) // 2
-        effective_range = base_range + dex_mod
-        if manhattan > effective_range:
-            return Response(
-                {"error": f"Hedef, menzil ({effective_range}) dışında."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        base_rng  = 2
+        dex_mod   = (attacker.dexterity - 10) // 2
+        max_rng   = base_rng + dex_mod
+        if dist > max_rng:
+            return Response({"error": f"Menzil ({max_rng}) dışında."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        # 5) Attack roll
-        roll    = random.randint(1, 20)
-        lvl     = attacker.level
+        # 4) Attack roll
+        roll      = random.randint(1, 20)
+        lvl       = attacker.level
+        is_crit   = roll == 20
+        atk_score = roll + dex_mod + lvl
+        hit       = is_crit or atk_score >= target.ac
 
-        # 6) Fumble?
         if roll == 1:
-            chat_msg = f"{attacker.name} zar attı: 1 → Otomatik kaçırma!"
             damage   = 0
-        else:
-            attack_score = roll + dex_mod + lvl
-            is_crit      = (roll == 20)
-            hit          = is_crit or (attack_score >= target.ac)
+            chat_msg = f"{attacker.name} zar attı: 1 → Otomatik kaçırma!"
+        elif hit:
+            try:
+                num, die = map(int, dice_str.split('d'))
+            except ValueError:
+                num, die = 1, 6
+            dice_tot   = sum(random.randint(1, die) for _ in range(num))
+            base_dmg   = dice_tot + dex_mod
+            damage     = base_dmg * 2 if is_crit else base_dmg
 
-            if hit:
-                # 7) Hasar hesaplama
-                try:
-                    num, die = map(int, dice_str.split('d'))
-                except:
-                    num, die = 1, 6
-
-                dice_total  = sum(random.randint(1, die) for _ in range(num))
-                base_damage = dice_total + dex_mod
-                damage      = base_damage * 2 if is_crit else base_damage
-
-                if is_crit:
-                    chat_msg = (
-                        f"{attacker.name} zar attı: 20 → Kritik! "
-                        f"Dice {dice_str} toplamı {dice_total}, "
-                        f"DEX mod {dex_mod} → Hasar = {damage}"
-                    )
-                else:
-                    chat_msg = (
-                        f"Roll: {roll} + DEX mod {dex_mod} + LVL {lvl} = {attack_score} "
-                        f"vs AC {target.ac} → İsabet! Hasar = {damage}"
-                    )
+            if is_crit:
+                chat_msg = (f"{attacker.name} zar attı: 20 → Kritik! "
+                            f"Dice {dice_str} toplamı {dice_tot}, "
+                            f"DEX mod {dex_mod} → Hasar = {damage}")
             else:
-                damage   = 0
-                chat_msg = (
-                    f"Roll: {roll} + DEX mod {dex_mod} + LVL {lvl} = {attack_score} "
-                    f"vs AC {target.ac} → Kaçırma!"
-                )
+                chat_msg = (f"Roll: {roll}+DEX {dex_mod}+LVL {lvl}={atk_score} "
+                            f"vs AC {target.ac} → İsabet! Hasar = {damage}")
+        else:
+            damage   = 0
+            chat_msg = (f"Roll: {roll}+DEX {dex_mod}+LVL {lvl}={atk_score} "
+                        f"vs AC {target.ac} → Kaçırma!")
 
-        # 8) HP güncelle
+        # ---------- İSTATİSTİK GÜNCELLEME ----------
+        if damage > 0:
+            attacker.damage_dealt = (attacker.damage_dealt or 0) + damage
+            target.damage_taken   = (target.damage_taken   or 0) + damage
+            if target.hp - damage <= 0:
+                attacker.kills = (attacker.kills or 0) + 1
+            attacker.save(update_fields=["damage_dealt", "kills"])
+            target.save(update_fields=["damage_taken"])
+        # -------------------------------------------
+
+        # ---------- EVENT-LOG ----------------------
+        log_event = {
+            "type":       "damage",
+            "source_id":  attacker.id,
+            "target_id":  target.id,
+            "amount":     damage,
+            "hp_after":   max(0, target.hp - damage),
+            "critical":   is_crit,
+            "timestamp":  timezone.now().isoformat(),
+        }
+        battle_state.setdefault("events", []).append(log_event)
+        # -------------------------------------------
+
+        # 5) HP güncelle
         target.hp = max(0, target.hp - damage)
         target.save(update_fields=["hp"])
 
-        # 9) Ölüm anında grid ve inisiyatiften temizle
-        if target.hp <= 0:
-            # grid’den temizle
+        # 6) Ölen hedefi grid / inisiyatiften çıkar
+        if target.hp == 0:
             for cell, unit in list(placements.items()):
                 if unit and unit.get("id") == target.id:
                     placements[cell] = None
 
-            # initiative_order listesinden çıkar
-            old_list = battle_state.get("initiative_order", [])
-            new_list = [e for e in old_list if e["character_id"] != target.id]
+            old_ord = battle_state.get("initiative_order", [])
+            battle_state["initiative_order"] = [
+                e for e in old_ord if e["character_id"] != target.id
+            ]
 
-            # current_turn_index düzeltmesi
-            cur_idx = battle_state.get("current_turn_index", 0)
-            old_idx = next((i for i, e in enumerate(old_list) if e["character_id"] == target.id), None)
-            if old_idx is not None and old_idx < cur_idx:
-                cur_idx -= 1
-
-            battle_state["initiative_order"]   = new_list
-            battle_state["current_turn_index"] = max(cur_idx, 0)
-
-        # 10) Chat log güncelle
+        # 7) Chat log
         chat_log = battle_state.get("chat_log", [])
         chat_log.append(f"{chat_msg} (Kalan HP: {target.hp})")
         battle_state["chat_log"] = chat_log
 
-        # 11) Aksiyon puanını düşür
+        # 8) AP düş
         attacker.action_points -= 1
         attacker.save(update_fields=["action_points"])
 
-        # 12) State kaydet ve publish et
+        # 9) State kaydet + WS
         battle_state["placements"] = placements
         BATTLE_STATE[str(lobby_id)] = battle_state
+
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"lobby_{lobby_id}",
-            {"type": "game_message", "message": battle_state}
+            f"battle_{lobby_id}",
+            {
+                "type": "battle.update",
+                "data": {
+                    "lobbyId":    lobby_id,
+                    "placements": placements,
+                    "chatLog":    chat_log,
+                    "logEvent":   log_event,   # ⬅️ event’i ilet
+                }
+            }
         )
 
-        # 13) Response (placements ve initiative_order dahil)
+        # 10) REST cevabı
         return Response({
             "message":             chat_msg,
             "damage":              damage,
             "target_remaining_hp": target.hp,
             "chat_log":            chat_log,
             "placements":          placements,
-            "initiative_order":    battle_state["initiative_order"],
+            "initiative_order":    battle_state.get("initiative_order", [])
         }, status=status.HTTP_200_OK)
     
 class MoveCharacterView(APIView):
@@ -713,19 +743,37 @@ class EndTurnView(APIView):
         })
 
 # BattleState endpoint: Global battle state'i döner.
+def to_jsonable(obj):
+    """Recursively convert bytes/File to JSON-friendly values."""
+    if isinstance(obj, bytes):
+        # İstersen base64 → burada URL gerekmezse base64 ver
+        return base64.b64encode(obj).decode()
+    if isinstance(obj, File):
+        return obj.url or str(obj)          # /media/… URL
+    if isinstance(obj, dict):
+        return {k: to_jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [to_jsonable(i) for i in obj]
+    return obj
+
+def default_state():
+    return {
+        "initiative_order":     [],
+        "placements":           {},
+        "available_characters": [],
+        "current_turn_index":   0,
+        "chat_log":             [],
+        "obstacles":            [],
+        "background":           "forest",
+        "finished":             False,
+    }
+
 class BattleStateView(APIView):
-    """
-    Global BATTLE_STATE içerisindeki battle state bilgisini döner.
-    """
-    def get(self, request, lobby_id, format=None):
-        state = BATTLE_STATE.get(str(lobby_id), {
-            "initiative_order": [],
-            "placements": {},
-            "available_characters": [],
-            "current_turn_index": 0,
-            "chat_log": []
-        })
-        return Response(state)
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, lobby_id):
+        state = BATTLE_STATE.get(str(lobby_id), default_state())
+        return Response(to_jsonable(state))
 
 # Diğer view'ler...
 class LobbyViewSet(viewsets.ModelViewSet):
@@ -770,6 +818,104 @@ class LobbyViewSet(viewsets.ModelViewSet):
         lobby.is_active = False
         lobby.save()
         return Response({"message": "Game started!", "lobby_id": lobby.lobby_id})
+    
+
+class EndBattleView(APIView):
+    """
+    GM “Savaşı Bitir” butonuna bastığında çağrılır.
+    – DB’de geçici karakterleri siler
+    – Hafif bir “battle summary” JSON’u oluşturur (icon → URL)
+    – Özeti bellekte tutar ve WS ile battleEnd yayını yapar
+    """
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes     = [IsAuthenticated]
+
+    def post(self, request):
+        lobby_id = request.data.get("lobby_id")
+        if not lobby_id:
+            return Response(
+                {"error": "lobby_id gereklidir"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        lobby = get_object_or_404(Lobby, lobby_id=lobby_id)
+        if lobby.gm_player_id != request.user.id:
+            return Response(
+                {"error": "Sadece GM bitirebilir"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        state     = BATTLE_STATE.get(str(lobby_id), {})
+        chat_log  = state.get("chat_log", [])
+
+        # ------ oyuncu başına sade istatistikler ------
+        players = Character.objects.filter(
+            lobby_id=lobby_id,
+            is_temporary=False
+        )
+
+        summary_players = [
+            {
+                "id":            ch.id,
+                "name":          ch.name,
+                "icon":          ch.icon.url if ch.icon else None,
+                "level":         ch.level,
+                "xp_gained":     getattr(ch, "xp_gained_last_battle", 0),
+                "damage_dealt":  getattr(ch, "damage_dealt", 0),
+                "healing_done":  getattr(ch, "healing_done", 0),
+                "damage_taken":  getattr(ch, "damage_taken", 0),
+                "kills":         getattr(ch, "kills", 0),
+            }
+            for ch in players
+        ]
+
+        summary = {
+            "lobby_id": lobby_id,
+            "ended_at": timezone.now().isoformat(),
+            "players":  summary_players,
+            "chat_log": chat_log,
+        }
+
+        # Bellekte sakla – BattleSummaryView dönecek
+        BATTLE_STATE[str(lobby_id)] = {
+            **state, "finished": True, "summary": summary
+        }
+
+        # Geçici yaratıkları sil
+        Character.objects.filter(
+            lobby_id=lobby_id,
+            is_temporary=True
+        ).delete()
+
+        # Tüm client’lara WS ile “battleEnd” yayını
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"battle_{lobby_id}",
+            {
+                "type":   "battle_end", # Bu type, battle_end consumer'ında işlenecek
+                "event":  "battleEnd",
+                "lobbyId": lobby_id,
+                "summary": (summary),
+                
+            }
+        )
+
+        return Response(summary, status=status.HTTP_200_OK)
+
+
+class BattleSummaryView(APIView):
+    """Savaş bittikten sonra özet verilerini döner"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, lobby_id):
+        state = BATTLE_STATE.get(str(lobby_id), {})
+        summary = state.get("summary")
+        if not summary:
+            return Response({"error": "Savaş özeti bulunamadı."},
+                            status=status.HTTP_404_NOT_FOUND)
+        return Response(summary, status=status.HTTP_200_OK)
+
+
 
 class CreateLobbyView(APIView):
     authentication_classes = [CsrfExemptSessionAuthentication]

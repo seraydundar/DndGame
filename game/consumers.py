@@ -1,87 +1,120 @@
 # game/consumers.py
-
-import os
-import django
+import os, django, random
 django.setup()
 
-import random
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
-
 from game.models import Character
 
+
 class BattleConsumer(AsyncJsonWebsocketConsumer):
+    # ------------- connection lifecycle ---------------- #
     async def connect(self):
-        # URL routing: ws/battle/<battle_id>/
-        # ASGI router’da battle_id diye geçiyor:
+        # ws://…/ws/battle/<battle_id>/
         self.lobby_id   = self.scope["url_route"]["kwargs"]["battle_id"]
-        # view’de de group_send ile "battle_<lobby_id>" yayını yapılıyor
         self.group_name = f"battle_{self.lobby_id}"
 
-        # Gruba katıl ve WebSocket’i kabul et
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Grubu temizle
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
+    # ------------- incoming from THIS client ------------ #
     async def receive_json(self, content, **kwargs):
-        event = content.get("event")
+        """
+        İstemciden gelen tüm mesajları ‘event’ alanına göre
+        aynı gruba tekrar yayınlıyoruz.
+        """
+        event = content.get("event")      # örn: "startBattle", "battleUpdate"
         data  = content.get("data", {}) or {}
 
-        # Eğer client’tan startBattle gelirse (opsiyonel)
         if event == "startBattle":
-            placed_ids = data.get("character_ids", [])
-            combatants = await database_sync_to_async(list)(
-                Character.objects.filter(id__in=placed_ids)
-            )
-
-            # İnisiyatif hesapla
-            turn_queue = []
-            for c in combatants:
-                roll = random.randint(1, 20) + getattr(c, "initiative_bonus", 0)
-                turn_queue.append({
-                    "id":         c.id,
-                    "type":       "creature" if c.is_temporary else "player",
-                    "initiative": roll
-                })
-            turn_queue.sort(key=lambda x: x["initiative"], reverse=True)
-
-            # **Yayın** (view zaten broadcast ettiyse bu blok opsiyonel)
-            await self.channel_layer.group_send(
-                self.group_name,
-                {
-                    "type":      "battle_start",
-                    "event":     "battleStart",
-                    "lobbyId":   self.lobby_id,
-                    "turnQueue": turn_queue,
-                }
-            )
+            # GM manuel başlattıysa inisiyatif hesapla (opsiyonel)
+            await self._initiate_battle_queue(data)
             return
 
-        # Diğer tüm event’leri aynı gruba broadcast et
+        # Diğer her şeyi odadaki herkese ilet
+        # NOTE: type key’i Channels’ta handler adını belirler
         await self.channel_layer.group_send(
             self.group_name,
             {
-                "type": event,
+                "type": self._to_snake(event),  # battleUpdate → battle_update
                 **data
             }
         )
 
-    # group_send içindeki type="battle_start" burayı tetikler
+    # ------------- helper: initiative ------------------ #
+    async def _initiate_battle_queue(self, data):
+        placed_ids = data.get("character_ids", [])
+        combatants = await database_sync_to_async(list)(
+            Character.objects.filter(id__in=placed_ids)
+        )
+
+        queue = []
+        for c in combatants:
+            roll = random.randint(1, 20) + getattr(c, "initiative_bonus", 0)
+            queue.append({
+                "id":         c.id,
+                "type":       "creature" if c.is_temporary else "player",
+                "initiative": roll
+            })
+        queue.sort(key=lambda x: x["initiative"], reverse=True)
+
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                "type":    "battle_start",
+                "event":   "battleStart",
+                "lobbyId": self.lobby_id,
+                "turnQueue": queue,
+            }
+        )
+
+    # ------------- helpers ------------------------------ #
+    @staticmethod
+    def _to_snake(name: str) -> str:
+        """battleUpdate → battle_update  |  battle_end (değişimsiz)."""
+        return (
+            "".join(f"_{c.lower()}" if c.isupper() else c for c in name)
+            .lstrip("_")
+        )
+
+    # ------------- handlers fired by group_send ---------- #
     async def battle_start(self, event):
         await self.send_json({
-            "event":     event["event"],
-            "lobbyId":   event["lobbyId"],
-            "turnQueue": event["turnQueue"],
+            "event":     "battleStart",
+            "lobbyId":   event.get("lobbyId"),
+            "turnQueue": event.get("turnQueue"),
+        })
+     #    -> Frontend’de handleBattleUpdate zaten chatLog’u bu objeyle overwrite ediyor
+        await self.send_json({
+            "event":   "battleUpdate",
+            "lobbyId": self.lobby_id,
+            "chatLog": [],          # eski satırlar silinsin
+            "logEvents": [],        # varsa event-timeline da sıfırlansın
+        })    
+
+    async def battle_update(self, event):
+        # Hem server‐side “battle.update” hem client “battleUpdate” buraya düşer
+        await self.send_json({
+            "event":   "battleUpdate",
+            **{k: v for k, v in event.items() if k != "type"},
         })
 
-    async def battleUpdate(self, event):
-        await self.send_json({"event": "battleUpdate", **event})
+    async def battle_end(self, event):
+        await self.send_json({
+            "event":   "battleEnd",
+            "lobbyId": self.lobby_id,
+            "summary": event.get("summary"),
+        })
 
-    async def battleEnd(self, event):
-        await self.send_json({"event": "battleEnd", **event})
+    # camelCase versiyonları da (eski kod kırılmasın diye)
+    async def battleUpdate(self, event):   # noqa: N802  (mixedCase handler)
+        await self.battle_update(event)
+
+    async def battleEnd(self, event):      # noqa: N802
+        await self.battle_end(event)
 
     async def joinLobby(self, event):
         await self.send_json({"event": "joinLobby", **event})

@@ -93,7 +93,7 @@ export default function BattleActions({
       <div style={{ marginTop: 10 }}>
         <button onClick={onCancel} style={{ marginRight: 8 }}>İptal</button>
         <button onClick={onEndTurn} style={{ marginRight: 8 }}>Tur Sonu</button>
-        {isGM && <button onClick={onEndBattle}>Savaşı Bitir</button>}
+        
       </div>
     </div>
   );

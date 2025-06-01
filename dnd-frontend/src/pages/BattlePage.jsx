@@ -11,6 +11,7 @@ import './BattlePage.css';
 import bannerPng     from '../assets/ui/banner.png';
 import eyeBadge   from '../assets/ui/eye_badge.png';
 import shieldBadge from '../assets/ui/shield_badge.png';
+import { useNavigate } from "react-router-dom";
 
 const GRID_SIZE   = 20;
 const TOTAL_CELLS = GRID_SIZE * 15;
@@ -20,6 +21,7 @@ export default function BattlePage() {
   const currentUserId = +localStorage.getItem('user_id') || 0;
 
   // --- State’ler ---
+  const navigate = useNavigate();
   const [lobbyId, setLobbyId]                     = useState(null);
   const [lobbyData, setLobbyData]                 = useState(null);
   const [isGM, setIsGM]                           = useState(false);
@@ -146,6 +148,10 @@ export default function BattlePage() {
       case 'battleStart':
         // 1) Savaş başladı
         setBattleStarted(true);
+        // 1-a) Eski log ve event’leri temizle
+        setChatLog([]);
+        // eğer eventLog diye bir state’iniz varsa:
+        // setEventLog([]);
         setMovementMode(false);
         setAttackMode(false);
         setSpellMode(false);
@@ -168,7 +174,12 @@ export default function BattlePage() {
         break;
 
       case 'battleEnd':
+        // Savaş bittiğinde
         setBattleStarted(false);
+        navigate(`/endbattle/${d.lobbyId}`, {
+          state: { summary: d.summary || null },   // özet geldiyse taşı
+          replace: true                            // geri tuşunda eski sayfaya dönmesin
+        });
         break;
 
       case 'battleUpdate':
@@ -845,10 +856,25 @@ const handleSelectSpell = spell => {
   }
 };
 
-  // --- End battle ---
-  const handleEndBattle = () => {
-    getBattleSocket().send(JSON.stringify({ event:'battleEnd', lobbyId }));
-  };
+  
+  // --- End battle (GM) ---
+const handleEndBattle = async () => {
+  if (!isGM) return;                 // sadece GM
+
+  // 1) Yerel UI: savaş modu kapansın
+  setBattleStarted(false);
+
+  
+
+  // 3) (ops.) REST – sunucuya final bildirimi
+  try {
+    await api.post("combat/end-battle/", { lobby_id: lobbyId });
+  } catch (err) {
+    console.warn("REST combat/end-battle/ başarısız:", err);
+  }
+
+  
+};
 
   // --- Reachable hesapla ---
   useEffect(() => {
@@ -1008,12 +1034,16 @@ if (!lobbyData) {
           onSendMessage={msg => {
             const updatedLog = [...chatLog, msg];
             setChatLog(updatedLog);
-            getBattleSocket().send(JSON.stringify({
-              event: 'battleUpdate',
-              lobbyId,
-              chatLog: updatedLog,
-            }));
+            getBattleSocket().send(
+              JSON.stringify({
+                event: "battleUpdate",
+                lobbyId,
+                chatLog: updatedLog,
+              })
+            );
           }}
+          isGM={isGM}
+          onEndBattle={handleEndBattle}
         />
       </div>
     </div>

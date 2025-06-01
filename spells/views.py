@@ -4,6 +4,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Spell
 from .serializers import SpellSerializer
+from django.utils import timezone
+from game.views import BATTLE_STATE
 
 import random
 from math import floor
@@ -48,7 +50,7 @@ def roll_damage(spell: Spell) -> int:
 # ---------------- Spell Cast ---------------- #
 class SpellCastView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication,)
-    permission_classes     = [AllowAny]
+    permission_classes     = [AllowAny]   # istersen Authenticated yap
 
     def post(self, request, spell_id):
         """
@@ -56,110 +58,125 @@ class SpellCastView(APIView):
         Body:
         {
           "attacker_id": <int>,
-          "targets": [<int>, ...],             # tek/çok hedef
-          "center_cell": {"x": int,"y": int},  # alan büyüsü için opsiyonel
-          "lobby_id":   <int>
+          "targets": [<int>, ...],            # tek / çok hedef
+          "center_cell": {"x": int,"y": int}, # area spell ops.
+          "lobby_id": <int>
         }
         """
-        attacker  = get_object_or_404(Character, id=request.data.get('attacker_id'))
+        attacker  = get_object_or_404(Character, id=request.data.get("attacker_id"))
         spell     = get_object_or_404(Spell,     id=spell_id)
-        lobby_id  = request.data.get('lobby_id')
+        lobby_id  = request.data.get("lobby_id")
 
-        # -------- Hedef listesi -------- #
-        targets_qs = Character.objects.none()
-        if spell.scope == 'area' and request.data.get('center_cell'):
-            cx = request.data['center_cell']['x']
-            cy = request.data['center_cell']['y']
+        # -------- hedef listesi --------
+        if spell.scope == "area" and request.data.get("center_cell"):
+            cx = request.data["center_cell"]["x"]
+            cy = request.data["center_cell"]["y"]
             targets_qs = Character.objects.filter(
                 grid_x__range=(cx-1, cx+1),
                 grid_y__range=(cy-1, cy+1),
                 lobby_id=lobby_id
             )
         else:
-            target_ids = request.data.get('targets', [])
-            targets_qs = Character.objects.filter(id__in=target_ids)
+            tgt_ids    = request.data.get("targets", [])
+            targets_qs = Character.objects.filter(id__in=tgt_ids)
 
-        # -------- Zar + saldırı atışı -------- #
-        base_dmg = roll_damage(spell)
+        # -------- saldırı / bonus --------
+        base_dmg = roll_damage(spell)           # pozitif → hasar, negatif → heal
 
-        def spell_attack_bonus(attacker):
-            """
-            • Wizard   → INT mod
-            • (ileride) Sorcerer → CHA mod
-            • Diğer    → +0
-            """
-            # --- Sınıf adını güvenli şekilde çek ---
-            raw_cls = None
-
-            # 1) Düz text alanlar
-            if getattr(attacker, "char_class", None):
-                raw_cls = attacker.char_class
-            elif getattr(attacker, "character_class", None):
-                raw_cls = attacker.character_class
-
-            # 2) Tablo sütunu gerçekten “class” ise (FK veya CharField)
-            elif "class" in attacker.__dict__ and attacker.__dict__["class"]:
-                obj = attacker.__dict__["class"]
-                raw_cls = getattr(obj, "name", str(obj))  # FK ise obj.name, değilse str(obj)
-
-            cls = str(raw_cls).lower() if raw_cls else ""
-
-            # --- Mod seç ---
-            if cls == "wizard":
-                return ability_mod(attacker.intelligence)
-            elif cls == "sorcerer":
-                return ability_mod(attacker.charisma)
-            elif cls == "cleric":
-                return ability_mod(attacker.wisdom)
-            elif cls == "druid":
-                return ability_mod(attacker.wisdom)
-            elif cls == "paladin":
-                return ability_mod(attacker.charisma)
-            elif cls == "ranger":
-                return ability_mod(attacker.wisdom)
-            elif cls == "warlorck":
-                return ability_mod(attacker.wisdom)
-            
+        def spell_attack_bonus(caster: Character):
+            cls_name = (getattr(caster, "character_class", None)
+                        or getattr(caster, "char_class", None)
+                        or getattr(caster.__dict__.get("class", None), "name", "")
+                       )
+            cls_name = str(cls_name).lower()
+            if cls_name in ("wizard",):
+                return ability_mod(caster.intelligence)
+            if cls_name in ("sorcerer", "paladin"):
+                return ability_mod(caster.charisma)
+            if cls_name in ("cleric", "druid", "ranger", "warlock"):
+                return ability_mod(caster.wisdom)
             return 0
 
         atk_mod = spell_attack_bonus(attacker)
 
-        results  = {}
-        chat_log = []
+        # -------- mevcut state --------
+        battle_state = BATTLE_STATE.get(str(lobby_id), {})
+        chat_log     = battle_state.get("chat_log", [])
+        events       = battle_state.setdefault("events", [])
+        placements   = battle_state.get("placements", {})
+
+        results = {}
 
         for tgt in targets_qs:
-            roll     = random.randint(1, 20)
-            atk_total= roll + atk_mod
-            hit      = atk_total >= tgt.ac
-            damage   = base_dmg if hit else (base_dmg // 2 if spell.scope == 'area' else 0)
+            roll       = random.randint(1, 20)
+            atk_total  = roll + atk_mod
+            hit        = atk_total >= tgt.ac
+            # area spell: kaçırsa yarı hasar / yarı heal
+            amount     = base_dmg if hit else (base_dmg // 2 if spell.scope == "area" else 0)
 
-            # HP güncelle
-            tgt.hp = max(0, tgt.hp - damage)
-            tgt.save()
+            # ------------- İSTATİSTİK ----------------
+            if amount > 0:  # hasar
+                attacker.damage_dealt = (attacker.damage_dealt or 0) + amount
+                tgt.damage_taken      = (tgt.damage_taken  or 0) + amount
+                if tgt.hp - amount <= 0:
+                    attacker.kills = (attacker.kills or 0) + 1
+                attacker.save(update_fields=["damage_dealt", "kills"])
+                tgt.save(update_fields=["damage_taken"])
+            elif amount < 0:  # iyileştirme
+                healed = abs(amount)
+                attacker.healing_done = (attacker.healing_done or 0) + healed
+                attacker.save(update_fields=["healing_done"])
+
+            # ------------- HP ------------------------
+            tgt.hp = max(0, tgt.hp - amount) if amount > 0 else min(tgt.max_hp, tgt.hp + healed)
+            tgt.save(update_fields=["hp"])
             results[tgt.id] = tgt.hp
 
-            # Mesaj
-            outcome = "isabet" if hit else ("yarım hasar" if damage else "ıskalama")
-            msg = (f"{attacker.name} {spell.name} kullandı → "
-                   f"{tgt.name} {roll}+{atk_mod}={atk_total} ({outcome}), "
-                   f"{damage} {spell.damage_type} hasar (HP {tgt.hp}).")
-            chat_log.append(msg)
+            # ------------- EVENT LOG ----------------
+            events.append({
+                "type":      "heal" if amount < 0 else "damage",
+                "source_id": attacker.id,
+                "target_id": tgt.id,
+                "amount":    -healed if amount < 0 else amount,
+                "hp_after":  tgt.hp,
+                "critical":  False,
+                "spell_id":  spell.id,
+                "timestamp": timezone.now().isoformat(),
+            })
 
-        # -------- WS broadcast -------- #
+            # ------------- Chat ----------------------
+            outcome = "isabet" if hit else ("yarım" if amount else "ıskalama")
+            dmg_txt = f"{amount} {spell.damage_type}"
+            chat_log.append(
+                f"{attacker.name} {spell.name} kullandı → "
+                f"{tgt.name} {roll}+{atk_mod}={atk_total} ({outcome}), "
+                f"{dmg_txt} (HP {tgt.hp})."
+            )
+
+        battle_state["chat_log"] = chat_log
+
+        # -------- AP düşür (isteğe bağlı) ----------
+        attacker.action_points = max(0, attacker.action_points - 1)
+        attacker.save(update_fields=["action_points"])
+
+        # -------- state sakla & WS broadcast -------
+        BATTLE_STATE[str(lobby_id)] = battle_state
+
         channel_layer = get_channel_layer()
-        payload = {
-            "event": "battleUpdate",
-            "lobbyId": lobby_id,
-            "placements": {},   # isteğe bağlı board sync
-            "chatLog": chat_log,
-            "results": results,
-        }
         async_to_sync(channel_layer.group_send)(
             f"battle_{lobby_id}",
-            {"type": "battle.update", "data": payload}
+            {
+                "type": "battle.update",
+                "data": {
+                    "lobbyId":    lobby_id,
+                    "placements": placements,
+                    "chatLog":    chat_log,
+                    "logEvents":  events[-len(targets_qs):]  # son eklenenler
+                }
+            }
         )
 
-        # -------- REST response -------- #
+        # -------- REST response --------
         return Response({
             "message": chat_log,
             "results": results
