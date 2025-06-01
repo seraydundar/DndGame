@@ -17,6 +17,7 @@ import Trade              from "./pages/Trade";
 import Chat               from "./pages/Chat";
 import GodPanel           from "./pages/GodPanel";
 import PlayerPage         from "./pages/PlayerPage";
+import LevelUp            from "./pages/LevelUp"; 
 
 // Spells & Items & Creatures
 import SpellCreate    from "./components/SpellCreate";
@@ -106,9 +107,13 @@ export default function App() {
                         <Route path="/endbattle/:lobbyId"        
                                element={<RequireAuth><EndBattle /></RequireAuth>} />
 
+
                         {/* Trade & Chat */}
                         <Route path="/trade"            element={<RequireAuth><Trade /></RequireAuth>} />
                         <Route path="/chat"             element={<RequireAuth><Chat /></RequireAuth>} />
+
+                        {/* Level-up */}
+                        <Route path="/level-up/:id"     element={<RequireAuth><LevelUp /></RequireAuth>} /> {/* 🆕 */}
 
                         {/* GM & Player Pages */}
                         <Route path="/godpanel"         element={<RequireAuth><GodPanel /></RequireAuth>} />

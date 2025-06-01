@@ -20,6 +20,7 @@ from lobbies.models import Lobby, LobbyPlayer
 from .serializers import CharacterTemplateSerializer, RaceSerializer, ClassSerializer, CharacterSerializer
 from creature.models import Creature
 from items.models     import Item
+from django.db import transaction
 
 # Global battle state (demo amaçlı; production için merkezi store (ör. Redis) kullanın)
 BATTLE_STATE = {}
@@ -77,7 +78,9 @@ class CharacterViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='confirm-level-up')
     def confirm_level_up(self, request, pk=None):
-        character = self.get_object()
+        with transaction.atomic():
+            character = self.get_object().select_for_update()
+        
         if not character.can_level_up:
             return Response(
                 {"error": "Level up için yeterli XP yok."},

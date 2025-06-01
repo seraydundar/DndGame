@@ -2,12 +2,13 @@
 import React, { useEffect, useState }    from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend }                  from 'react-dnd-html5-backend';
+import { useNavigate }                   from 'react-router-dom';
 import api                               from '../services/api';
 import './PlayerPage.css';
 
-///////////////////////////
-// Slot ↔ DB alanı eşlemesi
-///////////////////////////
+/*------------------------------------------------------------
+  Slot alanı ↔ DB alanı eşlemesi
+------------------------------------------------------------*/
 const SLOT_FIELD_MAP = {
   HEAD:       'head_armor_id',
   EAR1:       'ear1_id',
@@ -22,36 +23,41 @@ const SLOT_FIELD_MAP = {
   LEGS:       'legs_armor_id',
 };
 
-// ■■ Aşağıyı eski SLOT_POSITIONS ile değiştirin ■■
+/*------------------------------------------------------------
+  Ekipman slotlarının ekranda konumu (yüzde cinsinden)
+------------------------------------------------------------*/
 const SLOT_POSITIONS = {
-  HEAD:       { top:  5,  left: 50 },  // kafa
-  EAR1:       { top: 5,  left: 25 },  // sol kulak
-  EAR2:       { top: 5,  left: 75 },  // sağ kulak
-  NECKLACE:   { top: 20,  left: 25 },  // kolye
-  CHEST:      { top: 20,  left: 50 },  // göğüs
-  HAND_ARMOR: { top: 35,  left: 25 },  // el zırhı (orta)
-  MAIN_HAND:  { top: 55,  left: 25 },  // ana el
-  OFF_HAND:   { top: 55,  left: 75 },  // yan el
-  RING1:      { top: 35,  left: 75 },  // sol yüzük
-  RING2:      { top: 20,  left: 75 },  // sağ yüzük
-  LEGS:       { top: 35,  left: 50 },  // bacak
+  HEAD:       { top:  5,  left: 50 },
+  EAR1:       { top:  5,  left: 25 },
+  EAR2:       { top:  5,  left: 75 },
+  NECKLACE:   { top: 20,  left: 25 },
+  CHEST:      { top: 20,  left: 50 },
+  HAND_ARMOR: { top: 35,  left: 25 },
+  MAIN_HAND:  { top: 55,  left: 25 },
+  OFF_HAND:   { top: 55,  left: 75 },
+  RING1:      { top: 35,  left: 75 },
+  RING2:      { top: 20,  left: 75 },
+  LEGS:       { top: 35,  left: 50 },
 };
 
+/*------------------------------------------------------------
+  Eşya slot uyumluluk tablosu
+------------------------------------------------------------*/
 const SLOT_COMPAT = {
   HEAD:       ['HEAD'],
-  EAR:        ['EAR1','EAR2'],
+  EAR:        ['EAR1', 'EAR2'],
   NECKLACE:   ['NECKLACE'],
   CHEST:      ['CHEST'],
   HAND_ARMOR: ['HAND_ARMOR'],
   MAIN_HAND:  ['MAIN_HAND'],
   OFF_HAND:   ['OFF_HAND'],
-  RING:       ['RING1','RING2'],
+  RING:       ['RING1', 'RING2'],
   LEGS:       ['LEGS'],
 };
 
-///////////////////////////
-// Media URL helper
-///////////////////////////
+/*------------------------------------------------------------
+  Medya URL yardımcı fonksiyonu
+------------------------------------------------------------*/
 const buildIconUrl = path => {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) return path;
@@ -59,12 +65,13 @@ const buildIconUrl = path => {
   return `${base}/${path.replace(/^\/+/, '')}`;
 };
 
+/* === Envanter kutusu bileşeni === */
 function InventoryItem({ item, onView }) {
   const [{ isDragging }, drag] = useDrag(
     () => ({
       type: 'ITEM',
       item: { id: item.id },
-      collect: m => ({ isDragging: !!m.isDragging() })
+      collect: m => ({ isDragging: !!m.isDragging() }),
     }),
     [item.id]
   );
@@ -81,6 +88,7 @@ function InventoryItem({ item, onView }) {
   );
 }
 
+/* === Ekipman slotu bileşeni === */
 function EquipSlot({ slot, equipped, allItems, onEquip, onUnequip, onView }) {
   const [, drop] = useDrop(
     () => ({
@@ -88,12 +96,12 @@ function EquipSlot({ slot, equipped, allItems, onEquip, onUnequip, onView }) {
       drop: async ({ id }) => {
         const itm = allItems.find(i => i.id === id);
         if (!itm) return;
-        const es = itm.equip_slot?.toUpperCase();           // örn. "RING" veya "MAIN_HAND"
-        const allowed = SLOT_COMPAT[es] || [];               // izinli slot listesi
-        if (!allowed.includes(slot)) return;                 // eşleşmiyorsa geri dön
-        if (equipped?.id === id) return;                    // zaten varsa
+        const es       = itm.equip_slot?.toUpperCase();
+        const allowed  = SLOT_COMPAT[es] || [];
+        if (!allowed.includes(slot)) return;
+        if (equipped?.id === id)      return;
         await onEquip(slot, id);
-      }
+      },
     }),
     [slot, equipped, allItems]
   );
@@ -110,52 +118,86 @@ function EquipSlot({ slot, equipped, allItems, onEquip, onUnequip, onView }) {
       {equipped ? (
         <div className="pp-slot-content">
           <img src={url} alt={equipped.name} onClick={() => onView(equipped)} />
-          <button className="pp-unequip-btn" onClick={() => onUnequip(slot)}>×</button>
+          <button className="pp-unequip-btn" onClick={() => onUnequip(slot)}>
+            ×
+          </button>
         </div>
       ) : (
-        <div className="pp-slot-label">{slot.toLowerCase().replace('_',' ')}</div>
+        <div className="pp-slot-label">{slot.toLowerCase().replace('_', ' ')}</div>
       )}
     </div>
   );
 }
 
+/*------------------------------------------------------------
+  Ana sayfa bileşeni
+------------------------------------------------------------*/
 export default function PlayerPage() {
-  const [char, setChar]           = useState(null);
-  const [inventory, setInventory] = useState([]);
-  const [equipped, setEquipped]   = useState({});
-  const [allItems, setAllItems]   = useState([]);
-  const [viewItem, setViewItem]   = useState(null);
+  const [char,           setChar]           = useState(null);
+  const [inventory,      setInventory]      = useState([]);
+  const [equipped,       setEquipped]       = useState({});
+  const [allItems,       setAllItems]       = useState([]);
+  const [viewItem,       setViewItem]       = useState(null);
+  const [preparedSpells, setPreparedSpells] = useState([]); // Karakterin sahip olduğu büyüler
+  const navigate = useNavigate();
 
+  /* ---------- İlk yükleme: karakter + item listesi ---------- */
   useEffect(() => {
-  // 1) Karakteri çek ve inventory + equipped state’ini doğru kur
-  api.get('characters/')
-    .then(res => {
-      const list = res.data.results || res.data;
-      if (!list.length) return;
-      const c = list[0];
-      setChar(c);
-      setInventory(c.inventory || []);
+    // Karakter verisini çek
+    api.get('characters/')
+      .then(res => {
+        const list = res.data.results || res.data;
+        if (!list.length) return;
+        const c = list[0];
+        setChar(c);
+        setInventory(c.inventory || []);
 
-      // Equipped haritasını hem write-only _id’lerden hem nested objelerden inşa et
-      const eq = {};
-      Object.entries(SLOT_FIELD_MAP).forEach(([slot, field]) => {
-        // örn. field = 'head_armor_id'
-        const idFromField   = c[field];                         // çoğunlukla null
-        const nestedName    = field.replace(/_id$/, '');        // örn. 'head_armor'
-        const idFromNested  = c[nestedName]?.id;                // nested objenin id’si
-        const finalId       = idFromField ?? idFromNested;      // biri varsa al
-        if (finalId) eq[slot] = finalId;
-      });
-      setEquipped(eq);
-    })
-    .catch(console.error);
+        // Equipped haritasını hem *_id hem nested objelerden oluştur
+        const eq = {};
+        Object.entries(SLOT_FIELD_MAP).forEach(([slot, field]) => {
+          const idFromField  = c[field];
+          const nestedName   = field.replace(/_id$/, '');
+          const idFromNested = c[nestedName]?.id;
+          const finalId      = idFromField ?? idFromNested;
+          if (finalId) eq[slot] = finalId;
+        });
+        setEquipped(eq);
 
-  // 2) Tüm eşyaları yükle
-  api.get('items/items/')
-    .then(r => setAllItems(r.data.results || r.data))
-    .catch(console.error);
-}, []);
+        // Eğer karakter prepared_spells içeriyorsa, ID listesi oluştur ve bunları çek
+        if (c.prepared_spells) {
+          const ps = c.prepared_spells;
+          let ids = [];
 
+          // prepared_spells farklı formatlarda gelebilir: dict, dizi, nesne-dizisi
+          if (Array.isArray(ps) && ps.length && typeof ps[0] === 'object' && ps[0].id !== undefined) {
+            // [{id:3,...}, {id:7,...}]
+            ids = ps.map(x => Number(x.id));
+          } else if (Array.isArray(ps)) {
+            // ["3","7"] veya [3,7]
+            ids = ps.map(x => Number(x));
+          } else if (typeof ps === 'object') {
+            // {"3": true, "7": true}
+            ids = Object.keys(ps).map(k => Number(k));
+          }
+
+          // Her bir spell ID'si için API'den detayları alalım
+          Promise.all(
+            ids.map(spellId => api.get(`spells/${spellId}/`).then(r => r.data).catch(() => null))
+          ).then(results => {
+            // null olmayanları filtrele
+            setPreparedSpells(results.filter(r => r));
+          }).catch(console.error);
+        }
+      })
+      .catch(console.error);
+
+    // Eşya kataloğu
+    api.get('items/items/')
+      .then(r => setAllItems(r.data.results || r.data))
+      .catch(console.error);
+  }, []);
+
+  /* ---------- Slot ekip / çıkar işlemleri ---------- */
   const handleEquip = async (slot, id) => {
     const patch = { [SLOT_FIELD_MAP[slot]]: id };
     const res   = await api.patch(`characters/${char.id}/`, patch);
@@ -163,48 +205,56 @@ export default function PlayerPage() {
     setEquipped(e => ({ ...e, [slot]: id }));
     setInventory(inv => inv.filter(x => x !== id));
   };
-  const handleUnequip = async slot => {
-  // 1) figure out which item is being removed
-  const removedId = equipped[slot];
-  // 2) build the new inventory list
-  const newInventory = [...inventory, removedId];
 
-  // 3) send BOTH the cleared slot *and* the updated inventory
-  const payload = {
-    [SLOT_FIELD_MAP[slot]]: null,
-    inventory: newInventory
+  const handleUnequip = async slot => {
+    const removedId    = equipped[slot];
+    const newInventory = [...inventory, removedId];
+    const payload      = { [SLOT_FIELD_MAP[slot]]: null, inventory: newInventory };
+
+    try {
+      const res = await api.patch(`characters/${char.id}/`, payload);
+      setChar(res.data);
+      setEquipped(e => {
+        const copy = { ...e };
+        delete copy[slot];
+        return copy;
+      });
+      setInventory(newInventory);
+    } catch (err) {
+      console.error('unequip error:', err.response?.data || err);
+      alert('Eşyayı çıkarırken sorun oluştu:\n' + JSON.stringify(err.response?.data));
+    }
   };
 
-  try {
-    const res = await api.patch(`characters/${char.id}/`, payload);
-    // server should now respond with updated character
-    setChar(res.data);
-    // update local equipped & inventory
-    setEquipped(e => {
-      const copy = { ...e };
-      delete copy[slot];
-      return copy;
-    });
-    setInventory(newInventory);
-  } catch (err) {
-    console.error('unequip error:', err.response?.data || err);
-    alert('Eşyayı çıkarırken bir sorun oluştu:\n' + JSON.stringify(err.response?.data));
-  }
-};
-
+  /* ---------- Modal aç / kapat ---------- */
   const handleView = item => setViewItem(item);
-  const closeView = ()   => setViewItem(null);
+  const closeView  = ()   => setViewItem(null);
 
+  /* ---------- Yeterli XP? ---------- */
   if (!char) return null;
+  const xpNeeded = 100 * 2 ** (char.level - 1);
+  const canLevel = char.xp >= xpNeeded && char.level < 20;
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="player-page">
+
+        {/* --------- Sol panel --------- */}
         <div className="pp-sidebar">
           <h3>{char.name}</h3>
           <p><strong>Level:</strong> {char.level}</p>
           <p><strong>HP:</strong>    {char.hp}</p>
-          <p><strong>XP:</strong>    {char.xp}</p>
+          <p><strong>XP:</strong>    {char.xp} / {xpNeeded}</p>
+
+          {canLevel && (
+            <button
+              className="pp-levelup-btn"
+              onClick={() => navigate(`/level-up/${char.id}`)}
+            >
+              ▲ Level Up!
+            </button>
+          )}
+
           <h5>Stats</h5>
           <ul>
             <li>STR: {char.strength}</li>
@@ -214,8 +264,23 @@ export default function PlayerPage() {
             <li>WIS: {char.wisdom}</li>
             <li>CHA: {char.charisma}</li>
           </ul>
+
+          {/* ---------- Hazır Büyüler Bölümü ---------- */}
+          {preparedSpells.length > 0 && (
+            <>
+              <h5>Hazır Büyüler</h5>
+              <ul className="pp-spell-list">
+                {preparedSpells.map(sp => (
+                  <li key={sp.id} className="pp-spell-item">
+                    {sp.name || sp.spell_name || sp.title}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
 
+        {/* --------- Gövde: ekipman silueti --------- */}
         <div className="pp-body-container">
           {Object.keys(SLOT_FIELD_MAP).map(slot => (
             <EquipSlot
@@ -230,23 +295,21 @@ export default function PlayerPage() {
           ))}
         </div>
 
-         <div className="pp-inventory-panel">
-            {inventory.length > 0 ? (
+        {/* --------- Envanter paneli --------- */}
+        <div className="pp-inventory-panel">
+          {inventory.length ? (
             inventory
-              .map(id => allItems.find(i => i.id === id)) // önce tümItems’dan eşleşeni al
-              .filter(it => it)                          // undefined’ları at
+              .map(id => allItems.find(i => i.id === id))
+              .filter(Boolean)
               .map(it => (
-                <InventoryItem
-                  key={it.id}
-                  item={it}
-                  onView={handleView}
-                />
+                <InventoryItem key={it.id} item={it} onView={handleView} />
               ))
           ) : (
             <p>Envanter boş.</p>
           )}
         </div>
 
+        {/* --------- Eşya bilgi modali --------- */}
         {viewItem && (
           <div className="pp-modal-overlay" onClick={closeView}>
             <div className="pp-modal" onClick={e => e.stopPropagation()}>
@@ -258,12 +321,12 @@ export default function PlayerPage() {
               <p><strong>Değer:</strong>        {viewItem.value}</p>
               <p><strong>Ağırlık:</strong>      {viewItem.weight}</p>
               {viewItem.damage_dice && (
-                <p><strong>Damage:</strong>     {viewItem.damage_dice} + {viewItem.damage_modifier}</p>
+                <p><strong>Damage:</strong> {viewItem.damage_dice} + {viewItem.damage_modifier}</p>
               )}
               {viewItem.ac_bonus > 0 && (
-                <p><strong>AC Bonus:</strong>   {viewItem.ac_bonus}</p>
+                <p><strong>AC Bonus:</strong> {viewItem.ac_bonus}</p>
               )}
-              <p><strong>Açıklama:</strong>     {viewItem.description}</p>
+              <p><strong>Açıklama:</strong> {viewItem.description}</p>
               <button onClick={closeView}>Kapat</button>
             </div>
           </div>
