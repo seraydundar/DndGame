@@ -37,6 +37,7 @@ html, body {
   height: 400px;              /* var(--banner-h) */
   background: url('../assets/ui/banner.png') center/contain no-repeat;
   z-index: 10;
+  pointer-events: none;
 }
 
 /* ---------- GAME WRAPPER (banner’ın altını aç) ------------------ */
@@ -139,4 +140,9 @@ button:hover {
 }
 @media (max-width: 600px) {
   :root { --cell: 22px; }
+}
+
+.battle-grid .cell.aoe-preview {
+  background-color: rgba(255, 0, 0, 0.25);
+  outline: 1px solid rgba(255, 0, 0, 0.5);
 }

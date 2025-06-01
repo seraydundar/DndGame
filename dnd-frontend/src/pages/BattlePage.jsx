@@ -35,6 +35,7 @@ export default function BattlePage() {
   const [spellMode, setSpellMode]                 = useState(false);
   const [selectedSpell, setSelectedSpell]         = useState(null);
   const [availableCreatures, setAvailableCreatures] = useState([]);
+  const [aoeHoverCell,  setAoeHoverCell]  = useState(null);
 
   const [movementMode, setMovementMode]           = useState(false);  // ← Yeni
   const [reachableCells, setReachableCells]       = useState(new Set());
@@ -361,51 +362,88 @@ const handleStartBattle = async () => {
   }
 };
 
-  // --- Hücre tıklama: önce saldırı/büyü then hareket ---
-  const handleCellClick = (cellIndex, cellCharacter) => {
+  // --- Hücre tıklama: önce saldırı/büyü, sonra hareket ---
+const handleCellClick = (cellIndex, cellCharacter) => {
+  /* ---------- GM kontrollü yaratıklar ---------- */
+  // 1) GM yaratığı için hareket
+  if (
+    selectedAttacker?.type === 'creature' &&
+    movementMode &&
+    reachableCells.has(cellIndex)
+  ) {
+    handleMoveCreature(cellIndex);
+    return;
+  }
 
-          // --- GM yaratık kontrolü (movement) ---
-      if (selectedAttacker?.type === 'creature' && movementMode && reachableCells.has(cellIndex)) {
-        // tıpkı karakter gibi hareket ettir
-      handleMoveCreature(cellIndex);
-        return;
-      }
-      // --- GM yaratık kontrolü (attack) ---
-      if (selectedAttacker?.type === 'creature' && attackMode && cellCharacter) {
-        handleCreatureAttack(cellCharacter);
-        return;
-      }
-    // 1) Melee
-    if (attackMode && attackType === 'melee' && selectedAttacker && cellCharacter) {
-      handleMeleeAttack(cellCharacter);
-      return;
-    }
-    // 2) Ranged
-    if (attackMode && attackType === 'ranged' && selectedAttacker && cellCharacter) {
-      handleRangedAttack(cellCharacter);
-      return;
-    }
-    // 3) Spell
-    if (spellMode && selectedAttacker && selectedSpell && cellCharacter) {
+  // 2) GM yaratığı için saldırı
+  if (
+    selectedAttacker?.type === 'creature' &&
+    attackMode &&
+    cellCharacter
+  ) {
+    handleCreatureAttack(cellCharacter);
+    return;
+  }
+
+  /* ---------- Oyuncu karakterinin hamleleri ---------- */
+  // 3) Yakın dövüş
+  if (
+    attackMode &&
+    attackType === 'melee' &&
+    selectedAttacker &&
+    cellCharacter
+  ) {
+    handleMeleeAttack(cellCharacter);
+    return;
+  }
+
+  // 4) Menzilli saldırı
+  if (
+    attackMode &&
+    attackType === 'ranged' &&
+    selectedAttacker &&
+    cellCharacter
+  ) {
+    handleRangedAttack(cellCharacter);
+    return;
+  }
+
+  // 5) Büyü (tek hedef veya alan)
+  if (spellMode && selectedAttacker && selectedSpell) {
+    if (selectedSpell.scope === 'area') {
+      /* Alan etkili büyü:
+         - Hedefte karakter olsun veya olmasın
+         - Merkez olarak tıklanan hücreyi kullan.
+      */
+      handleSpellCast(selectedSpell.id, [], { centerIndex: cellIndex });
+    } else if (cellCharacter) {
+      // Tek hedefli büyü
       handleSpellCast(selectedSpell.id, [cellCharacter.id]);
+    }
+    return;
+  }
+
+  /* ---------- Hareket ---------- */
+  if (
+    movementMode &&
+    selectedAttacker &&
+    reachableCells.has(cellIndex)
+  ) {
+    handleMoveCharacter(cellIndex);
+    return;
+  }
+
+  /* ---------- Karakter seçimi ---------- */
+  if (cellCharacter?.player_id === currentUserId) {
+    const turn = initiativeOrder[currentTurnIndex];
+    if (!turn || cellCharacter.id !== turn.character_id) {
+      alert('Sıra sizde değil!');
       return;
     }
-    // 4) Move
-    if (movementMode && selectedAttacker && reachableCells.has(cellIndex)) {
-      handleMoveCharacter(cellIndex);
-      return;
-    }
-    // 5) Select character (sira kontrolu)
-    if (cellCharacter?.player_id === currentUserId) {
-      const turn = initiativeOrder[currentTurnIndex];
-      if (!turn || cellCharacter.id !== turn.character_id) {
-        alert('Sıra sizde değil!');
-        return;
-      }
-      // sadece seçimi yap, modları bozmadan
-      setSelectedAttacker(cellCharacter);
-    }
-  };
+    // Sadece seçimi yap, modları bozmadan
+    setSelectedAttacker(cellCharacter);
+  }
+};
 
   // --- Karakteri hareket ettir ---
   const handleMoveCharacter = async targetCell => {
@@ -649,58 +687,127 @@ const handleCreatureAttack = async targetCharacter => {
     setSelectedAttacker(null);
   };
 
-  // --- Spell Cast ---
-  const handleSpellCast = async (spellId, targetIds, extra={}) => {
-    if (!selectedAttacker || !targetIds.length) return;
-    try {
+  // --- Spell Cast (tek hedef + alan) ---
+const handleSpellCast = async (spellId, targetIds = [], extra = {}) => {
+  if (!selectedAttacker) return;
+
+  try {
+    /* ---------- 1) Alan etkili (“area”) büyü ---------- */
+    if (selectedSpell?.scope === 'area' && typeof extra.centerIndex === 'number') {
+      const centerIdx       = extra.centerIndex;
+      const centerX         = centerIdx % GRID_SIZE;
+      const centerY         = Math.floor(centerIdx / GRID_SIZE);
+
+      // 3×3 hücredeki karakterleri bul
+      const targetsInArea = Object.entries(placements)
+        .filter(([idx, unit]) => {
+          if (!unit) return false;           // hücre boşsa geç
+          const index = +idx;                // string → number
+          const x = index % GRID_SIZE;
+          const y = Math.floor(index / GRID_SIZE);
+          return Math.abs(x - centerX) <= 1 && Math.abs(y - centerY) <= 1;
+        })
+        .map(([_, unit]) => unit);
+
+      // Hedef yoksa boşa harcama yapma
+      if (targetsInArea.length === 0) {
+        alert('Bu alanda hedef yok.');
+        return;
+      }
+
+      // Her hedefe tek tek POST /cast
+      for (const tgt of targetsInArea) {
+        const res = await api.post(`spells/${spellId}/cast/`, {
+          attacker_id: selectedAttacker.id,
+          targets:     [tgt.id],
+          lobby_id:    lobbyId,
+          spell_id:    spellId,
+          spell_level: selectedSpell.level
+        });
+
+        const { message, results } = res.data;
+
+        // Chat log’a ekle ve WS yayınla
+        setChatLog(prev => {
+          const next = [...prev, message];
+          getBattleSocket()?.send(JSON.stringify({
+            event:  'battleUpdate',
+            lobbyId,
+            chatLog: next
+          }));
+          return next;
+        });
+
+        // Placement HP güncelle
+        if (results) {
+          setPlacements(prev => {
+            const next = { ...prev };
+            Object.entries(results).forEach(([cid, hp]) => {
+              const entry = Object.entries(prev).find(([_, c]) => c?.id === +cid);
+              if (entry) next[entry[0]] = { ...entry[1], current_hp: hp };
+            });
+            return next;
+          });
+        }
+      }
+    }
+
+    /* ---------- 2) Tek hedefli büyü ---------- */
+    else if (targetIds.length) {
       const res = await api.post(`spells/${spellId}/cast/`, {
         attacker_id: selectedAttacker.id,
-        targets: targetIds,
-        lobby_id: lobbyId,
-        spell_id: spellId,
+        targets:     targetIds,
+        lobby_id:    lobbyId,
+        spell_id:    spellId,
         spell_level: selectedSpell.level,
         ...extra
       });
-      const message = res.data.message, results = res.data.results;
-      console.log('[BattlePage] Spell cast:', message);
+
+      const { message, results } = res.data;
+
       setChatLog(prev => {
         const next = [...prev, message];
-        getBattleSocket().send(JSON.stringify({
-          event:'battleUpdate',
+        getBattleSocket()?.send(JSON.stringify({
+          event: 'battleUpdate',
           lobbyId,
-          chatLog:next
+          chatLog: next
         }));
         return next;
       });
+
       if (results) {
         setPlacements(prev => {
-          const next = {...prev};
-          Object.entries(results).forEach(([cid,hp]) => {
-            const e = Object.entries(prev).find(([_,c])=>c?.id===+cid);
-            if (e) next[e[0]] = {...e[1], current_hp: hp};
+          const next = { ...prev };
+          Object.entries(results).forEach(([cid, hp]) => {
+            const entry = Object.entries(prev).find(([_, c]) => c?.id === +cid);
+            if (entry) next[entry[0]] = { ...entry[1], current_hp: hp };
           });
           return next;
         });
       }
-      const state=await api.get(`battle-state/${lobbyId}/`);
-      setInitiativeOrder(state.data.initiative_order);
-      setPlacements(state.data.placements);
-      setCurrentTurnIndex(state.data.current_turn_index||0);
-      setActionUsed(true);
-    } catch(err){
-      console.error("Büyü kullanım hata:", err);
     }
-    setSpellMode(false);
-    setSelectedSpell(null);
-    setSelectedAttacker(null);
-  };
 
-  // --- Spell select ---
-  const handleSelectSpell = spell => {
-    setSelectedSpell(spell);
-    setAttackMode(false);
-    setAttackType(null);
-  };
+    /* ---------- 3) Durum tazele ---------- */
+    const state = await api.get(`battle-state/${lobbyId}/`);
+    setInitiativeOrder(state.data.initiative_order);
+    setPlacements(state.data.placements);
+    setCurrentTurnIndex(state.data.current_turn_index || 0);
+    setActionUsed(true);
+  } catch (err) {
+    console.error('Büyü kullanım hata:', err);
+  }
+
+  setSpellMode(false);
+  setSelectedSpell(null);
+  setSelectedAttacker(null);
+};
+
+// --- Spell seçimi ---
+const handleSelectSpell = spell => {
+  setSelectedSpell(spell);
+  setAttackMode(false);
+  setAttackType(null);
+};
 
   const handleEndTurn = async () => {
   try {
@@ -831,6 +938,10 @@ if (!lobbyData) {
           totalCells={TOTAL_CELLS}
           moving={moving}
           currentUserId={currentUserId}
+          spellMode={spellMode}
+          selectedSpell={selectedSpell}
+          aoeHoverCell={aoeHoverCell}
+          onCellHover={setAoeHoverCell}
           onCellClick={handleCellClick}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}

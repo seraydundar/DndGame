@@ -4,11 +4,11 @@ import React from 'react';
 /**
  * BattleMap – kare grid üzerine karakter ikon + isim + HP bar çizer.
  *  🔹 CSS entegrasyonu
- *      - Dış sarmal div -> className="battle-grid"  (BattlePage.css’te tanımlı)
- *      - Her hücre      -> className="cell" (+ reachable / ranged ekleri)
- *  🔹 Inline style yalnızca dinamik ölçüler (CELL_SIZE) için tutuldu.
+ *      - Dış sarmal div  → className="battle-grid"  (BattlePage.css’te stil)
+ *      - Her hücre       → className="cell" (+ reachable / ranged / aoe-preview)
+ *  🔹 Inline style yalnızca dinamik ölçüler (CELL_SIZE) için tutulur.
+ *  🔹 Alan büyüsü (“area”) seçildiğinde mouse-hover merkezinden 3×3 kare vurgulanır.
  */
-
 export default function BattleMap({
   placements,
   reachableCells,
@@ -17,6 +17,12 @@ export default function BattleMap({
   totalCells,
   moving,
   currentUserId,
+  /* alan büyüsü önizlemesi için ↓ */
+  spellMode,
+  selectedSpell,
+  aoeHoverCell,
+  onCellHover,
+  /* etkileşimler */
   onCellClick,
   onDragStart,
   onDragOver,
@@ -25,24 +31,55 @@ export default function BattleMap({
   const CELL_SIZE = 35;
   const ICON_SIZE = 28;
 
+  /* ------------ 3×3 AOE vurgusu ------------ */
+  const aoeCells = new Set();
+  if (
+    spellMode &&
+    selectedSpell?.scope === 'area' &&
+    typeof aoeHoverCell === 'number'
+  ) {
+    const cx = aoeHoverCell % gridSize;
+    const cy = Math.floor(aoeHoverCell / gridSize);
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x >= 0 && x < gridSize && y >= 0 && y < totalCells / gridSize) {
+          aoeCells.add(y * gridSize + x);
+        }
+      }
+    }
+  }
+
+  /* ------------ Hücreleri oluştur ------------ */
   const cells = Array.from({ length: totalCells }, (_, i) => {
     const ch = placements[i];
-    const hpPerc = ch && ch.max_hp
-      ? Math.max(0, Math.min(100, ((ch.current_hp ?? ch.max_hp) / ch.max_hp) * 100))
-      : 0;
 
-    // CSS sınıfları: cell + opsiyonel reachable / ranged
+    /* HP yüzdesi */
+    const hpPerc =
+      ch && ch.max_hp
+        ? Math.max(
+            0,
+            Math.min(100, ((ch.current_hp ?? ch.max_hp) / ch.max_hp) * 100),
+          )
+        : 0;
+
+    /* CSS sınıfları */
     const cellClasses = [
       'cell',
       reachableCells.has(i) ? 'reachable' : '',
       rangedReachableCells.has(i) ? 'ranged' : '',
-    ].join(' ');
+      aoeCells.has(i) ? 'aoe-preview' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     return (
       <div
         key={i}
         className={cellClasses}
         onClick={() => onCellClick(i, ch)}
+        onMouseEnter={() => onCellHover && onCellHover(i)}
         onDragOver={onDragOver}
         onDrop={(e) => onDrop(e, i)}
         style={{
@@ -62,7 +99,7 @@ export default function BattleMap({
               flexDirection: 'column',
               alignItems: 'center',
               width: '100%',
-              pointerEvents: 'none', // hücre tıklamasını koru
+              pointerEvents: 'none', // hücre tıklamasını engelleme
             }}
           >
             {/* ---- İKON ---- */}
@@ -102,7 +139,9 @@ export default function BattleMap({
             </div>
 
             {/* ---- İSİM ---- */}
-            <span style={{ fontSize: 8, lineHeight: 1, marginTop: 2 }}>{ch.name}</span>
+            <span style={{ fontSize: 8, lineHeight: 1, marginTop: 2 }}>
+              {ch.name}
+            </span>
 
             {/* ---- HP BAR ---- */}
             {ch.max_hp && (
@@ -131,6 +170,7 @@ export default function BattleMap({
     );
   });
 
+  /* ------------ Render grid ------------ */
   return (
     <div
       className="battle-grid"
