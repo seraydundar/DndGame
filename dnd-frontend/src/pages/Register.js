@@ -28,7 +28,7 @@ const Register = () => {
     }
   };
 
-  return (
+ return (
     <div
       style={{
         position: 'fixed',
@@ -41,32 +41,33 @@ const Register = () => {
         padding: 0,
       }}
     >
-      {/* Bulanık arkaplan */}
-      <div
+      {/* Arka planda video */}
+      <video
+        src="/backgroundvideo.mp4"
+        autoPlay
+        muted
+        loop
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundImage: 'url("/dndregister.jpg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(6px)',
-          transform: `scale(${blurScale})`,
-          transition: 'transform 1s ease-out',
+          objectFit: 'cover',
           zIndex: -1,
         }}
       />
 
-      {/* Form kutusu tam ortada */}
+      {/* Form kutusu */}
       <form
         onSubmit={handleRegister}
         style={{
           position: 'absolute',
           top: '50%',
           left: '50%',
-          transform: visible ? 'translate(-50%, -50%)' : 'translate(-50%, -60%)',
+          transform: visible
+            ? 'translate(-50%, -50%)'
+            : 'translate(-50%, -60%)',
           opacity: visible ? 1 : 0,
           transition: 'transform 0.8s ease-in-out, opacity 0.8s ease-in-out',
           background: 'rgba(0, 0, 0, 0.7)',
@@ -80,10 +81,14 @@ const Register = () => {
           zIndex: 1,
         }}
       >
-        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>Sign Up</h2>
+        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>
+          Sign Up
+        </h2>
 
         <div style={{ marginBottom: '24px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Username</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>
+            Username
+          </label>
           <input
             type="text"
             value={username}
@@ -101,7 +106,9 @@ const Register = () => {
         </div>
 
         <div style={{ marginBottom: '24px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Email</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>
+            Email
+          </label>
           <input
             type="email"
             value={email}
@@ -119,7 +126,9 @@ const Register = () => {
         </div>
 
         <div style={{ marginBottom: '32px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Password</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>
+            Password
+          </label>
           <input
             type="password"
             value={password}
@@ -150,18 +159,25 @@ const Register = () => {
             cursor: 'pointer',
             transition: 'background-color 0.3s ease',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8d662f')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#a57c3c')}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = '#8d662f')
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = '#a57c3c')
+          }
         >
           Sign Up
         </button>
-        {/* added login link */}
-       <div style={{ marginTop: 20, textAlign: 'center' }}>
-         Already have an account?{' '}
-         <Link to="/login" style={{ color: '#a57c3c', textDecoration: 'none' }}>
-           Login
-         </Link>
-       </div>
+
+        <div style={{ marginTop: 20, textAlign: 'center' }}>
+          Already have an account?{' '}
+          <Link
+            to="/login"
+            style={{ color: '#a57c3c', textDecoration: 'none' }}
+          >
+            Login
+          </Link>
+        </div>
       </form>
     </div>
   );

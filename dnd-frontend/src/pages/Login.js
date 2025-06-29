@@ -54,25 +54,24 @@ const Login = () => {
         padding: 0,
       }}
     >
-      {/* Bulanık arkaplan */}
-      <div
+      {/* Arka planda video */}
+      <video
+        src="/backgroundvideo.mp4"
+        autoPlay
+        muted
+        loop
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundImage: 'url("/dndregister.jpg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(6px)',
-          transform: `scale(${blurScale})`,
-          transition: 'transform 1s ease-out',
+          objectFit: 'cover',
           zIndex: -1,
         }}
       />
 
-      {/* Form kutusu tam ortada */}
+      {/* Form kutusu */}
       <form
         onSubmit={handleLogin}
         style={{
@@ -95,10 +94,14 @@ const Login = () => {
           zIndex: 1,
         }}
       >
-        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>Login</h2>
+        <h2 style={{ marginBottom: '32px', fontSize: '1.8em' }}>
+          Login
+        </h2>
 
         <div style={{ marginBottom: '24px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Username</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>
+            Username
+          </label>
           <input
             type="text"
             value={username}
@@ -116,7 +119,9 @@ const Login = () => {
         </div>
 
         <div style={{ marginBottom: '32px', textAlign: 'left' }}>
-          <label style={{ display: 'block', marginBottom: '8px' }}>Password</label>
+          <label style={{ display: 'block', marginBottom: '8px' }}>
+            Password
+          </label>
           <input
             type="password"
             value={password}
@@ -152,13 +157,13 @@ const Login = () => {
         >
           Login
         </button>
-        {/* added register link */}
-       <div style={{ marginTop: 20, textAlign: 'center' }}>
-         Don’t have an account?{' '}
-         <Link to="/register" style={{ color: '#a57c3c', textDecoration: 'none' }}>
-           Register
-         </Link>
-       </div>
+
+        <div style={{ marginTop: 20, textAlign: 'center' }}>
+          Don’t have an account?{' '}
+          <Link to="/register" style={{ color: '#a57c3c', textDecoration: 'none' }}>
+            Register
+          </Link>
+        </div>
       </form>
     </div>
   );

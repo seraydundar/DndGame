@@ -48,9 +48,6 @@ const Dashboard = () => {
         <nav className="dashboard-nav">
           <ul>
             <li>
-              <Link to="/charactercreation">Create New Character</Link>
-            </li>
-            <li>
               <Link to="/spells">List All Spells</Link>
             </li>
             <li>
@@ -73,9 +70,6 @@ const Dashboard = () => {
             </li>
             <li>
               <Link to="/battle">Create Battle Area</Link>
-            </li>
-            <li>
-              <Link to="/trade">Create Trade Area</Link>
             </li>
             <li>
               <Link to="/chat">Chat</Link>
