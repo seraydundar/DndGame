@@ -39,10 +39,15 @@ const SpellList = () => {
       <div className="spell-grid">
         {spells.map(spell => {
           const iconUrl = getIconURL(spell.icon);
-          const { type, dice = {} } = spell.effect || {};
-          const diceExpr = dice.num && dice.size
-            ? `${dice.num}d${dice.size}${dice.modifier >= 0 ? '+'+dice.modifier : dice.modifier}`
-            : null;
+          const {
+            effect_type,
+            scope,
+            damage_type,
+            dice_num,
+            dice_size,
+            dice_modifier
+          } = spell;
+          const diceExpr = `${dice_num}d${dice_size}${dice_modifier >= 0 ? '+' + dice_modifier : dice_modifier}`;
 
           return (
             <div key={spell.id} className="spell-card">
@@ -57,17 +62,20 @@ const SpellList = () => {
                 <strong>Classes:</strong>{' '}
                 {spell.classes && spell.classes.length
                   ? spell.classes.join(', ')
-                  : '—'}
+                  : '—'
+                }
               </p>
               <hr />
-              <p><strong>Effect Type:</strong> {type || '—'}</p>
-              {(type === 'damage' || type === 'heal') && diceExpr && (
-                <p>
-                  <strong>
-                    {type === 'damage' ? 'Damage' : 'Heal'}:
-                  </strong>{' '}
-                  {diceExpr}
-                </p>
+              <p><strong>Effect Type:</strong> {effect_type}</p>
+              <p><strong>Scope:</strong> {scope}</p>
+              {effect_type === 'damage' && (
+                <>
+                  <p><strong>Damage Type:</strong> {damage_type}</p>
+                  <p><strong>Dice:</strong> {diceExpr}</p>
+                </>
+              )}
+              {effect_type === 'heal' && (
+                <p><strong>Heal Dice:</strong> {diceExpr}</p>
               )}
             </div>
           );

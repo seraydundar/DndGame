@@ -1,6 +1,6 @@
 import json
 from rest_framework import serializers
-from .models import Character, Race, Class as CharacterClass, CharacterTemplate, Class
+from .models import Character, Race, Class as CharacterClass, CharacterTemplate
 from spells.models import Spell
 from spells.serializers import SpellSerializer
 from items.models import Item
@@ -21,15 +21,18 @@ class CharacterTemplateSerializer(serializers.ModelSerializer):
         rep['class'] = rep.pop('class_name')
         return rep
 
+
 class RaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Race
         fields = ['race_name', 'description', 'traits']
 
+
 class ClassSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Class
+        model = CharacterClass
         fields = ['class_name', 'description', 'features']
+
 
 class CharacterSerializer(serializers.ModelSerializer):
     race = serializers.SlugRelatedField(
@@ -41,71 +44,126 @@ class CharacterSerializer(serializers.ModelSerializer):
         queryset=CharacterClass.objects.all()
     )
 
-    # Inventory replacing equipment
+    # Core fields
+    hp = serializers.IntegerField()
+    max_hp = serializers.IntegerField()
+    icon = serializers.ImageField(required=False, allow_null=True)
     inventory = serializers.ListField(
-        child=serializers.IntegerField(), required=False, default=list
+        child=serializers.IntegerField(),
+        required=False,
+        default=list
     )
 
-    # Equipped item slots
+    # Equipment serializers
     head_armor = ItemSerializer(read_only=True)
     head_armor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='head_armor', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='head_armor',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     chest_armor = ItemSerializer(read_only=True)
     chest_armor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='chest_armor', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='chest_armor',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     hand_armor = ItemSerializer(read_only=True)
     hand_armor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='hand_armor', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='hand_armor',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     legs_armor = ItemSerializer(read_only=True)
     legs_armor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='legs_armor', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='legs_armor',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     ring1 = ItemSerializer(read_only=True)
     ring1_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='ring1', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='ring1',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     ring2 = ItemSerializer(read_only=True)
     ring2_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='ring2', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='ring2',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     necklace = ItemSerializer(read_only=True)
     necklace_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='necklace', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='necklace',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     ear1 = ItemSerializer(read_only=True)
     ear1_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='ear1', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='ear1',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     ear2 = ItemSerializer(read_only=True)
     ear2_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='ear2', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='ear2',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     main_hand = ItemSerializer(read_only=True)
     main_hand_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='main_hand', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='main_hand',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
     off_hand = ItemSerializer(read_only=True)
     off_hand_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(), source='off_hand', write_only=True, required=False
+        queryset=Item.objects.all(),
+        source='off_hand',
+        write_only=True,
+        required=False,
+        allow_null=True
     )
 
-    # 1) Okuma için nested serializer'ı tutarız
+    # ——— Yeni Alanlar: Geçici monster karakterleri için ———
+    is_temporary = serializers.BooleanField(read_only=True)
+    melee_dice   = serializers.CharField(required=False, allow_null=True)
+    ranged_dice  = serializers.CharField(required=False, allow_null=True)
+    # ——————————————————————————————————————————————
+
     prepared_spells = serializers.SerializerMethodField()
-    # 2) Yazma için JSONField
     prepared_spells_input = serializers.JSONField(
         write_only=True,
         required=False,
         default=list
     )
+    class_features = serializers.JSONField(required=False)
 
     def get_prepared_spells(self, obj):
         spells = obj.prepared_spells or []
         if isinstance(spells, str):
             spells = json.loads(spells)
-        spell_ids = [s.get("id") for s in spells if isinstance(s, dict) and s.get("id") is not None]
+        spell_ids = [s.get("id") for s in spells
+                     if isinstance(s, dict) and s.get("id") is not None]
         qs = Spell.objects.filter(id__in=spell_ids)
         return SpellSerializer(qs, many=True).data
 
@@ -127,24 +185,24 @@ class CharacterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Character
         fields = [
-            'id', 'player_id', 'lobby_id', 'name',
-            'race', 'character_class',
-            'level', 'hp',
-            'strength', 'dexterity', 'constitution',
-            'intelligence', 'wisdom', 'charisma',
-            'gold',
-            'inventory',
+            'id', 'player_id', 'lobby_id', 'name', 'race', 'character_class',
+            'level', 'hp', 'max_hp', 'icon',
+            'strength', 'dexterity', 'constitution', 'intelligence',
+            'wisdom', 'charisma', 'ac', 'xp', 'gold', 'inventory',
             'head_armor', 'head_armor_id',
             'chest_armor', 'chest_armor_id',
             'hand_armor', 'hand_armor_id',
             'legs_armor', 'legs_armor_id',
-            'ring1', 'ring1_id', 'ring2', 'ring2_id',
+            'ring1', 'ring1_id',
+            'ring2', 'ring2_id',
             'necklace', 'necklace_id',
-            'ear1', 'ear1_id', 'ear2', 'ear2_id',
-            'main_hand', 'main_hand_id', 'off_hand', 'off_hand_id',
-            # Okuma ve yazma alanlarını ayrı tuttuk:
-            'prepared_spells',
-            'prepared_spells_input',
-            'class_features'
+            'ear1', 'ear1_id',
+            'ear2', 'ear2_id',
+            'main_hand', 'main_hand_id',
+            'off_hand', 'off_hand_id',
+            # ——— Yeni Alanlar ———
+            'is_temporary', 'melee_dice', 'ranged_dice',
+            # ——————————————————
+            'prepared_spells', 'prepared_spells_input', 'class_features'
         ]
-        read_only_fields = ['prepared_spells']
+        read_only_fields = ['prepared_spells', 'is_temporary']

@@ -47,7 +47,17 @@ class Character(models.Model):
         blank=True
     )
     level = models.IntegerField(default=1)
+
+    # ---- Combat Stats (yeni) ----
+    damage_dealt   = models.IntegerField(default=0)   # verdiği toplam hasar
+    damage_taken   = models.IntegerField(default=0)   # aldığı toplam hasar
+    healing_done   = models.IntegerField(default=0)   # yaptığı toplam iyileştirme
+    kills          = models.IntegerField(default=0)
+
+    # Current and maximum HP
     hp = models.IntegerField(default=10)
+    max_hp = models.IntegerField(default=10)
+
     xp = models.IntegerField(default=0)
     strength = models.IntegerField(default=10)
     dexterity = models.IntegerField(default=10)
@@ -55,7 +65,17 @@ class Character(models.Model):
     intelligence = models.IntegerField(default=10)
     wisdom = models.IntegerField(default=10)
     charisma = models.IntegerField(default=10)
+    ac = models.IntegerField(default=0)
     gold = models.IntegerField(default=10)
+    action_points = models.IntegerField(default=1)
+
+    # Icon for character portrait
+    icon = models.ImageField(
+        upload_to='character_icons/',
+        null=True,
+        blank=True,
+        help_text='PNG or JPG image for character icon (64×64 recommended)'
+    )
 
     # Inventory replaces equipment list
     inventory = models.JSONField(default=list, blank=True)
@@ -63,37 +83,54 @@ class Character(models.Model):
     # Equipped items slots
     head_armor = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     chest_armor = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     hand_armor = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     legs_armor = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     ring1 = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     ring2 = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     necklace = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     ear1 = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     ear2 = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     main_hand = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
     off_hand = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='+')
+        null=True, blank=True, related_name='+'
+    )
+
+    # ——— Yeni Alanlar: Geçici monster karakterleri için ———
+    is_temporary = models.BooleanField(default=False)
+    melee_dice  = models.CharField(max_length=20, blank=True, null=True)
+    ranged_dice = models.CharField(max_length=20, blank=True, null=True)
+    # ——————————————————————————————————————————————
 
     prepared_spells = models.JSONField(default=dict, blank=True)
     class_features = models.JSONField(default=dict, blank=True)
@@ -108,6 +145,12 @@ class Character(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # Ensure hp does not exceed max_hp
+        if self.max_hp is not None:
+            self.hp = min(self.hp, self.max_hp)
+        return super().save(*args, **kwargs)
 
     def xp_for_next_level(self):
         if self.level >= 20:
@@ -131,7 +174,8 @@ class Character(models.Model):
             raise ValueError("Level up için yeterli XP yok.")
         info = self.level_up_info()
         self.level += 1
-        self.hp += info["hp_increase"]
+        self.max_hp += info["hp_increase"]
+        self.hp = self.max_hp
         self.xp = 0
         self.save()
         return info
@@ -145,6 +189,7 @@ class Character(models.Model):
         return 2 + dex_bonus
 
     def normal_attack_damage(self):
+        # Bu metot artık yalnızca player saldırıları için fallback olabilir
         strength_mod = (self.strength - 10) // 2 if self.strength >= 10 else 0
         damage_roll = random.randint(1, 6)
         return damage_roll + strength_mod

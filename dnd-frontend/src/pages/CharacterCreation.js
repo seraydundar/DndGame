@@ -7,59 +7,48 @@ import './Dashboard.css';
 import './CharacterCreation.css';
 
 const CharacterCreation = () => {
-   // URL param’ından almayacağız, sessionStorage’a kaydedilmiş lobby_id’yi okuyalım
   const lobby_id = Number(sessionStorage.getItem('lobby_id'));
   const navigate = useNavigate();
   const currentUserId = parseInt(localStorage.getItem("user_id"), 10);
 
-  // --- Point-buy ayarları ---
   const totalPoints = 27;
   const cost = v => (v <= 13 ? v - 8 : 5 + 2 * (v - 13));
 
-  // --- Adım takibi ---
   const [step, setStep] = useState(1);
-
-  // --- API’den gelecek listeler ---
   const [races, setRaces] = useState([]);
   const [classes, setClasses] = useState([]);
 
-  // --- Seçimler ---
-  const [selectedRace, setSelectedRace]     = useState('');
-  const [selectedClass, setSelectedClass]   = useState('');
-  const [gender, setGender]                 = useState('');
+  const [selectedRace, setSelectedRace] = useState('');
+  const [selectedClass, setSelectedClass] = useState('');
+  const [gender, setGender] = useState('');
 
-  // --- Stat blokları ---
-  const [strength, setStrength]       = useState(8);
-  const [dexterity, setDexterity]     = useState(8);
-  const [constitution, setConstitution]= useState(8);
-  const [intelligence, setIntelligence]= useState(8);
-  const [wisdom, setWisdom]           = useState(8);
-  const [charisma, setCharisma]       = useState(8);
+  const [strength, setStrength] = useState(8);
+  const [dexterity, setDexterity] = useState(8);
+  const [constitution, setConstitution] = useState(8);
+  const [intelligence, setIntelligence] = useState(8);
+  const [wisdom, setWisdom] = useState(8);
+  const [charisma, setCharisma] = useState(8);
 
-  // --- Bonus puan atamaları ---
   const [bonusAssignments, setBonusAssignments] = useState({
     strength:0, dexterity:0, constitution:0,
     intelligence:0, wisdom:0, charisma:0
   });
 
-  // --- Büyüler ---
   const [availableSpells, setAvailableSpells] = useState([]);
-  const [selectedSpells, setSelectedSpells]   = useState([]);
+  const [selectedSpells, setSelectedSpells] = useState([]);
   const MAX_ZERO_LEVEL  = 2;
   const MAX_FIRST_LEVEL = 1;
 
-  // --- Karakter bilgileri ---
-  const [characterName, setCharacterName]     = useState('');
-  const [background, setBackground]           = useState('');
+  const [characterName, setCharacterName] = useState('');
+  const [background, setBackground] = useState('');
   const [personalityTraits, setPersonalityTraits] = useState('');
+  const [icon, setIcon] = useState(null);
 
-  // --- Harcanan ve kalan puan ---
   const totalSpent =
     cost(strength) + cost(dexterity) + cost(constitution) +
     cost(intelligence) + cost(wisdom) + cost(charisma);
   const remainingPoints = totalPoints - totalSpent;
 
-  // --- Irk ve sınıf listelerini çek ---
   useEffect(() => {
     api.get('races/')
       .then(res => {
@@ -75,7 +64,6 @@ const CharacterCreation = () => {
       .catch(console.error);
   }, []);
 
-  // --- Seçilen sınıfa göre şablon ve büyüleri çek ---
   useEffect(() => {
     if (!selectedClass) return;
     api.get(`character-templates/?class=${selectedClass}`)
@@ -97,7 +85,6 @@ const CharacterCreation = () => {
       .catch(console.error);
   }, [selectedClass]);
 
-  // --- WebSocket dinleyici (isteğe bağlı) ---
   useEffect(() => {
     const handler = e => {
       const data = JSON.parse(e.data);
@@ -111,7 +98,6 @@ const CharacterCreation = () => {
     return () => socket.removeEventListener('message', handler);
   }, []);
 
-  // --- Stat değiştirme & bonus atama ---
   const changeStat = (stat, delta) => {
     const map = {
       strength:[strength, setStrength],
@@ -140,7 +126,6 @@ const CharacterCreation = () => {
     });
   };
 
-  // --- Büyü seçimi ---
   const toggleSpell = spell => {
     const zeroCount = selectedSpells.filter(s => s.spell_level === 0).length;
     const oneCount  = selectedSpells.filter(s => s.spell_level === 1).length;
@@ -157,35 +142,41 @@ const CharacterCreation = () => {
     }
   };
 
-  // --- Adım kontrolü ---
   const next = () => setStep(step + 1);
   const prev = () => setStep(step - 1);
 
-  // --- Form gönderimi ---
   const handleSubmit = async e => {
     e.preventDefault();
-    const finalStats = { /* … */ };
-  
-    const payload = {
-      player_id: currentUserId,
-      name:      characterName,
-      race:      selectedRace,
-      character_class: selectedClass,
-      gender,
-      level:     1,
-      hp:        10,
-      ...finalStats,
-      gold:      10,
-      equipment: [],
-      prepared_spells_input: selectedSpells.map(s => ({ id: s.id })),
-      class_features: {},
-      xp:        0,
-      background,
-      personality_traits: personalityTraits
-    };
-  
+    const finalStats = { strength, dexterity, constitution, intelligence, wisdom, charisma };
+
+    const formData = new FormData();
+    formData.append('player_id', currentUserId);
+    formData.append('name', characterName);
+    formData.append('race', selectedRace);
+    formData.append('character_class', selectedClass);
+    formData.append('gender', gender);
+    formData.append('level', 1);
+    formData.append('hp', 10);
+    formData.append('max_hp', 10);
+    formData.append('gold', 10);
+    formData.append('equipment', JSON.stringify([]));
+    formData.append('class_features', JSON.stringify({}));
+    formData.append('xp', 0);
+    formData.append('background', background);
+    formData.append('personality_traits', personalityTraits);
+    formData.append('prepared_spells_input', JSON.stringify(selectedSpells.map(s => ({ id: s.id }))));
+    formData.append('strength', strength);
+    formData.append('dexterity', dexterity);
+    formData.append('constitution', constitution);
+    formData.append('intelligence', intelligence);
+    formData.append('wisdom', wisdom);
+    formData.append('charisma', charisma);
+    if (icon) formData.append('icon', icon);
+
     try {
-      await api.post(`lobbies/${lobby_id}/characters/`, payload);
+      await api.post(`lobbies/${lobby_id}/characters/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       alert('Karakter başarıyla oluşturuldu!');
       navigate(`/lobbies/${lobby_id}`);
     } catch (err) {
@@ -194,7 +185,6 @@ const CharacterCreation = () => {
     }
   };
 
-  // --- Dinamik karakter resmi ---
   let imgSrc;
   try {
     imgSrc = require(`../assets/character/${selectedRace}-${selectedClass}-${gender}.png`);
@@ -305,45 +295,33 @@ const CharacterCreation = () => {
             </>
           )}
 
-          {/* Adım 4 */}
           {step === 4 && (
             <>
               <h3>Adım 4: Karakter Bilgileri</h3>
               <label>
                 İsim:
-                <input
-                  type="text"
-                  value={characterName}
-                  onChange={e=>setCharacterName(e.target.value)}
-                  required
-                />
+                <input type="text" value={characterName} onChange={e=>setCharacterName(e.target.value)} required />
               </label>
               <label>
                 Arka Plan:
-                <input
-                  type="text"
-                  value={background}
-                  onChange={e=>setBackground(e.target.value)}
-                />
+                <input type="text" value={background} onChange={e=>setBackground(e.target.value)} />
               </label>
               <label>
                 Kişilik Özellikleri:
-                <textarea
-                  value={personalityTraits}
-                  onChange={e=>setPersonalityTraits(e.target.value)}
-                />
+                <textarea value={personalityTraits} onChange={e=>setPersonalityTraits(e.target.value)} />
+              </label>
+              <label>
+                Karakter İkonu:
+                <input type="file" accept="image/*" onChange={e => setIcon(e.target.files[0])} required />
               </label>
               <button type="button" onClick={prev}>Geri</button>
-              <button type="submit" disabled={!characterName}>
-                Oluştur
-              </button>
+              <button type="submit" disabled={!characterName}>Oluştur</button>
             </>
           )}
 
         </form>
       </div>
 
-      {/* Sağ tarafta karakter önizlemesi */}
       {selectedRace && selectedClass && gender && (
         <div className="character-image">
           <img src={imgSrc} alt="Karakter Önizleme" />

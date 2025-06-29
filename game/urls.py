@@ -4,7 +4,7 @@ from .views import (
     CharacterViewSet, RaceListView, ClassListView,
     CharacterTemplateListView, InitiateCombatView,
     MeleeAttackView, RangedAttackView, EndTurnView,
-    MoveCharacterView, BattleStateView, LobbyViewSet,
+    MoveCharacterView, BattleStateView, LobbyViewSet,EndBattleView, BattleSummaryView
 )
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -45,4 +45,7 @@ urlpatterns = [
 
     # Battle state: /api/battle-state/<lobby_id>/
     path('battle-state/<int:lobby_id>/', BattleStateView.as_view(), name='battle-state'),
+    path('combat/end-battle/', EndBattleView.as_view(), name='combat-end'),
+    path('battle-state/<int:lobby_id>/end/', BattleSummaryView.as_view(),
+         name='battle-summary'),
 ]

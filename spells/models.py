@@ -1,9 +1,8 @@
-# DndGame/spells/models.py
-
 from django.db import models
 from django.db.models import JSONField
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 class Spell(models.Model):
     # — Temel Bilgiler —
@@ -59,21 +58,70 @@ class Spell(models.Model):
     concentration   = models.BooleanField(default=False)
     ritual          = models.BooleanField(default=False)
 
-    # — Etki Şeması —
-    effect          = JSONField(
-                          default=dict,
-                          help_text=(
-                              "Örnek şema: {"
-                              "'type':'damage','dice':{'num':2,'size':8,'modifier':3},"
-                              "'target':'enemy','damage_type':'fire',"
-                              "'area':{'shape':'sphere','radius':20},"
-                              "'save':{'ability':'Dex','on_success':'half'}"
-                              "}"
-                          )
+    # — Yeni Etki Alanları —
+    SPELL_EFFECTS = [
+        ('damage', 'Hasar'),
+        ('heal', 'İyileştirme'),
+        ('buff', 'Güçlendirme'),
+        ('debuff', 'Zayıflatma'),
+    ]
+    TARGET_SCOPES = [
+        ('single', 'Tek Hedef'),
+        ('area', 'Alan Etkili'),
+        ('self', 'Kendine'),
+    ]
+    DAMAGE_TYPES = [
+        ('fire', 'Ateş'),
+        ('glacier', 'Buz'),
+        ('poison', 'Zehir'),
+        ('lightning', 'Yıldırım'),
+        ('earth', 'Toprak'),
+        ('power', 'Arcane (Güç)'),
+        ('sonic', 'Sonic'),
+    ]
+    effect_type   = models.CharField(
+        max_length=10,
+        choices=SPELL_EFFECTS,
+        default='damage',
+        help_text="Büyünün etki türü"
+    )
+    scope         = models.CharField(
+        max_length=10,
+        choices=TARGET_SCOPES,
+        default='single',
+        help_text="Büyünün hedef kapsamı"
+    )
+    damage_type   = models.CharField(
+        max_length=10,
+        choices=DAMAGE_TYPES,
+        blank=True,
+        null=True,
+        help_text="Hasar büyüsü için hasar tipi"
+    )
+
+    # — Zar Mekaniği —
+    dice_num       = models.PositiveSmallIntegerField(
+                          default=1,
+                          help_text="Atılacak zar sayısı (num)"
+                      )
+    dice_size      = models.PositiveSmallIntegerField(
+                          default=6,
+                          help_text="Zar yüz sayısı (size)"
+                      )
+    dice_modifier  = models.IntegerField(
+                          default=0,
+                          help_text="Zar atma sonrası eklenecek modifikasyon (modifier)"
                       )
 
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        # Hasar tip kontrolü
+        if self.effect_type == 'damage' and not self.damage_type:
+            raise ValidationError({'damage_type': "Hasar büyüleri için damage_type zorunlu."})
+        if self.effect_type != 'damage' and self.damage_type:
+            raise ValidationError({'damage_type': "Sadece hasar büyüleri için damage_type tanımlanabilir."})
 
     def __str__(self):
         return f"{self.name} (Level {self.spell_level})"

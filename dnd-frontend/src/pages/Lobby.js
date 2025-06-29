@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import usePersistentWebSocket from '../hooks/usePersistentWebSocket';
 import './Lobbies.css';
+import { createBattleSocket } from '../services/battleSocket';
 
 const WS_BASE = process.env.REACT_APP_WS_URL || 'ws://localhost:8000';
 delete api.defaults.headers.common['X-User-Id'];
@@ -12,6 +13,17 @@ export default function Lobby() {
   const { id: lobbyId } = useParams();            // route: /lobbies/:lobbyId
   const navigate       = useNavigate();
   const currentUserId  = Number(localStorage.getItem('user_id') || 0);
+
+  useEffect(() => {
+    const socket = createBattleSocket(lobbyId, msg => {
+      console.log('[Lobby] battle WS mesajı:', msg);
+      if (msg.event === 'battleStart') {
+        console.log('[Lobby] battleStart alındı, BattlePage’e geçiliyor');
+        navigate(`/battle/${lobbyId}`, { state: { init: msg } });
+      }
+    });
+    return () => socket?.close();
+  }, [lobbyId, navigate]);
 
   /* — State — */
   const [lobby,        setLobby]        = useState(null);

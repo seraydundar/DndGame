@@ -38,6 +38,10 @@ class CreatureSerializer(serializers.ModelSerializer):
             'ranged_attack_dice':   {'required': False, 'allow_null': True},
             'created_by':           {'required': False, 'allow_null': True},
             'created_at':           {'required': False, 'allow_null': True},
+            'damage_dealt   ':      {'required': False, 'allow_null': True},
+            'damage_taken':         {'required': False, 'allow_null': True},
+            'healing_done':         {'required': False, 'allow_null': True},
+            'kills':                {'required': False, 'allow_null': True},
             
             # spells ve icon zaten üstte ayarlandı
         }
