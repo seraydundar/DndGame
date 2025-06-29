@@ -23,8 +23,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/accounts/', include('accounts.urls')),     # Accounts API
     path('api/csrf/', get_csrf),
-    path('api/', include('game.urls')),                  # Game API
     path('api/lobbies/', include('lobbies.urls')),       # Lobbies API
+    path('api/', include('game.urls')),                  # Game API
     path('api/items/', include('items.urls')),           # Items API
     path('api/', include('spells.urls')),                # Spells API
     path('api/creatures/', include('creature.urls')),    # Creatures API

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import parchmentBg from '../assets/parchment1.jpg';
 import './SpellCreate.css'
 
 export default function SpellCreate() {
@@ -170,7 +171,17 @@ export default function SpellCreate() {
   }
 
   return (
-    <form className="spell-create-form" onSubmit={handleSubmit}>
+    
+      <form
+    className="spell-create-form"
+    onSubmit={handleSubmit}
+    style={{
+      backgroundImage: `url(${parchmentBg})`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }}
+  >
       <h2>Create New Spell</h2>
       <button
         type="button"

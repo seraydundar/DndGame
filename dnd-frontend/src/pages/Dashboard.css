@@ -10,52 +10,17 @@
   position: relative;
 }
 
-/* Arkaplan: 4 resim Ken Burns (Fade + Zoom) Efekti */
-html::before,
-html::after,
-body::before,
-body::after {
-  content: "";
-  position: absolute;
+/* Video Background Styling */
+.dashboard-container video {
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
   z-index: -1;
-  opacity: 0;
-  transform: scale(1);
-  animation: kenburns 40s ease-in-out infinite;
-  animation-fill-mode: both;
+  pointer-events: none;
 }
-
-html::before {
-  background-image: url('../assets/dash1.jpg');
-  animation-delay: 0s;
-}
-html::after {
-  background-image: url('../assets/dash2.jpg');
-  animation-delay: 10s;
-}
-body::before {
-  background-image: url('../assets/dash3.jpg');
-  animation-delay: 20s;
-}
-body::after {
-  background-image: url('../assets/dash4.jpg');
-  animation-delay: 30s;
-}
-
-@keyframes kenburns {
-  /* İlk slide: %0-%24 */
-  0%, 24%   { opacity: 1; transform: scale(1.1); }
-  /* Geçiş: %25 */
-  25%       { opacity: 0; transform: scale(1.1); }
-  /* Gizli kalan süre: %26-%100 */
-  26%,100%  { opacity: 0; transform: scale(1); }
-}
-
 /* Dashboard Layout */
 .dashboard-container {
   position: relative;
@@ -122,64 +87,98 @@ body::after {
   text-decoration: underline;
 }
 
-/* Yan Paneller */
+/* Friend Panel */
 .friend-panel {
-  position: absolute;
+  position: fixed;
   top: 100px;
-  right: 20px;    /* Sağ kenara daha yakın */
-  width: 340px;   /* Genişlik artırıldı */
-  z-index: 1;
-}
-
-.notification-panel {
-  position: absolute;
-  top: 520px;     /* Arkadaş panelinin altına inecek şekilde ayarlandı */
-  right: 20px;    /* Align edilsin diye aynı sağ mesafe */
-  width: 340px;   /* Genişlik eşitlendi */
-  z-index: 1;
-}
-
-/* Arkadaş ve Bildirim Kutuları */
-.friend-sidebar,
-.notification-sidebar {
+  right: 20px;
+  width: 340px;
   background: rgba(255, 250, 240, 0.95);
   border: 2px solid #8b5e3c;
   border-radius: 6px;
   padding: 16px;
   box-shadow: 4px 4px 12px rgba(0,0,0,0.2);
-  min-height: 350px;   /* Yükseklik artırıldı */
+  z-index: 1;
 }
 
-.friend-sidebar h3,
-.notification-sidebar h3 {
+.friend-panel h3 {
   margin: 0 0 8px;
   color: #6b4f3f;
   font-size: 1.1rem;
 }
 
-.friend-sidebar p,
-.notification-sidebar p {
-  margin: 4px 0;
-  font-weight: bold;
+.friend-panel form {
+  display: flex;
+  margin-bottom: 12px;
 }
-/* Ekle Butonu Stilleri */
-.friend-sidebar button,
-.friend-sidebar input[type="submit"] {
-  display: inline-block;
-  margin-left: 8px;        /* Butonu input’un yanına biraz kaydırır */
-  margin-top: 8px;         /* Üstten boşluk */
-  padding: 6px 14px;       /* Dikey/yatay iç boşluk */
-  font-family: inherit;    
+
+.friend-panel input[type="text"] {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #4b3621;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.friend-panel input[type="submit"],
+.friend-panel button {
+  margin-left: 8px;
+  padding: 6px 14px;
+  font-family: inherit;
   font-weight: 600;
-  background: #6b4f3f;     /* Koyu kahverengi zemin */
-  color: #f4ecd8;          /* Açık krem yazı */
+  background: #6b4f3f;
+  color: #f4ecd8;
   border: 1px solid #4b3621;
   border-radius: 4px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.friend-sidebar button:hover,
-.friend-sidebar input[type="submit"]:hover {
-  background: #4b3621;     /* Hover’da biraz daha koyu */
+.friend-panel input[type="submit"]:hover,
+.friend-panel button:hover {
+  background: #4b3621;
+}
+
+.friend-panel ul {
+  list-style: disc inside;
+  margin: 0;
+  padding: 0;
+}
+
+.friend-panel li {
+  margin: 6px 0;
+  font-size: 0.95em;
+  color: #2e2e2e;
+}
+
+/* Notification Panel */
+.notification-panel {
+  position: fixed;
+  top: 480px;
+  right: 20px;
+  width: 340px;
+  background: rgba(255, 250, 240, 0.95);
+  border: 2px solid #8b5e3c;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+.notification-panel h3 {
+  margin: 0 0 8px;
+  color: #6b4f3f;
+  font-size: 1.1rem;
+}
+
+.notification-panel ul {
+  list-style: disc inside;
+  margin: 0;
+  padding: 0;
+}
+
+.notification-panel li {
+  margin: 6px 0;
+  font-size: 0.95em;
+  color: #2e2e2e;
 }

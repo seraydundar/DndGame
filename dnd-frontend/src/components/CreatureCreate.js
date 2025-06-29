@@ -1,6 +1,7 @@
 // CreatureCreate.js
 import React, { useState, useEffect } from 'react';
 import api from "../services/api";
+import parchmentBg from '../assets/parchment1.jpg';
 import './Creature.css';
 
 const CreatureCreate = () => {

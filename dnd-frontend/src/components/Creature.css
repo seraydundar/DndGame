@@ -1,123 +1,137 @@
-/* Creature.css */
+@import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&display=swap');
 
-/* Formu sayfanın ortasında ve kart tarzında göster */
+/* Creature.css – DnD temalı panel genişlik, font ve renk ayarları */
 .creature-form {
-    max-width: 500px;
-    margin: 40px auto;
-    padding: 30px 40px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    color: #333;
-  }
-  
-  /* Başlık */
-  .creature-form h2 {
-    margin-bottom: 24px;
-    font-size: 1.8rem;
-    text-align: center;
-    color: #4a2f27;
-  }
-  
-  /* Etiketler */
-  .creature-form label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 600;
-    color: #555;
-  }
-  
-  /* Tüm input, textarea, select, file */
-  .creature-form input[type="text"],
-  .creature-form input[type="number"],
-  .creature-form input[type="file"],
-  .creature-form textarea,
-  .creature-form select {
-    width: 100%;
-    padding: 10px 12px;
-    margin-bottom: 16px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    background: #fff;
-    color: #333;
-  }
-  
-  /* Textarea’ya biraz yükseklik verelim */
-  .creature-form textarea {
-    min-height: 80px;
-    resize: vertical;
-  }
-  
-  /* Çoklu seçim kutusunu biraz uzat */
-  .creature-form select[multiple] {
-    min-height: 100px;
-  }
-  
-  /* Hata metinleri */
-  .creature-form .error {
-    display: block;
-    margin-top: -12px;
-    margin-bottom: 12px;
-    font-size: 0.875rem;
-    color: #d9534f;
-  }
-  
-  /* Gönder butonu */
-  .creature-form button[type="submit"] {
-    width: 100%;
-    padding: 12px;
-    background-color: #4a2f27;
-    color: #fff;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  /* Hover efekti */
-  .creature-form button[type="submit"]:hover {
-    background-color: #39221c;
-  }
-  
-  /* Listeyi de biraz iyileştirelim */
-  .creature-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
-    padding: 20px 0;
-  }
-  
-  .creature-card {
-    width: 220px;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 16px;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  }
-  
-  .creature-card h3 {
-    margin: 12px 0 8px;
-    font-size: 1.2rem;
-    color: #333;
-  }
-  
-  .creature-card p {
-    margin: 4px 0;
-    font-size: 0.95rem;
-    color: #555;
-  }
-  
-  .creature-icon {
-    width: 64px;
-    height: 64px;
-    object-fit: contain;
-    margin-bottom: 12px;
-  }
-  
+  width: 90%;             /* Ekrana daha iyi sığacak genişlik */
+  max-width: 650px;       /* Sabit maksimum genişlik */
+  margin: 20px auto;      /* Üst-alt boşluk ve yatayda ortalama */
+  padding: 20px;          /* İç boşluğu biraz küçülttük */
+  background: rgba(255, 248, 235, 0.9);
+  border: 4px solid #6b4226;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  font-family: 'Uncial Antiqua', serif;
+  color: #3e2a12;
+  font-size: 0.8rem;
+  box-sizing: border-box;
+}
+
+/* Başlık süslemeleri */
+.creature-form h2 {
+  margin-bottom: 16px;
+  font-size: 1.6rem;
+  text-align: center;
+  color: #6b4226;
+}
+.creature-form h2::before,
+.creature-form h2::after {
+  content: '✦';
+  font-size: 0.9rem;
+  margin: 0 6px;
+  color: #6b4226;
+}
+
+/* Etiketler */
+.creature-form label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #4a2f27;
+  font-size: 0.8rem;
+}
+
+/* Giriş alanları */
+.creature-form input[type="text"],
+.creature-form input[type="number"],
+.creature-form input[type="file"],
+.creature-form textarea,
+.creature-form select {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 12px;
+  border: 2px solid #6b4226;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.9);
+  color: #3e2a12;
+  font-family: inherit;
+  font-size: 0.8rem;
+  box-sizing: border-box;
+}
+
+.creature-form textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.creature-form select[multiple] {
+  min-height: 80px;
+}
+
+/* Hata metinleri */
+.creature-form .error {
+  display: block;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  font-size: 0.7rem;
+  color: #d9534f;
+}
+
+/* Gönder butonu */
+.creature-form button[type="submit"] {
+  width: 100%;
+  padding: 8px;
+  background-color: #6b4226;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  border: 2px solid #3e2a12;
+  border-radius: 6px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.creature-form button[type="submit"]:hover {
+  background-color: #5a371e;
+}
+
+/* Liste görünümü */
+.creature-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+/* Kart stili */
+.creature-card {
+  width: 180px;
+  background: rgba(255, 248, 235, 0.9);
+  border: 2px solid #6b4226;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  font-family: 'Uncial Antiqua', serif;
+  color: #3e2a12;
+  font-size: 0.8rem;
+}
+
+.creature-card h3 {
+  margin: 6px 0;
+  font-size: 0.95rem;
+  color: #4a2f27;
+}
+
+.creature-card p {
+  margin: 4px 0;
+  font-size: 0.75rem;
+  color: #4a2f27;
+}
+
+.creature-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}

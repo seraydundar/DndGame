@@ -30,6 +30,14 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
+      {/* Background video */}
+      <video
+        src="/backgroundvideo.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+      />
       {/* Sidebars */}
       <div className="friend-panel">
         <FriendSidebar requests={friendRequests} />

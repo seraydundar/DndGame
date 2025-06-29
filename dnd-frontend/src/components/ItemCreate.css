@@ -1,90 +1,114 @@
-/* src/components/ItemCreate.css */
+@import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&display=swap');
 
+/* ItemCreate.css – DnD temalı panel genişlik, font ve renk ayarları */
 .item-create-form {
-    max-width: 600px;
-    margin: 40px auto;
-    padding: 24px;
-    background: rgba(255,255,255,0.85);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    max-height: 85vh;
-    overflow-y: auto;
-  }
-  
-  .item-create-form h2 {
-    margin-bottom: 16px;
-    font-size: 1.6rem;
-    text-align: center;
-  }
-  
-  .item-create-form label {
-    display: flex;
-    flex-direction: column;
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-  }
-  
-  .item-create-form input[type="text"],
-  .item-create-form input[type="number"],
-  .item-create-form input[type="file"],
-  .item-create-form select,
-  .item-create-form textarea {
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-  
-  .item-create-form textarea {
-    resize: vertical;
-  }
-  
-  .item-create-form img {
-    display: block;
-    margin: 8px auto;
-    max-width: 64px;
-    max-height: 64px;
-  }
-  
-  .item-create-form fieldset {
-    border: 1px solid #ddd;
-    padding: 12px;
-    border-radius: 4px;
-    margin-bottom: 24px;
-  }
-  
-  .item-create-form legend {
-    font-weight: bold;
-    margin-bottom: 8px;
-  }
-  
-  .item-create-form button[type="button"] {
-    margin-left: 8px;
-    padding: 6px 12px;
-    border: none;
-    background: #3a86ff;
-    color: white;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .item-create-form button[type="button"]:hover {
-    background: #2657aa;
-  }
-  
-  .item-create-form button[type="submit"] {
-    display: block;
-    margin: 24px auto 0;
-    padding: 10px 20px;
-    font-size: 1rem;
-    border: none;
-    background: #2b8a3e;
-    color: white;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .item-create-form button[type="submit"]:hover {
-    background: #246e32;
-  }
-  
+  width: 90%;
+  max-width: 650px;
+  margin: 20px auto;
+  padding: 20px;
+  /* Parşömen dokusu kaldırıldı, sadece soluk panel rengi */
+  background: rgba(255,248,235,0.9);
+  border: 4px solid #6b4226;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  font-family: 'Uncial Antiqua', serif;
+  color: #3e2a12;
+  font-size: 0.8rem;
+  box-sizing: border-box;
+}
+
+/* Başlık süslemeleri */
+.item-create-form h2 {
+  margin-bottom: 16px;
+  font-size: 1.6rem;
+  text-align: center;
+  color: #6b4226;
+}
+.item-create-form h2::before,
+.item-create-form h2::after {
+  content: '✦';
+  font-size: 0.9rem;
+  margin: 0 6px;
+  color: #6b4226;
+}
+
+/* Etiketler */
+.item-create-form label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #4a2f27;
+  font-size: 0.8rem;
+}
+
+/* Giriş alanları */
+.item-create-form input[type="text"],
+.item-create-form input[type="number"],
+.item-create-form input[type="file"],
+.item-create-form select,
+.item-create-form textarea {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 12px;
+  border: 2px solid #6b4226;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.9);
+  color: #3e2a12;
+  font-family: inherit;
+  font-size: 0.8rem;
+  box-sizing: border-box;
+}
+
+.item-create-form textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.item-create-form select[multiple] {
+  min-height: 80px;
+}
+
+/* Fieldset ve legend */
+.item-create-form fieldset {
+  border: 2px dashed #6b4226;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  background: rgba(255,255,255,0.7);
+}
+.item-create-form legend {
+  font-size: 1.1rem;
+  color: #6b4226;
+  padding: 0 6px;
+  text-transform: uppercase;
+}
+
+/* Görsel önizleme */
+.item-create-form img {
+  display: block;
+  margin: 8px auto;
+  max-width: 64px;
+  max-height: 64px;
+}
+
+/* Butonlar */
+.item-create-form button[type="button"],
+.item-create-form button[type="submit"] {
+  display: block;
+  width: auto;
+  padding: 8px 16px;
+  margin: 12px auto 0;
+  font-family: 'Uncial Antiqua', serif;
+  font-size: 0.9rem;
+  color: #fff;
+  background: #6b4226;
+  border: 2px solid #3e2a12;
+  border-radius: 6px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.item-create-form button[type="button"]:hover,
+.item-create-form button[type="submit"]:hover {
+  background: #5a371e;
+}

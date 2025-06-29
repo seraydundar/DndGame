@@ -51,13 +51,17 @@ class LobbyViewSet(viewsets.ModelViewSet):
             "message": f"Player with player_id={player_id} is_ready={lp.is_ready}"
         })
 
-    @action(detail=True, methods=['get'], url_path='characters')
-    def characters(self, request, lobby_id=None):
-        lobby = self.get_object()
-        # Lobby modelindeki lobby_id ile eşleşen tüm karakterleri çekiyoruz.
-        characters = Character.objects.filter(lobby_id=lobby.lobby_id)
-        serializer = CharacterSerializer(characters, many=True)
-        return Response(serializer.data)
+@action(detail=True, methods=['post'], url_path='characters')
+def create_character(self, request, lobby_id=None):
+    lobby = self.get_object()
+    data = request.data.copy()
+    data['lobby'] = lobby.lobby_id
+    serializer = CharacterSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
     @action(detail=True, methods=['post'], url_path='start_game')
     def start_game(self, request, lobby_id=None):
