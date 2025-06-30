@@ -15,7 +15,10 @@
   --board-w: calc(var(--cols) * var(--cell) + (var(--cols) - 1) * var(--gap)); /* ≃738px */
   --banner-h: 80px;     /* banner’ın gerçek yüksekliği */
   --edge: #5b4a2f;
+  --bg-floor: url('../assets/backgrounds/forest.png') center/cover;
   --bg-parch: url('../assets/ui/parchment_tile.jpg');
+  --panel-frame-color: var(--edge);
+  --panel-frame-thick: 6px;
 }
 
 html, body {
@@ -43,11 +46,12 @@ html, body {
 /* ---------- GAME WRAPPER (banner’ın altını aç) ------------------ */
 .game-wrapper {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-left: calc(38% - var(--board-w) / 2 + 20px);
-  gap: 40px;                  /* grid ile panel arası boşluk */
-  padding-top: 80px;          /* banner yüksekliği kadar boşluk */
+  flex-direction: row;      /* ↓ sütun yerine satır */
+  align-items: flex-start;  /* üstte hizala */
+  justify-content: center;  /* ortaya al */
+  gap: 20px;                /* grid ↔ panel arası boşluk */
+  padding-top: var(--banner-h);
+  margin: 0 auto;
 }
 
 /* ---------- BOARD WRAPPER (otomatik ortada) --------------------- */
@@ -81,13 +85,21 @@ html, body {
   display: grid;
   grid-template-columns: repeat(var(--cols), var(--cell));
   gap: var(--gap);
-  background: #8c764f;
+  background: var(--bg-floor);
 }
 .battle-grid .cell {
   width: var(--cell);
   height: var(--cell);
-  background: #efe5cf;
-  border: 2px solid #c9b48a;
+
+  /* Zeminin görünürlüğü için hafif opaklık */
+  background: rgba(5, 4, 4, 0.15);
+
+  /* Border’ı kalınlaştırdık ve opaklığı artırdık */
+  border: 3px solid rgba(121, 95, 47, 0.85);
+
+  /* İnce bir gölge ekleyerek derinlik katıyoruz */
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.5);
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -101,12 +113,42 @@ html, body {
   margin: 0 auto;
   width: var(--board-w);
   max-width: 100%;
+
+  /* artık uniform border yok */
+  border: none;
+
+  /* parşömen arkaplanı korunuyor */
   background: var(--bg-parch) repeat;
-  border: 3px solid var(--edge);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
-  padding: 24px;
+
+  /* drop-shadow + inset ile sol-sağ bantları oluşturuyoruz */
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.45),               /* mevcut dış gölge */
+    inset var(--panel-frame-thick) 0 0 0 var(--panel-frame-color),   /* sol bant */
+    inset -var(--panel-frame-thick) 0 0 0 var(--panel-frame-color); /* sağ bant */
+
+  /* üst ve alt bantlar için ekstra iç boşluk */
+  padding:
+    calc(24px + var(--panel-frame-thick)) /* üst */,
+    24px                                 /* sağ  */,
+    calc(24px + var(--panel-frame-thick)) /* alt  */,
+    24px;                                /* sol  */
+
   z-index: 1;
 }
+/* 3) ::before / ::after ile üst ve alt bantları ekleyin */
+.panel::before,
+.panel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--panel-frame-thick);
+  background: var(--panel-frame-color);
+  pointer-events: none;
+}
+.panel::before { top: 0; }
+.panel::after  { bottom: 0; }
+
 .panel h3 {
   margin: 0 0 12px;
 }
@@ -145,4 +187,192 @@ button:hover {
 .battle-grid .cell.aoe-preview {
   background-color: rgba(255, 0, 0, 0.25);
   outline: 1px solid rgba(255, 0, 0, 0.5);
+}
+.game-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0; /* top:0; right:0; bottom:0; left:0; */
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+  z-index: 10;
+}
+@keyframes flicker {
+  0%, 18%, 22%, 25%, 53%, 57%, 100% {
+    opacity: 0.05;
+  }
+  20%, 24%, 55% {
+    opacity: 0.18;
+  }
+}
+.game-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(255, 240, 200, 0.03);
+  animation: flicker 3s infinite;
+  z-index: 11;
+}
+
+.token {
+  /* Mevcut boyutlandırma/konumlama kuralları… */
+  width: var(--token-size);
+  height: var(--token-size);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  /* Yeni eklenen sınır ve gölge */
+  border: 3px solid var(--edge-color, #c9b48a);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+
+  /*transform ile hafif bir yükselme efekti yakalayabilirsin */
+  transition: transform 0.2s ease-in-out;
+}
+.token:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
+}
+
+
+/*chat */
+/* ---------------------------
+   Chat Toggle Butonu
+   --------------------------- */
+.chat-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: var(--btn-primary-bg, #2e5339);
+  color: var(--btn-primary-fg, #fff);
+  border: none;
+  padding: 8px 12px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+  z-index: 200;
+}
+.chat-toggle:hover {
+  opacity: 0.9;
+}
+
+/* Unread badge */
+.chat-badge {
+  display: inline-block;
+  background: #c92a2a;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-radius: 50%;
+  padding: 2px 6px;
+  margin-left: 6px;
+  vertical-align: top;
+}
+
+/* ---------------------------
+   Sağdan kayan Chat Paneli
+   --------------------------- */
+.chat-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: var(--bg-parch, #f5e6c4);
+  box-shadow: -4px 0 12px rgba(0,0,0,0.5);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 150;
+}
+.chat-panel.open {
+  transform: translateX(0);
+}
+.chat-panel.closed {
+  transform: translateX(100%);
+}
+
+/* BattleChat içindeki form, log vs. layout önceden tanımlıysa kalabilir.
+   Gerekirse şöyle bir sabitleme yap: */
+.chat-panel > * {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Karakter Detay Paneli */
+.char-detail-panel {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  background: var(--bg-parch, #f5e6c4);
+  border: 2px solid var(--edge, #c9b48a);
+  border-radius: 8px;
+  padding: 16px 24px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.7);
+  z-index: 300;
+  font-size: 0.95rem;
+}
+.char-detail-panel h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+.char-detail-panel p {
+  margin: 6px 0;
+}
+.char-detail-panel .close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* ---------- Sol Olay/Aksiyon Paneli ---------- */
+.left-panel {
+  position: fixed;
+  top: var(--banner-h);
+  left: 0;
+  width: 280px;
+  height: calc(100% - var(--banner-h));
+  background: var(--bg-parch) repeat;
+  border-right: 3px solid var(--edge);
+  box-shadow: 4px 0 12px rgba(0,0,0,0.5);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.left-panel-header {
+  margin: 0 0 12px;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.event-log {
+  flex: 1;
+  overflow-y: auto;
+  background: rgba(251,247,239,0.8);
+  border: 2px solid rgba(210,193,160,0.6);
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.event-item {
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: #322810;
+}
+
+.actions-container {
+  margin-top: 16px;
 }

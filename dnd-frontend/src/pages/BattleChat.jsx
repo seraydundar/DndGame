@@ -2,13 +2,8 @@
 import React, { useState } from "react";
 
 export default function BattleChat({
-  initiativeOrder,
-  currentTurnIndex,
   chatLog,
   onSendMessage,
-  /* yeni ↓ */
-  isGM = false,
-  onEndBattle
 }) {
   const [msg, setMsg] = useState("");
 
@@ -20,62 +15,16 @@ export default function BattleChat({
   };
 
   return (
-    <div style={{ marginTop: 20 }}>
-      {/* ------- ÜST BAR (inisiyatif + GM butonu) ------- */}
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      {/* ------- Sadece Chat Log ------- */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: 10,
-          background: "#ddd",
-          borderRadius: 4,
-          marginBottom: 10,
-          gap: 8
-        }}
-      >
-        <div>
-          <strong>İnisiyatif:</strong>{" "}
-          {initiativeOrder.map((p, idx) => (
-            <span
-              key={p.character_id}
-              style={{
-                fontWeight: idx === currentTurnIndex ? "bold" : "normal",
-                marginRight: 8
-              }}
-            >
-              {p.name} ({p.initiative})
-            </span>
-          ))}
-        </div>
-
-        {/* --------- Savaşı Bitir (sadece GM) --------- */}
-        {isGM && (
-          <button
-            onClick={onEndBattle}
-            style={{
-              padding: "6px 14px",
-              background: "#c62828",
-              color: "#fff",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer"
-            }}
-          >
-            Savaşı Bitir
-          </button>
-        )}
-      </div>
-
-      {/* ------- Chat Log ------- */}
-      <div
-        style={{
+          flex: 1,
           padding: 10,
           border: "1px solid #aaa",
           borderRadius: 4,
-          maxHeight: 150,
           overflowY: "auto",
-          background: "#f0f0f0"
+          background: "#f0f0f0",
         }}
       >
         {chatLog.map((m, i) => (
@@ -85,10 +34,10 @@ export default function BattleChat({
         ))}
       </div>
 
-      {/* ------- Mesaj girişi ------- */}
+      {/* ------- Mesaj Girişi ------- */}
       <form
         onSubmit={submit}
-        style={{ display: "flex", gap: 4, marginTop: 8 }}
+        style={{ display: "flex", gap: 4, marginTop: 8, padding: 10 }}
       >
         <input
           value={msg}

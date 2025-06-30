@@ -11,22 +11,20 @@ import React from 'react';
  */
 export default function BattleMap({
   placements,
-  reachableCells,
-  rangedReachableCells = new Set(),
-  gridSize,
-  totalCells,
-  moving,
-  currentUserId,
-  /* alan büyüsü önizlemesi için ↓ */
-  spellMode,
-  selectedSpell,
-  aoeHoverCell,
-  onCellHover,
-  /* etkileşimler */
-  onCellClick,
-  onDragStart,
-  onDragOver,
-  onDrop,
+   reachableCells,
+   rangedReachableCells = new Set(),
+   gridSize,
+   totalCells,
+   moving,
+   currentUserId,
+   spellMode,
+   selectedSpell,
+   aoeHoverCell,
+   onCellHover,
+   onCellClick,
+   onDragStart,
+   onDragOver,
+   onDrop,
 }) {
   const CELL_SIZE = 35;
   const ICON_SIZE = 28;
@@ -105,6 +103,7 @@ export default function BattleMap({
             {/* ---- İKON ---- */}
             <div
               draggable
+              onClick={() => onCellClick(i, ch)}
               onDragStart={(e) => onDragStart(e, ch, 'grid', i)}
               style={{
                 width: ICON_SIZE,

@@ -39,6 +39,12 @@ export default function BattlePage() {
   const [availableCreatures, setAvailableCreatures] = useState([]);
   const [aoeHoverCell,  setAoeHoverCell]  = useState(null);
 
+  // Sağdan kayan chat için aç/kapa durumu
+  const [chatOpen, setChatOpen] = useState(false);
+  // Chat kapalıyken gelen mesajları saymak için
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [movementMode, setMovementMode]           = useState(false);  // ← Yeni
   const [reachableCells, setReachableCells]       = useState(new Set());
   const [moving, setMoving]                       = useState(false);
@@ -46,6 +52,16 @@ export default function BattlePage() {
   const [actionUsed, setActionUsed]               = useState(false);
   const [movementRemaining, setMovementRemaining] = useState(3);
   const [rangedReachableCells, setRangedReachableCells] = useState(new Set());
+
+ const currentEntry = initiativeOrder[currentTurnIndex] || {};
+
+ // placements bir obje, bu yüzden önce değerleri diziye dönüştürüp find ile arayalım:
+ const currentChar = Object.values(placements).find(
+   unit => unit?.id === currentEntry.character_id
+ );
+ // Şimdi gerçekten sıramızın bizde olup olmadığını kontrol edebiliriz:
+ const isMyTurn = currentChar?.player_id === currentUserId;
+  
 
   // --- lobbyId’yi belirle / sakla ---
   useEffect(() => {
@@ -446,15 +462,13 @@ const handleCellClick = (cellIndex, cellCharacter) => {
 
   /* ---------- Karakter seçimi ---------- */
   if (cellCharacter?.player_id === currentUserId) {
-    const turn = initiativeOrder[currentTurnIndex];
-    if (!turn || cellCharacter.id !== turn.character_id) {
-      alert('Sıra sizde değil!');
-      return;
+      if (!isMyTurn) {
+        alert('Sıra sizde değil!');
+        return;
+      }
+      setSelectedAttacker(cellCharacter);
     }
-    // Sadece seçimi yap, modları bozmadan
-    setSelectedAttacker(cellCharacter);
-  }
-};
+  };
 
   // --- Karakteri hareket ettir ---
   const handleMoveCharacter = async targetCell => {
@@ -875,6 +889,22 @@ const handleEndBattle = async () => {
 
   
 };
+  
+// Yeni mesaj sayısını güncelle
+  useEffect(() => {
+    if (!chatOpen) {
+      setUnreadCount(c => c + 1);
+    }
+  }, [chatLog]);
+
+  // Chat paneli açıldığında uyarıyı temizle
+  const toggleChat = () => {
+    setChatOpen(o => {
+      if (!o) setUnreadCount(0);
+      return !o;
+    });
+  };
+
 
   // --- Reachable hesapla ---
   useEffect(() => {
@@ -964,89 +994,144 @@ if (!lobbyData) {
           totalCells={TOTAL_CELLS}
           moving={moving}
           currentUserId={currentUserId}
+          onCellClick={handleCellClick}
           spellMode={spellMode}
           selectedSpell={selectedSpell}
           aoeHoverCell={aoeHoverCell}
           onCellHover={setAoeHoverCell}
-          onCellClick={handleCellClick}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          
+          
         />
+        {/* ---------- Sol Olay/Aksiyon Paneli ---------- */}
+      <div className="left-panel">
+        {/* — Sıra Gösterimi — */}
+        <div className="turn-order">
+          <strong>Sıra:</strong>
+          {initiativeOrder.map((entry, idx) => (
+            <span
+              key={entry.character_id}
+              className={idx === currentTurnIndex ? 'current-turn' : ''}
+            >
+              {entry.name}
+            </span>
+          ))}
+        </div>
+
+         {/* —— Olay Log’u —— */}
+        <h3 className="left-panel-header">Olaylar</h3>
+        <div className="event-log">
+          {chatLog.map((msg, i) => (
+            <div key={i} className="event-item">{msg}</div>
+          ))}
+        </div>
+
+   {/* —— Aksiyon Butonları (sıra sizdeyse) —— */}
+       {isMyTurn && (
+          <div className="actions-container">
+            <BattleActions
+              selectedAttacker={selectedAttacker}
+              attackMode={attackMode}
+              attackType={attackType}
+              spellMode={spellMode}
+              selectedSpell={selectedSpell}
+              availableSpells={selectedAttacker?.prepared_spells}
+              movementRemaining={movementRemaining}
+              actionUsed={actionUsed}
+
+              onChooseMelee={() => {
+                setAttackMode(true);
+                setAttackType('melee');
+                setSpellMode(false);
+                setMovementMode(false);
+              }}
+              onChooseRanged={() => {
+                setAttackMode(true);
+                setAttackType('ranged');
+                setSpellMode(false);
+                setMovementMode(false);
+              }}
+              onChooseSpell={() => {
+                setSpellMode(true);
+                setAttackMode(false);
+                setAttackType(null);
+                setMovementMode(false);
+              }}
+              onChooseMove={() => {
+                setMovementMode(true);
+                setAttackMode(false);
+                setSpellMode(false);
+                setAttackType(null);
+              }}
+
+              onSelectSpell={handleSelectSpell}
+              onCancel={() => {
+                setSelectedAttacker(null);
+                setAttackMode(false);
+                setAttackType(null);
+                setSpellMode(false);
+                setSelectedSpell(null);
+                setMovementMode(false);
+              }}
+              onEndTurn={handleEndTurn}
+              onEndBattle={handleEndBattle}
+              isGM={isGM}
+            />
+          </div>
+        )}
       </div>
 
-      {/* ---------- Alt parşömen panel (actions + chat) ---------- */}
-      <div className="panel">
-        <BattleActions
-          selectedAttacker={selectedAttacker}
-          attackMode={attackMode}
-          attackType={attackType}
-          spellMode={spellMode}
-          selectedSpell={selectedSpell}
-          availableSpells={selectedAttacker?.prepared_spells}
-          movementRemaining={movementRemaining}
-          actionUsed={actionUsed}
-
-          onChooseMelee={() => {
-            setAttackMode(true);
-            setAttackType('melee');
-            setSpellMode(false);
-            setMovementMode(false);
-          }}
-          onChooseRanged={() => {
-            setAttackMode(true);
-            setAttackType('ranged');
-            setSpellMode(false);
-            setMovementMode(false);
-          }}
-          onChooseSpell={() => {
-            setSpellMode(true);
-            setAttackMode(false);
-            setAttackType(null);
-            setMovementMode(false);
-          }}
-          onChooseMove={() => {
-            setMovementMode(true);
-            setAttackMode(false);
-            setSpellMode(false);
-            setAttackType(null);
-          }}
-
-          onSelectSpell={handleSelectSpell}
-          onCancel={() => {
-            setSelectedAttacker(null);
-            setAttackMode(false);
-            setAttackType(null);
-            setSpellMode(false);
-            setSelectedSpell(null);
-            setMovementMode(false);
-          }}
-          onEndTurn={handleEndTurn}
-          onEndBattle={handleEndBattle}
-
-          isGM={isGM}
-        />
-
+      </div>
+      {/* — Chat Toggle Butonu — */}
+      <button className="chat-toggle" onClick={toggleChat}>
+   {/* kapalıyken “Chat” yaz, açıkken çarpı göster */}
+   {chatOpen ? '✖' : 'Chat'}
+   {/* yalnızca kapalıyken ve okunmamış var ise badge */}
+   {!chatOpen && unreadCount > 0 && (
+     <span className="chat-badge">{unreadCount}</span>
+   )}
+ </button>
+      <div className={`chat-panel ${chatOpen ? 'open' : 'closed'}`}>
         <BattleChat
-          initiativeOrder={initiativeOrder}
-          currentTurnIndex={currentTurnIndex}
-          chatLog={chatLog}
-          onSendMessage={msg => {
-            const updatedLog = [...chatLog, msg];
-            setChatLog(updatedLog);
-            getBattleSocket().send(
-              JSON.stringify({
-                event: "battleUpdate",
-                lobbyId,
-                chatLog: updatedLog,
-              })
-            );
-          }}
-          isGM={isGM}
-          onEndBattle={handleEndBattle}
-        />
+        // Event log satırlarını (→ içeren) sondan ele
+        chatLog={chatLog.filter(m => !m.includes('→'))}
+        onSendMessage={msg => {
+          const updatedLog = [...chatLog, msg];
+          setChatLog(updatedLog);
+          // yine tamamını gönderiyorsunuz, ama BattleChat’e
+          // sadece filtrelenmişini iletmiş olacağız
+          getBattleSocket().send(JSON.stringify({
+            event: "battleUpdate",
+            lobbyId,
+            chatLog: updatedLog,
+          }));
+        }}
+      />
       </div>
+    
+      
     </div>
+    {/* ---------- Karakter Detay Paneli ---------- */}
+     {selectedCharacter && (
+       <div className="char-detail-panel">
+         <button
+           className="close-btn"
+           onClick={() => setSelectedCharacter(null)}
+         >✖</button>
+
+         <h2>{selectedCharacter.name}</h2>
+         <p><strong>HP:</strong> {selectedCharacter.hp} / {selectedCharacter.maxHp}</p>
+         <p><strong>AC:</strong> {selectedCharacter.ac}</p>
+         <p>
+           <strong>Str:</strong> {selectedCharacter.strength}&nbsp;
+           <strong>Dex:</strong> {selectedCharacter.dexterity}&nbsp;
+           <strong>Con:</strong> {selectedCharacter.constitution}
+         </p>
+         {/* İstersen buraya daha fazla stat ekleyebilirsin */}
+       </div>
+     )}
   </>
 );
 }

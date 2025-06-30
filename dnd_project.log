@@ -27808,3 +27808,4 @@ django.db.utils.ProgrammingError: HATA:  "damage_dealt" kolonu "characters" tabl
 LINE 1: ...d", "lobby_id", "name", "race", "class", "level", "damage_de...
                                                              ^
 
+Forbidden: /api/accounts/login/

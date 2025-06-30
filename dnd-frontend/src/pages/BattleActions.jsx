@@ -1,3 +1,5 @@
+// src/components/BattleActions.jsx
+
 import React from 'react';
 
 export default function BattleActions({
@@ -42,7 +44,7 @@ export default function BattleActions({
       <h3>{selectedAttacker.name} – Aksiyon Seçimi</h3>
       <p><strong>Hareket Hakkı:</strong> {movementRemaining}</p>
 
-      {/* 1. Seçim blokları */}
+      {/* 1. Seçim Blokları */}
       {!attackMode && !spellMode && (
         <div style={{ marginBottom: 10 }}>
           {hasMeleeWeapon && (
@@ -68,7 +70,7 @@ export default function BattleActions({
         </div>
       )}
 
-      {/* 2. Hangi moda girdiysek ona özel açıklama */}
+      {/* 2. Açıklamalar */}
       {attackMode && attackType === 'melee' && !spellMode && (
         <p>Hedef karaktere tıklayarak yakın dövüş saldırını gerçekleştir.</p>
       )}
@@ -79,7 +81,11 @@ export default function BattleActions({
         <>
           <p>Kullanmak istediğin büyüyü seç:</p>
           {availableSpells.map(sp => (
-            <button key={sp.id} onClick={() => onSelectSpell(sp)} style={{ margin: 4 }}>
+            <button
+              key={sp.id}
+              onClick={() => onSelectSpell(sp)}
+              style={{ margin: 4 }}
+            >
               {sp.name}
             </button>
           ))}
@@ -89,11 +95,19 @@ export default function BattleActions({
         <p>“{selectedSpell.name}” için hedef seç ve üzerine tıkla.</p>
       )}
 
-      {/* 3. Genel Kontroller */}
+      {/* 3. Kontroller */}
       <div style={{ marginTop: 10 }}>
-        <button onClick={onCancel} style={{ marginRight: 8 }}>İptal</button>
-        <button onClick={onEndTurn} style={{ marginRight: 8 }}>Tur Sonu</button>
-        
+        <button onClick={onCancel} style={{ marginRight: 8 }}>
+          İptal
+        </button>
+        <button onClick={onEndTurn} style={{ marginRight: 8 }}>
+          Tur Sonu
+        </button>
+        {isGM && (
+          <button onClick={onEndBattle}>
+            Savaşı Bitir
+          </button>
+        )}
       </div>
     </div>
   );
