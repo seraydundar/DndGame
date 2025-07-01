@@ -4,28 +4,26 @@ import React from 'react';
 /**
  * BattleMap – kare grid üzerine karakter ikon + isim + HP bar çizer.
  *  🔹 CSS entegrasyonu
- *      - Dış sarmal div  → className="battle-grid"  (BattlePage.css’te stil)
- *      - Her hücre       → className="cell" (+ reachable / ranged / aoe-preview)
- *  🔹 Inline style yalnızca dinamik ölçüler (CELL_SIZE) için tutulur.
- *  🔹 Alan büyüsü (“area”) seçildiğinde mouse-hover merkezinden 3×3 kare vurgulanır.
+ *      - Grid panel  → className="grid-panel"   (parşömen kutu, BattleSetup.css v5)
+ *      - Grid        → className="battle-grid" (hücre ızgarası)
+ *      - Hücre       → className="cell" (+ reachable / ranged / aoe-preview)
  */
 export default function BattleMap({
   placements,
-   reachableCells,
-   rangedReachableCells = new Set(),
-   gridSize,
-   totalCells,
-   moving,
-   currentUserId,
-   spellMode,
-   selectedSpell,
-   aoeHoverCell,
-   onCellHover,
-   onCellClick,
-   onDragStart,
-   onDragOver,
-   onDrop,
-   backgroundImage,
+  reachableCells,
+  rangedReachableCells = new Set(),
+  gridSize,
+  totalCells,
+  moving,
+  currentUserId,
+  spellMode,
+  selectedSpell,
+  aoeHoverCell,
+  onCellHover,
+  onCellClick,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }) {
   const CELL_SIZE = 35;
   const ICON_SIZE = 28;
@@ -49,7 +47,6 @@ export default function BattleMap({
       }
     }
   }
-  
 
   /* ------------ Hücreleri oluştur ------------ */
   const cells = Array.from({ length: totalCells }, (_, i) => {
@@ -171,20 +168,20 @@ export default function BattleMap({
     );
   });
 
-  /* ------------ Render grid ------------ */
+  /* ------------ Render grid (parşömen panel içinde) ------------ */
   return (
-    
-    <div
-      className="battle-grid"
-      style={{
-        display: 'grid',
-    gridTemplateColumns: `repeat(${gridSize}, ${CELL_SIZE}px)`,
-    gap: 2,
-    marginBottom: 20,
-    background: `url(${backgroundImage}) center / cover`
-      }}
-    >
-      {cells}
+    <div className="grid-panel">
+      <div
+        className="battle-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${gridSize}, ${CELL_SIZE}px)`,
+          gap: 2,
+          padding: 2,
+        }}
+      >
+        {cells}
+      </div>
     </div>
   );
 }

@@ -1,12 +1,13 @@
-// src/components/BattleSetup.jsx
+// ====================================================================
+// BattleSetup.jsx — 03 Tem 2025
+// ====================================================================
 import React, { useState } from 'react';
 import './BattleSetup.css';
-import api from '../services/api';         // axios instance’in
+import api from '../services/api';
 
-import forestPng from '../assets/backgrounds/forest.png';
+import forestPng  from '../assets/backgrounds/forest.png';
 import dungeonJpg from '../assets/backgrounds/dungeon.jpg';
-import castleJpg from '../assets/backgrounds/castle.jpg';
-
+import castleJpg  from '../assets/backgrounds/castle.jpg';
 
 export default function BattleSetup({
   isGM,
@@ -14,47 +15,45 @@ export default function BattleSetup({
   placements: initialPlacements,
   availableCharacters,
   availableCreatures,
-  totalCells,
   onStartBattle,
   selectedBg,
-  setSelectedBg 
+  setSelectedBg,
 }) {
-  const [placements, setPlacements] = useState(initialPlacements || {});
-  const CELL_SIZE = 35;
-  const ICON_SIZE = 30;
+  /* -------- GRID sabiti -------- */
+  const COLS = 20;
+  const ROWS = 15;
+  const CELL_SIZE = 50;
+  const ICON_SIZE = 40;
+  const TOTAL_CELLS = COLS * ROWS;
 
-  /* -------- Monster’ı backend’de spawn et -------- */
+  const [placements, setPlacements] = useState(initialPlacements || {});
+
+  /* -------- Sunucuda canavar oluştur -------- */
   const spawnMonster = async (monsterId) => {
     const { data } = await api.post('characters/spawn-monster/', {
       monster_id: monsterId,
       lobby_id:   lobbyId,
     });
-    // Dönen veri CharacterSerializer çıktısı
-    return {
-      ...data,
-      icon_url: data.icon || null,
-    };
+    return { ...data, icon_url: data.icon || null };
   };
 
-  /* ---------------- Drag helpers ---------------- */
-  const handleDragOver = (e) => e.preventDefault();
-
+  /* -------- Drag helpers -------- */
+  const handleDragOver  = (e) => e.preventDefault();
   const handleDragStart = (e, item, type, sourceIndex = null) => {
     e.dataTransfer.setData('type', type);
-    e.dataTransfer.setData('id', item.id);
+    e.dataTransfer.setData('id',   item.id);
     if (type === 'move' && sourceIndex !== null) {
       e.dataTransfer.setData('sourceIndex', sourceIndex);
     }
   };
 
-  /* ---------------- Drop (güncellenen kısım) ---------------- */
+  /* -------- Drop -------- */
   const handleDrop = async (e, targetIndex) => {
     e.preventDefault();
     const type        = e.dataTransfer.getData('type');
     const id          = parseInt(e.dataTransfer.getData('id'), 10);
     const sourceIndex = e.dataTransfer.getData('sourceIndex');
 
-    // 1) Eğer grid içi taşıma ise eski hücreyi boşalt
     if (type === 'move' && sourceIndex !== '') {
       setPlacements((prev) => {
         const copy = { ...prev };
@@ -64,47 +63,35 @@ export default function BattleSetup({
     }
 
     let entity = null;
-
     if (type === 'player') {
-      entity = availableCharacters.find((ch) => ch.id === id);
-
+      entity = availableCharacters.find((c) => c.id === id);
     } else if (type === 'creature') {
-      try {
-        entity = await spawnMonster(id);      // ⇦ backend’de gerçek Character
-      } catch (err) {
-        console.error('spawn-monster failed', err);
-        return; // hata varsa ekleme
-      }
-
+      try      { entity = await spawnMonster(id); }
+      catch(er){ console.error('spawn-monster', er); return; }
     } else if (type === 'move') {
       entity = placements[sourceIndex];
     }
 
-    if (entity) {
-      setPlacements((prev) => ({ ...prev, [targetIndex]: entity }));
-    }
+    if (entity) setPlacements((p) => ({ ...p, [targetIndex]: entity }));
   };
 
-  /* ---------------- Start battle ---------------- */
+  /* -------- Savaşı başlat -------- */
   const handleStart = () => {
     if (Object.keys(placements).length === 0) {
-      alert('Haritaya en az bir birim yerleştirmelisiniz.');
-      return;
+      return alert('Haritaya en az bir birim yerleştirmelisiniz.');
     }
     onStartBattle(placements);
   };
 
-  /* ---------------- Pools ---------------- */
+  /* -------- Havuzlar -------- */
   const placedIds = Object.values(placements).map((p) => p.id);
-
   const remainingCharacters = availableCharacters.filter(
-    (ch) => !placedIds.includes(ch.id),
+    (c) => !placedIds.includes(c.id),
   );
+  const remainingCreatures = availableCreatures;
 
-  const remainingCreatures = availableCreatures; // havuz tükenmez
-
-  /* ---------------- Grid cells ---------------- */
-  const cells = Array.from({ length: totalCells }, (_, i) => {
+  /* -------- Grid Hücreleri -------- */
+  const cells = Array.from({ length: TOTAL_CELLS }, (_, i) => {
     const placed = placements[i];
     return (
       <div
@@ -132,103 +119,82 @@ export default function BattleSetup({
     );
   });
 
-  /* ---------------- Render ---------------- */
+  /* -------- Render -------- */
   return (
-    
     <div className="battle-setup">
-  <h2>Karakterleri Yerleştir</h2>
+      <h2>Karakterleri Yerleştir</h2>
 
-  <div style={{ marginBottom: '10px' }}>
-    <label htmlFor="bgSelect"><strong>Mekan:</strong></label>
-    <select
-      id="bgSelect"
-      value={selectedBg}
-      onChange={(e) => setSelectedBg(e.target.value)}
-      style={{ marginLeft: '8px' }}
-    >
-      <option value={forestPng}>Orman</option>
-      <option value={dungeonJpg}>Zindan</option>
-      <option value={castleJpg}>Kale</option>
-    </select>
-  </div>
-
-  <h3>Harita</h3>
-  <div
-  className="battle-grid"
->
-    {cells}
-  </div>
-
-      <h3>Kalan Karakterler</h3>
-      <div className="character-list">
-        {remainingCharacters.map((ch) => (
-          <div
-            key={ch.id}
-            className="character-tile"
-            draggable={isGM}
-            onDragStart={(ev) => handleDragStart(ev, ch, 'player')}
-          >
-            <img
-              src={ch.icon_url || ch.icon || '/placeholder.png'}
-              alt={ch.name}
-              style={{
-                width: ICON_SIZE,
-                height: ICON_SIZE,
-                objectFit: 'cover',
-                borderRadius: '50%',
-              }}
-            />
-            <span
-              style={{
-                display: 'block',
-                marginTop: '4px',
-                fontWeight: 'bold',
-                fontSize: '12px',
-                color: '#322810',
-              }}
-            >
-              {ch.name}
-            </span>
-          </div>
-        ))}
+      {/* Mekan seçimi */}
+      <div style={{ marginBottom: 10 }}>
+        <label htmlFor="bgSelect"><strong>Mekan:</strong></label>
+        <select
+          id="bgSelect"
+          value={selectedBg}
+          onChange={(e) => setSelectedBg(e.target.value)}
+          style={{ marginLeft: 8 }}
+        >
+          <option value={forestPng}>Orman</option>
+          <option value={dungeonJpg}>Zindan</option>
+          <option value={castleJpg}>Kale</option>
+        </select>
       </div>
 
-      <h3>Yaratık Havuzu</h3>
-      <div className="creature-list">
-        {remainingCreatures.map((cr) => (
+      {/* Grid + Sağ sütun */}
+      <div className="setup-row">
+
+        {/* GRID */}
+        <div className="grid-panel">
           <div
-            key={cr.id}
-            className="character-tile"
-            draggable={isGM}
-            onDragStart={(ev) => handleDragStart(ev, cr, 'creature')}
+            className="battle-grid"
+            style={{
+              gridTemplateColumns: `repeat(${COLS}, var(--cell))`,
+              gridTemplateRows:    `repeat(${ROWS}, var(--cell))`,
+            }}
           >
-            <img
-              src={cr.icon_url || cr.icon || '/placeholder.png'}
-              alt={cr.name}
-              style={{
-                width: ICON_SIZE,
-                height: ICON_SIZE,
-                objectFit: 'cover',
-                borderRadius: '50%',
-              }}
-            />
-            <span
-              style={{
-                display: 'block',
-                marginTop: '4px',
-                fontWeight: 'bold',
-                fontSize: '12px',
-                color: '#322810',
-              }}
-            >
-              {cr.name}
-            </span>
+            {cells}
           </div>
-        ))}
+        </div>
+
+        {/* Sağ sütun (Karakter + Yaratık panelleri) */}
+        <div className="pools-column">
+          <div>
+            <h3>Kalan Karakterler</h3>
+            <div className="character-list">
+              {remainingCharacters.map((ch) => (
+                <div
+                  key={ch.id}
+                  className="character-tile"
+                  draggable={isGM}
+                  onDragStart={(ev) => handleDragStart(ev, ch, 'player')}
+                >
+                  <img src={ch.icon_url || ch.icon || '/placeholder.png'} alt={ch.name} />
+                  <span>{ch.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3>Yaratık Havuzu</h3>
+            <div className="creature-list">
+              {remainingCreatures.map((cr) => (
+                <div
+                  key={cr.id}
+                  className="character-tile"
+                  draggable={isGM}
+                  onDragStart={(ev) => handleDragStart(ev, cr, 'creature')}
+                >
+                  <img src={cr.icon_url || cr.icon || '/placeholder.png'} alt={cr.name} />
+                  <span>{cr.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {isGM && (
-        <button className="start-btn" onClick={handleStart}>
+        <button className="start-button" onClick={handleStart}>
           Savaşı Başlat
         </button>
       )}

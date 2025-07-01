@@ -1,193 +1,122 @@
-/* BattleSetup.css — harmonized with BattlePage.css */
+/* ===============================================================
+   BattleSetup.css — v7  (03 Tem 2025)
+   =============================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
 
-:root {
-  --cols: 20;
-  --cell: 35px;
-  --gap: 2px;
-  --board-w: calc(var(--cols) * var(--cell) + (var(--cols) - 1) * var(--gap)); /* ≃738px */
-  --edge: #5b4a2f;
-  --bg-floor: url('../assets/backgrounds/forest.png') center/cover;
-  --bg-parch: url('../assets/ui/parchment_tile.jpg');
-  --panel-frame-thick: 6px;
-  --panel-frame-color: var(--edge);
+/* ---------- Değişkenler -------------------------------------- */
+:root{
+  --cols:20;
+  --rows:15;             /* ⇦ yeni satır sayısı */
+  --cell:50px;           /* hücre boyutu */
+  --gap:2px;
+  --board-w:calc(var(--cols)*var(--cell)+(var(--cols)-1)*var(--gap));
+
+  --edge:#5b4a2f;
+  --bg-parch:url('../assets/ui/parchment_tile.jpg');
+  --frame:6px;
 }
 
-html, body {
-  height: 100%;
-  margin: 0;
-  font-family: 'Cinzel', serif;
-  color: #322810;
-}
-
-/* ---------- Container ---------- */
-.battle-setup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px;
-}
-
-/* Headings */
+/* ---------- Genel -------------------------------------------- */
+html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
+.battle-setup{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:24px;}
 .battle-setup h2,
-.battle-setup h3 {
-  margin: 0 0 12px;
-  font-size: 20px;
-  text-transform: uppercase;
-  color: var(--edge);
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-  
+.battle-setup h3{margin:0 0 12px;font-size:20px;text-transform:uppercase;
+                 color:var(--edge);text-shadow:2px 2px 4px rgba(0,0,0,.7);}
+
+/* ---------- Layout ------------------------------------------- */
+.setup-row{display:flex;gap:24px;align-items:flex-start;margin-bottom:32px;}
+.pools-column{display:flex;flex-direction:column;gap:32px;}
+
+/* ---------- Parşömen Panel ----------------------------------- */
+.parch-box{
+  background:var(--bg-parch) repeat;
+  padding:16px;
+  box-shadow:0 4px 16px rgba(0,0,0,.45),
+             inset var(--frame) 0 0 0 var(--edge),
+             inset -var(--frame) 0 0 0 var(--edge);
 }
 
-/* ---------- Grid ---------- */
-.battle-setup .battle-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--cols), var(--cell));
-  gap: var(--gap);
-  /* background: var(--bg-floor); */  /* Bunu sil ya da pasif yap */
-  padding: var(--gap);
-  margin-bottom: 20px;
-  width: var(--board-w);
-  max-width: 100%;
+/* ---------- Grid Panel --------------------------------------- */
+.grid-panel{
+  width:calc(var(--board-w) + 40px);     /* sağ-sol nefes */
+  overflow-x:auto;
+  background:var(--bg-parch) repeat;
+  padding:16px;
+  box-shadow:0 4px 16px rgba(0,0,0,.45),
+             inset var(--frame) 0 0 0 var(--edge),
+             inset -var(--frame) 0 0 0 var(--edge);
 }
 
-.battle-setup .battle-grid .cell {
-  width: var(--cell);
-  height: var(--cell);
-  background: transparent !important;
-  border: 1px solid rgba(121, 95, 47, 0.85);
-  box-shadow: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.battle-setup .battle-grid .cell.reachable {
-  background: #d4f2d4;
+/* Grid */
+.battle-grid{
+  display:grid;
+  grid-template-columns:repeat(var(--cols), var(--cell));
+  grid-template-rows:   repeat(var(--rows), var(--cell));
+  gap:0;                                  /* ← boşluk yok */
+  padding:0;
+  border:1px solid rgba(121,95,47,.85);   /* dış çerçeve */
 }
 
-/* ---------- Available Characters & Creatures Lists ---------- */
+/* Hücre – sadece sağ ve alt kenar çizilir */
+.battle-grid .cell{
+  width:var(--cell);height:var(--cell);
+  border-right:1px solid rgba(121,95,47,.5);
+  border-bottom:1px solid rgba(121,95,47,.5);
+  /* Üst / sol kenarlar yok; böylece çift kalınlık oluşmaz */
+
+}
+.battle-grid .cell.reachable{background:#d4f2d4;}
+
+/* ---------- List Panels -------------------------------------- */
 .available-list,
-.creature-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap);
-  width: var(--board-w);
-  max-width: 100%;
-  background: var(--bg-parch) repeat;
-  padding: 16px;
-  margin-bottom: 20px;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.45),
-    inset var(--panel-frame-thick) 0 0 0 var(--panel-frame-color),
-    inset -var(--panel-frame-thick) 0 0 0 var(--panel-frame-color);
-}
-
-.available-list .character-tile,
-.creature-list .character-tile {
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  cursor: grab;
-  text-align: center;
-}
-
-.available-list .character-tile {
-  background: #2196F3;
-}
-.creature-list .character-tile {
-  background: #f44336;
-}
-
-.character-tile {
-  width: 50px;          /* Kart genişliği */
-  height: 70px;        /* Kart yüksekliği */
-  border-radius: 6px;   /* İstersen 0 yap, köşe tam dik olsun */
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #3e8e41, #2e7d32);
-  box-shadow: 0 0 8px #4caf50;
-  padding: 4px;
-}
-
-
-.character-tile img {
-  width: 70px;
-  height: 70px;
-  object-fit: cover;
-  border-radius: 4px;   /* İstersen 0 yap */
-}
-
-
-.character-tile span {
-  margin-top: 4px;
-  text-align: center;
-  font-weight: bold;
-  font-size: 12px;
-  color: #322810;
-  text-shadow: 1px 1px 2px #000;
-}
-
-
-/* ---------- Start Button ---------- */
-.start-button {
-  margin-top: 20px;
-  padding: 10px 24px;
-  background: linear-gradient(135deg, #5b4a2f, #322810);
-  color: #f0e6d2;
-  border: 2px solid #322810;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: 'Cinzel', serif;
-  font-size: 14px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.6);
-  transition: all 0.2s ease-in-out;
-}
-
-.start-button:hover {
-  background: linear-gradient(135deg, #6b5a3f, #3a2a10);
-  box-shadow: 0 0 12px rgba(255,215,0,0.6);
-}
-
-/* ---------- Responsive ---------- */
-@media (max-width: 860px) {
-  :root { --cell: 28px; }
-}
-@media (max-width: 600px) {
-  :root { --cell: 22px; }
-}
-
-.available-list .character-tile {
-  background: linear-gradient(135deg, #3e8e41, #2e7d32);
-  box-shadow: 0 0 8px #4caf50;
-  transition: all 0.2s ease-in-out;
-}
-.character-list .character-tile {
-  background: linear-gradient(135deg, #3e8e41, #2e7d32);
-  box-shadow: 0 0 8px #4caf50;
-  transition: all 0.2s ease-in-out;
-}
-
-.character-tile:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
-}
-.creature-list .character-tile {
-  background: linear-gradient(135deg, #3e8e41, #2e7d32); /* karakter ile aynı */
-  box-shadow: 0 0 8px #4caf50;
-  transition: all 0.2s ease-in-out;
-}
-
 .character-list,
-.creature-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 24px;
+.creature-list{
+  width:260px;
+  background:var(--bg-parch) repeat;
+  padding:16px;
+  box-shadow:0 4px 16px rgba(0,0,0,.45),
+             inset var(--frame) 0 0 0 var(--edge),
+             inset -var(--frame) 0 0 0 var(--edge);
+  display:flex;flex-wrap:wrap;gap:var(--gap);justify-content:center;
+}
+
+/* Tile */
+.character-tile{
+  width:50px;height:70px;border-radius:6px;overflow:hidden;cursor:grab;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#3e8e41,#2e7d32);
+  box-shadow:0 0 8px #4caf50;padding:4px;transition:.2s;
+}
+.character-tile:hover{
+  transform:scale(1.1);box-shadow:0 0 12px rgba(255,215,0,.7);
+}
+.character-tile img{width:70px;height:70px;object-fit:cover;border-radius:4px;}
+.character-tile span{margin-top:4px;font-weight:bold;font-size:12px;
+                     color:#322810;text-shadow:1px 1px 2px #000;text-align:center;}
+
+/* ---------- Start Button ------------------------------------- */
+.start-button{
+  margin-top:16px;padding:10px 24px;
+  background:linear-gradient(135deg,#5b4a2f,#322810);
+  color:#f0e6d2;border:2px solid #322810;border-radius:4px;
+  font-size:14px;cursor:pointer;
+  box-shadow:0 0 8px rgba(0,0,0,.6);transition:.2s;
+}
+.start-button:hover{
+  background:linear-gradient(135deg,#6b5a3f,#3a2a10);
+  box-shadow:0 0 12px rgba(255,215,0,.6);
+}
+
+/* ---------- Responsive --------------------------------------- */
+@media(max-width:1300px){
+  .setup-row{flex-direction:column;align-items:center;}
+  .pools-column{flex-direction:row;gap:24px;}
+  .character-list,.creature-list,.available-list{width:220px;}
+}
+@media(max-width:860px){
+  :root{--cell:42px;--rows:15;--board-w:calc(var(--cols)*var(--cell)+(var(--cols)-1)*var(--gap));}
+  .grid-panel{width:auto;}
+}
+@media(max-width:600px){
+  :root{--cell:34px;}
 }
