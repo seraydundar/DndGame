@@ -27809,3 +27809,26 @@ LINE 1: ...d", "lobby_id", "name", "race", "class", "level", "damage_de...
                                                              ^
 
 Forbidden: /api/accounts/login/
+Forbidden: /api/accounts/friends/sent-requests/
+Forbidden: /api/accounts/friends/list/
+Forbidden: /api/accounts/notifications/
+Forbidden: /api/lobbies/
+Forbidden: /api/accounts/friends/sent-requests/
+Forbidden: /api/accounts/friends/list/
+Forbidden: /api/accounts/notifications/
+Forbidden: /api/accounts/logout/
+Forbidden: /api/accounts/friends/sent-requests/
+Forbidden: /api/accounts/friends/list/
+Forbidden: /api/accounts/notifications/
+Forbidden: /api/accounts/logout/
+Unauthorized: /api/accounts/login/
+Unauthorized: /api/accounts/login/
+Forbidden: /api/characters/
+Unauthorized: /api/accounts/login/
+Unauthorized: /api/accounts/login/
+Unauthorized: /api/accounts/login/
+Unauthorized: /api/accounts/login/
+Not Found: /api/combat/melee-attack/
+Not Found: /api/combat/melee-attack/
+Not Found: /api/api/characters/spawn-monster/
+Not Found: /api/api/characters/spawn-monster/

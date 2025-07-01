@@ -301,7 +301,7 @@ const handleDrop = async (e, cellIndex) => {
     const gridY = Math.floor(cellIndex / GRID_SIZE);
     const gridX = cellIndex % GRID_SIZE;
     try {
-      const res = await api.post('characters/spawn-monster/', {
+      const res = await api.post('game/spawn-monster/', {
         monster_id: unit.id,
         lobby_id:   lobbyId,
         position:   { x: gridX, y: gridY }
