@@ -18,7 +18,7 @@ export default function BattleSetup({
 
   /* -------- Monster’ı backend’de spawn et -------- */
   const spawnMonster = async (monsterId) => {
-    const { data } = await api.post('/api/characters/spawn-monster/', {
+    const { data } = await api.post('characters/spawn-monster/', {
       monster_id: monsterId,
       lobby_id:   lobbyId,
     });
