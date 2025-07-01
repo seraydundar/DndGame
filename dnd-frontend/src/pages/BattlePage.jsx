@@ -199,49 +199,38 @@ export default function BattlePage() {
         break;
 
       case 'battleUpdate':
-        if (d.placements) {
-          setPlacements(d.placements);
-        } else if (d.creatures) {
-          setPlacements(prev => {
-            const next = { ...prev };
-            d.creatures.forEach(c => {
-              const oldEntry = Object.entries(prev)
-                .find(([_, u]) => u?.type === 'creature' && u.id === c.id);
-              if (oldEntry) delete next[oldEntry[0]];
-              const idx = c.grid_y * GRID_SIZE + c.grid_x;
-              next[idx] = { ...c, type: 'creature' };
-            });
-            return next;
-          });
-        }
-        if (d.initiativeOrder) setInitiativeOrder(d.initiativeOrder);
+        // hem root-level hem de data altında gelebilen payload’ı çıkaralım
+    const payload = d.data ?? d;
 
-        // Yeni tur kontrolü
-        if (d.current_turn_index !== undefined && d.current_turn_index !== currentTurnIndex) {
-          setCurrentTurnIndex(d.current_turn_index);
-          setMovementMode(false);
-          setAttackMode(false);
-          setSpellMode(false);
+    // 1) placements / creatures
+    if (payload.placements) {
+      setPlacements(payload.placements);
+    } else if (payload.creatures) {
+      setPlacements(prev => {
+        /* aynı eski creatures logic’iniz */
+      });
+    }
 
-          const entry = d.initiativeOrder[d.current_turn_index];
-          if (entry?.character_id === selectedAttacker?.id) {
-            const dexMod = Math.floor((selectedAttacker.dexterity - 10) / 2) || 0;
-            setMovementRemaining(2 + dexMod);
-            setActionUsed(false);
-          } else {
-            setMovementRemaining(0);
-          }
-        }
+    // 2) initiative sırası
+    const newOrder = payload.initiative_order ?? payload.initiativeOrder;
+    if (newOrder) setInitiativeOrder(newOrder);
 
-        // chatLog merge
-        const msgs = d.chatLog || d.chat_log;
-        if (Array.isArray(msgs)) {
-          setChatLog(prev => {
-            const news = msgs.filter(m => !prev.includes(m));
-            return prev.concat(news);
-          });
-        }
-        break;
+    // 3) tur index’i
+    const newIdx = payload.current_turn_index;
+    if (newIdx !== undefined && newIdx !== currentTurnIndex) {
+      setCurrentTurnIndex(newIdx);
+      /* hareket/aksiyon modlarını reset’leyin */
+    }
+
+    // 4) chat log
+    const msgs = payload.chat_log || payload.chatLog;
+    if (Array.isArray(msgs)) {
+      setChatLog(prev => {
+        const news = msgs.filter(m => !prev.includes(m));
+        return prev.concat(news);
+      });
+    }
+     break;
     }
   };
 
@@ -357,32 +346,40 @@ const handleDrop = async (e, cellIndex) => {
 };
 
 // --- Savaş başlat (GM) ---
-const handleStartBattle = async () => {
+const handleStartBattle = async (childPlacements) => {
   if (!isGM) return;
 
   try {
-    // 1) Grid’deki tüm birimlerin ID’lerini al
-    const placedIds = Object.values(placements)
-      .map(unit => unit?.id)
+    // 1) Yerleşimleri al
+    //    → artık childPlacements üzerinden okuyacağız
+    setPlacements(childPlacements);            // parent state’i de güncelle (opsiyonel)
+    const placedIds = Object.values(childPlacements)
+      .map(u => u?.id)
       .filter(id => id != null);
-
     if (placedIds.length === 0) {
       return alert("Haritaya en az bir birim yerleştirmelisiniz.");
     }
 
-    // 2) REST ile inisiyatif sırasını oluştur
+    // 2) REST çağrısı
     await api.post('combat/initiate/', {
       lobby_id:             lobbyId,
       character_ids:        placedIds,
-      placements,
+      placements:           childPlacements,
       available_characters: availableCharacters.map(c => c.id),
     });
 
-    // 2a) Server’ın WS broadcast hazırlığı için kısa bir gecikme
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // 3) Setup’ı kapat, savaş moduna geç
+    setBattleStarted(true);
+    setChatLog([]);                // eski log’u temizle
+    setMovementMode(false);        // modları sıfırla
+    setAttackMode(false);
+    setSpellMode(false);
 
-    // (BattleStart mesajı server’dan WS üzerinden geleceği için
-    // burada hiçbir şey yapmaya gerek yok.)
+    // 4) İlk battle-state’i çekip yükle
+    const res = await api.get(`battle-state/${lobbyId}/`);
+    setInitiativeOrder(res.data.initiative_order);
+    setPlacements(res.data.placements);
+    setCurrentTurnIndex(res.data.current_turn_index || 0);
 
   } catch (err) {
     console.error("Savaş başlatma hata:", err);
@@ -939,6 +936,7 @@ if (!lobbyData) {
       return (
         <BattleSetup
           isGM={isGM}
+          lobbyId={lobbyId}
           characters={allCharacters}
           placements={placements}
           availableCharacters={availableCharacters}

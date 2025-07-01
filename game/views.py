@@ -22,6 +22,9 @@ from creature.models import Creature
 from items.models     import Item
 from django.db import transaction
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 # Global battle state (demo amaçlı; production için merkezi store (ör. Redis) kullanın)
 BATTLE_STATE = {}
 
@@ -634,16 +637,18 @@ class MoveCharacterView(APIView):
         # Tüm gruba yayınla (Channels)
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"lobby_{lobby_id}",
+            f"battle_{lobby_id}",
             {
-                "type": "battle.update",
-                "event": "battleUpdate",
-                "lobbyId": lobby_id,
-                "placements": placements,
-                "initiative_order": state.get("initiative_order"),
-                "available_characters": state.get("available_characters"),
-                "current_turn_index": state.get("current_turn_index"),
-                "chat_log": state.get("chat_log"),
+               "type": "battle.update",
+                
+               "data": {
+               "lobbyId": lobby_id,
+               "placements": placements,
+               "initiative_order": state.get("initiative_order", []),
+               "available_characters": state.get("available_characters", []),
+               "current_turn_index": state.get("current_turn_index",0),
+               "chat_log": state.get("chat_log", []),
+           }
             }
         )
 
@@ -726,16 +731,22 @@ class EndTurnView(APIView):
         Character.objects.filter(
             lobby_id=lobby_id,
             is_temporary=True,
-            hp__lte=0
-        ).delete()
+            hp__lte=0).delete()
 
-        # Güncellenmiş battle state'i broadcast et
+
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"lobby_{lobby_id}",
+            f"battle_{lobby_id}",             # battle_<id> grubuna
             {
-                'type':    'game_message',
-                'message': battle_state
+                "type": "battle.update",       # consumer’daki battle_update handler’ına
+                "data": {
+                    "lobbyId": lobby_id,
+                    "placements": placements,
+                    "initiative_order": new_initiative,
+                    "current_turn_index": battle_state.get("current_turn_index", 0),
+                    "available_characters": battle_state.get("available_characters", []),
+                    "chat_log": battle_state.get("chat_log", []),
+                }
             }
         )
 
