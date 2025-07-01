@@ -13,6 +13,7 @@ import eyeBadge   from '../assets/ui/eye_badge.png';
 import shieldBadge from '../assets/ui/shield_badge.png';
 import { useNavigate } from "react-router-dom";
 
+
 const GRID_SIZE   = 20;
 const TOTAL_CELLS = GRID_SIZE * 15;
 
@@ -53,6 +54,8 @@ export default function BattlePage() {
   const [movementRemaining, setMovementRemaining] = useState(3);
   const [rangedReachableCells, setRangedReachableCells] = useState(new Set());
 
+  const [selectedBg, setSelectedBg] = useState('/assets/backgrounds/forest.png');
+
  const currentEntry = initiativeOrder[currentTurnIndex] || {};
 
  // placements bir obje, bu yüzden önce değerleri diziye dönüştürüp find ile arayalım:
@@ -85,6 +88,22 @@ export default function BattlePage() {
       })
       .catch(err => console.error("Lobi verisi hata:", err));
   }, [lobbyId, currentUserId]);
+
+  useEffect(() => {
+  // BattlePage açılırken body'nin önceki before/after'ını temizle
+  document.body.className = ''; // varsa EndBattle'dan kalan class'ları temizler
+  document.body.style.background = `url(${selectedBg}) center / cover no-repeat fixed`;
+  document.body.style.minHeight = '100vh';
+  document.body.style.margin = '0';
+
+  // CSS ::before ve ::after’ı override edecek inline stil ekleyebilirsin:
+  document.body.style.setProperty('--body-before-bg', 'none');
+  document.body.style.setProperty('--body-after-bg', 'none');
+
+  return () => {
+    document.body.style.background = '';
+  };
+}, [selectedBg]);
 
   // --- Karakterleri çek ---
   useEffect(() => {
@@ -947,6 +966,9 @@ if (!lobbyData) {
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onStartBattle={handleStartBattle}
+          setSelectedBg={setSelectedBg}
+          selectedBg={selectedBg}
+  
         />
       );
     } else {
@@ -960,6 +982,7 @@ if (!lobbyData) {
 
   // Savaş başladıysa gerçek savaş alanını göster
   return (
+    
   <>
     {/* ---------- Banner (ekranın üstü, bağımsız) ---------- */}
     <img
@@ -969,7 +992,9 @@ if (!lobbyData) {
     />
 
     {/* ---------- Tüm oyun alanını saran flex-wrapper ---------- */}
-    <div className="game-wrapper">
+    
+
+  <div className="game-wrapper">
 
       {/* ---------- Pano (grid) + yan rozetler ---------- */}
       <div className="board-wrapper">
@@ -983,6 +1008,7 @@ if (!lobbyData) {
           alt="Shield Badge"
           className="badge badge-shield"
         />
+
 
         <BattleMap
           placements={placements}
@@ -1000,6 +1026,7 @@ if (!lobbyData) {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          backgroundImage={selectedBg} 
           
           
         />

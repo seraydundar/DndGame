@@ -1,7 +1,12 @@
 // src/components/BattleSetup.jsx
 import React, { useState } from 'react';
 import './BattleSetup.css';
-import api from '../services/api';          // axios instance’in
+import api from '../services/api';         // axios instance’in
+
+import forestPng from '../assets/backgrounds/forest.png';
+import dungeonJpg from '../assets/backgrounds/dungeon.jpg';
+import castleJpg from '../assets/backgrounds/castle.jpg';
+
 
 export default function BattleSetup({
   isGM,
@@ -11,6 +16,8 @@ export default function BattleSetup({
   availableCreatures,
   totalCells,
   onStartBattle,
+  selectedBg,
+  setSelectedBg 
 }) {
   const [placements, setPlacements] = useState(initialPlacements || {});
   const CELL_SIZE = 35;
@@ -127,11 +134,30 @@ export default function BattleSetup({
 
   /* ---------------- Render ---------------- */
   return (
+    
     <div className="battle-setup">
-      <h2>Karakterleri Yerleştir</h2>
+  <h2>Karakterleri Yerleştir</h2>
 
-      <h3>Harita</h3>
-      <div className="battle-grid">{cells}</div>
+  <div style={{ marginBottom: '10px' }}>
+    <label htmlFor="bgSelect"><strong>Mekan:</strong></label>
+    <select
+      id="bgSelect"
+      value={selectedBg}
+      onChange={(e) => setSelectedBg(e.target.value)}
+      style={{ marginLeft: '8px' }}
+    >
+      <option value={forestPng}>Orman</option>
+      <option value={dungeonJpg}>Zindan</option>
+      <option value={castleJpg}>Kale</option>
+    </select>
+  </div>
+
+  <h3>Harita</h3>
+  <div
+  className="battle-grid"
+>
+    {cells}
+  </div>
 
       <h3>Kalan Karakterler</h3>
       <div className="character-list">

@@ -25,6 +25,7 @@ export default function BattleMap({
    onDragStart,
    onDragOver,
    onDrop,
+   backgroundImage,
 }) {
   const CELL_SIZE = 35;
   const ICON_SIZE = 28;
@@ -48,6 +49,7 @@ export default function BattleMap({
       }
     }
   }
+  
 
   /* ------------ Hücreleri oluştur ------------ */
   const cells = Array.from({ length: totalCells }, (_, i) => {
@@ -171,13 +173,15 @@ export default function BattleMap({
 
   /* ------------ Render grid ------------ */
   return (
+    
     <div
       className="battle-grid"
       style={{
         display: 'grid',
-        gridTemplateColumns: `repeat(${gridSize}, ${CELL_SIZE}px)`,
-        gap: 2,
-        marginBottom: 20,
+    gridTemplateColumns: `repeat(${gridSize}, ${CELL_SIZE}px)`,
+    gap: 2,
+    marginBottom: 20,
+    background: `url(${backgroundImage}) center / cover`
       }}
     >
       {cells}

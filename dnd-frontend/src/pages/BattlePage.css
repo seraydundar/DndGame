@@ -85,21 +85,14 @@ html, body {
   display: grid;
   grid-template-columns: repeat(var(--cols), var(--cell));
   gap: var(--gap);
-  background: var(--bg-floor);
+  background: transparent !important;
 }
 .battle-grid .cell {
   width: var(--cell);
   height: var(--cell);
-
-  /* Zeminin görünürlüğü için hafif opaklık */
-  background: rgba(5, 4, 4, 0.15);
-
-  /* Border’ı kalınlaştırdık ve opaklığı artırdık */
-  border: 3px solid rgba(121, 95, 47, 0.85);
-
-  /* İnce bir gölge ekleyerek derinlik katıyoruz */
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.5);
-
+  background: transparent !important;
+  border: 1px solid rgba(121, 95, 47, 0.85);
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,10 +181,10 @@ button:hover {
   background-color: rgba(255, 0, 0, 0.25);
   outline: 1px solid rgba(255, 0, 0, 0.5);
 }
-.game-wrapper::before {
+/*.game-wrapper::before {
   content: '';
   position: absolute;
-  inset: 0; /* top:0; right:0; bottom:0; left:0; */
+  inset: 0; /* top:0; right:0; bottom:0; left:0; 
   pointer-events: none;
   background: radial-gradient(
     ellipse at center,
@@ -216,8 +209,7 @@ button:hover {
   background: rgba(255, 240, 200, 0.03);
   animation: flicker 3s infinite;
   z-index: 11;
-}
-
+}*/
 .token {
   /* Mevcut boyutlandırma/konumlama kuralları… */
   width: var(--token-size);
