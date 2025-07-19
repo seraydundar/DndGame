@@ -27841,3 +27841,20 @@ Bad Request: /api/combat/melee-attack/
 Bad Request: /api/combat/melee-attack/
 Bad Request: /api/combat/melee-attack/
 Bad Request: /api/combat/melee-attack/
+Forbidden: /api/accounts/notifications/
+Forbidden: /api/accounts/friends/list/
+Forbidden: /api/accounts/friends/sent-requests/
+Forbidden: /api/accounts/logout/
+Forbidden: /api/accounts/logout/
+Forbidden: /api/accounts/logout/
+Forbidden: /api/accounts/logout/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/

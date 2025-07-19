@@ -12,7 +12,8 @@ class Item(models.Model):
         ('NECKLACE', 'Necklace'),
         ('EARRING',  'Earring'),
         ('RING',     'Ring'),
-        ('MAIN_HAND','Main Hand'),
+        ('MELEE_WEAPON',  'Melee Weapon'),
+        ('RANGED_WEAPON', 'Ranged Weapon'),
         ('OFF_HAND', 'Off Hand'),
         ('INVENTORY','Inventory'),
     ]

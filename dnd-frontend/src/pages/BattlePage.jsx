@@ -596,7 +596,7 @@ const handleMeleeAttack = async targetCharacter => {
       enrichedMsg += ` (Canavar Zar: ${diceStr}) (Kalan HP: ${leftHp})`;
     } else {
       // Normal karakter: silah ve STR mod hesapla
-      const weapon = selectedAttacker.main_hand || selectedAttacker.off_hand;
+      const weapon = selectedAttacker.melee_weapon;
       const strMod = Math.floor((selectedAttacker.strength - 10) / 2);
       const isCrit  = apiMsg.includes('Kritik');
       const diceTotal = isCrit
@@ -687,7 +687,7 @@ const handleCreatureAttack = async targetCharacter => {
       } = res.data;
 
       // Mesajı zenginleştir
-      const weapon = selectedAttacker.main_hand || selectedAttacker.off_hand;
+      const weapon = selectedAttacker.ranged_weapon;
       const dexMod = Math.floor((selectedAttacker.dexterity - 10) / 2);
       const isCrit = apiMsg.includes('Kritik');
       const diceTotal = isCrit

@@ -117,7 +117,11 @@ class Character(models.Model):
         'items.Item', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='+'
     )
-    main_hand = models.ForeignKey(
+    melee_weapon = models.ForeignKey(
+        'items.Item', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+'
+    )
+    ranged_weapon = models.ForeignKey(
         'items.Item', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='+'
     )

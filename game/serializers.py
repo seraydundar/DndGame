@@ -127,10 +127,18 @@ class CharacterSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
-    main_hand = ItemSerializer(read_only=True)
-    main_hand_id = serializers.PrimaryKeyRelatedField(
+    melee_weapon = ItemSerializer(read_only=True)
+    melee_weapon_id = serializers.PrimaryKeyRelatedField(
         queryset=Item.objects.all(),
-        source='main_hand',
+        source='melee_weapon',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    ranged_weapon = ItemSerializer(read_only=True)
+    ranged_weapon_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(),
+        source='ranged_weapon',
         write_only=True,
         required=False,
         allow_null=True
@@ -198,7 +206,8 @@ class CharacterSerializer(serializers.ModelSerializer):
             'necklace', 'necklace_id',
             'ear1', 'ear1_id',
             'ear2', 'ear2_id',
-            'main_hand', 'main_hand_id',
+            'melee_weapon', 'melee_weapon_id',
+            'ranged_weapon', 'ranged_weapon_id',
             'off_hand', 'off_hand_id',
             # ——— Yeni Alanlar ———
             'is_temporary', 'melee_dice', 'ranged_dice',

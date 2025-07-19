@@ -128,7 +128,8 @@ class CharacterViewSet(viewsets.ModelViewSet):
             charisma      = getattr(monster, 'charisma', 10),
             gold          = 0,
             inventory     = [],
-            main_hand     = None,
+            melee_weapon  = None,
+            ranged_weapon = None,
             off_hand      = None,
             is_temporary  = True,
             melee_dice    = monster.melee_attack_dice,
@@ -261,14 +262,14 @@ class InitiateCombatView(APIView):
 
 def get_melee_dice(attacker: Character) -> str:
     """
-    - Eğer is_temporary ise monster’ın melee_dice alanını kullanır (fallback "1d4").
-    - Aksi halde, mutlaka main_hand silahının damage_dice değerini döner.
+    - Eğer is_temporary ise monster'ın melee_dice alanını kullanır (fallback "1d4").
+    - Aksi halde, melee_weapon alanındaki silahın damage_dice değerini döner.
     """
     if attacker.is_temporary:
         return attacker.melee_dice or "1d4"
-    if not attacker.main_hand:
-        raise ValueError("Melee attack için main_hand slotunda silah olmalı.")
-    return attacker.main_hand.damage_dice
+    if not attacker.melee_weapon:
+        raise ValueError("Melee attack için melee_weapon slotunda silah olmalı.")
+    return attacker.melee_weapon.damage_dice
 
 
 
@@ -446,16 +447,14 @@ class MeleeAttackView(APIView):
 
 def get_ranged_dice(attacker: Character) -> str:
     """
-    - Eğer attacker.is_temporary ise monster’ın ranged_dice alanını kullanır (fallback "1d4").
-    - Aksi halde, main_hand veya off_hand’da subtype 'bow' olan silahın damage_dice’ını döner.
+    - Eğer attacker.is_temporary ise monster'ın ranged_dice alanını kullanır (fallback "1d4").
+    - Aksi halde, ranged_weapon alanındaki silahın damage_dice değerini döner.
     """
     if attacker.is_temporary:
         return attacker.ranged_dice or "1d4"
-    # Player için bow kontrolü
-    weapon = attacker.main_hand or attacker.off_hand
-    if not weapon or getattr(weapon, 'subtype', None) != 'bow':
-        raise ValueError("Menzilli saldırı için bow kuşanmanız gerekiyor.")
-    return weapon.damage_dice
+    if not attacker.ranged_weapon:
+        raise ValueError("Menzilli saldırı için ranged_weapon slotunda silah olmalı.")
+    return attacker.ranged_weapon.damage_dice
 
 
 class RangedAttackView(APIView):
