@@ -229,6 +229,53 @@ class Character(models.Model):
             if item and getattr(item, "ac_bonus", 0):
                 total_bonus += item.ac_bonus
         return base_ac + total_bonus
+    
+    def get_stat_with_bonuses(self, stat: str) -> int:
+        """Return given ability score including bonuses from equipped items."""
+        base = getattr(self, stat, 0)
+        bonus = 0
+        for slot in [
+            "head_armor", "chest_armor", "hand_armor", "legs_armor",
+            "ring1", "ring2", "necklace", "ear1", "ear2",
+            "melee_weapon", "ranged_weapon", "off_hand",
+        ]:
+            item = getattr(self, slot, None)
+            if not item or not getattr(item, "bonuses", None):
+                continue
+            for b in item.bonuses:
+                if isinstance(b, dict) and b.get("stat") == stat:
+                    val = b.get("value", 0)
+                    if b.get("type") == "-":
+                        bonus -= val
+                    else:
+                        bonus += val
+        return base + bonus
+
+    @property
+    def total_strength(self):
+        return self.get_stat_with_bonuses("strength")
+
+    @property
+    def total_dexterity(self):
+        return self.get_stat_with_bonuses("dexterity")
+
+    @property
+    def total_constitution(self):
+        return self.get_stat_with_bonuses("constitution")
+
+    @property
+    def total_intelligence(self):
+        return self.get_stat_with_bonuses("intelligence")
+
+    @property
+    def total_wisdom(self):
+        return self.get_stat_with_bonuses("wisdom")
+
+    @property
+    def total_charisma(self):
+        return self.get_stat_with_bonuses("charisma")
+
+
 
     def get_melee_damage(self, critical=False):
         """Roll melee damage according to weapon or monster dice."""

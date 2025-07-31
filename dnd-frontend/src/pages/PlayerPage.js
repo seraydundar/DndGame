@@ -324,6 +324,7 @@ export default function PlayerPage() {
             <li>INT: {char.intelligence}</li>
             <li>WIS: {char.wisdom}</li>
             <li>CHA: {char.charisma}</li>
+            <li>AC: {char.ac}</li>
           </ul>
 
           {/* ---------- Hazır Büyüler Bölümü ---------- */}

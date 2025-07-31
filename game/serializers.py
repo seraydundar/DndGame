@@ -166,6 +166,24 @@ class CharacterSerializer(serializers.ModelSerializer):
     )
     class_features = serializers.JSONField(required=False)
 
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        stats = [
+            "strength",
+            "dexterity",
+            "constitution",
+            "intelligence",
+            "wisdom",
+            "charisma",
+        ]
+        for stat in stats:
+            if hasattr(instance, "get_stat_with_bonuses"):
+                rep[stat] = instance.get_stat_with_bonuses(stat)
+        rep["ac"] = instance.get_total_ac()
+        return rep
+
+
     def get_prepared_spells(self, obj):
         spells = obj.prepared_spells or []
         if isinstance(spells, str):

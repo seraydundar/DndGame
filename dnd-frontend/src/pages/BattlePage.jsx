@@ -518,10 +518,11 @@ const handleCellClick = (cellIndex, cellCharacter) => {
    if (rollRequestMode && cellCharacter) {
     const sock = getBattleSocket();
     if (sock?.readyState === WebSocket.OPEN) {
+      const targetId = cellCharacter.player_id ?? cellCharacter.playerId;
       sock.send(
         JSON.stringify({
           event: 'diceRollRequest',
-          playerId: cellCharacter.player_id,
+          playerId: targetId,
           lobbyId,
         })
       );
@@ -610,8 +611,13 @@ const handleCellClick = (cellIndex, cellCharacter) => {
       }
       setSelectedAttacker(cellCharacter);
       setActionPointsRemaining(cellCharacter.action_points ?? 1);
-    }
-  };
+   }
+
+  // GM tıkladığında detay kartını aç
+  if (isGM && cellCharacter) {
+    setSelectedCharacter(cellCharacter);
+  }
+}
 
   // --- Karakteri hareket ettir ---
   const handleMoveCharacter = async targetCell => {
@@ -1406,12 +1412,30 @@ if (!lobbyData) {
          >✖</button>
 
          <h2>{selectedCharacter.name}</h2>
-         <p><strong>HP:</strong> {selectedCharacter.hp} / {selectedCharacter.maxHp}</p>
-         <p><strong>AC:</strong> {selectedCharacter.ac}</p>
+         <p>
+           <strong>HP:</strong> {selectedCharacter.hp ?? selectedCharacter.current_hp} /
+           {" "}
+           {selectedCharacter.maxHp ?? selectedCharacter.max_hp}
+         </p>
+         {selectedCharacter.xp != null && (
+           <p>
+             <strong>XP:</strong> {selectedCharacter.xp}
+           </p>
+         )}
+         {selectedCharacter.level != null && (
+           <p>
+             <strong>Level:</strong> {selectedCharacter.level}
+           </p>
+         )}
          <p>
            <strong>Str:</strong> {selectedCharacter.strength}&nbsp;
            <strong>Dex:</strong> {selectedCharacter.dexterity}&nbsp;
            <strong>Con:</strong> {selectedCharacter.constitution}
+           <strong>Int:</strong> {selectedCharacter.intelligence}&nbsp;
+           <strong>Wis:</strong> {selectedCharacter.wisdom}&nbsp;
+           <strong>Cha:</strong> {selectedCharacter.charisma}
+           <strong>AC:</strong> {selectedCharacter.ac}
+
          </p>
          {/* İstersen buraya daha fazla stat ekleyebilirsin */}
        </div>

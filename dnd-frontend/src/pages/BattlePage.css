@@ -302,10 +302,11 @@ button:hover {
 /* Karakter Detay Paneli */
 .char-detail-panel {
   position: fixed;
-  top: 20%;
-  left: 50%;
-  transform: translateX(-50%);
+  top: var(--banner-h);
+  right: 0;
   width: 280px;
+  height: calc(100% - var(--banner-h));
+  overflow-y: auto;
   background: var(--bg-parch, #f5e6c4);
   border: 2px solid var(--edge, #c9b48a);
   border-radius: 8px;
