@@ -127,6 +127,20 @@ export default function GodPanel() {
   const [editItem, setEditItem]     = useState(null);
   const [formValues, setFormValues] = useState({});
 
+   useEffect(() => {
+    const handler = e => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.event === 'redirect' && data.target === 'battle') {
+          navigate(`/battle/${lobbyId}`);
+        }
+      } catch {}
+    };
+    socket.addEventListener('message', handler);
+    return () => socket.removeEventListener('message', handler);
+  }, [navigate, lobbyId]);
+
+
   // Başlangıçta karakterleri ve eşyaları yükle
   useEffect(() => {
     api.get('characters/')

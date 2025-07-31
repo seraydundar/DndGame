@@ -79,6 +79,9 @@ export default function Lobby() {
         const path = currentUserId === lobby?.gm_player ? '/godpanel' : '/playerpage';
         navigate(path);
       }
+      if (data.event === 'redirect' && data.target === 'battle') {
+        navigate(`/battle/${lobbyId}`);
+      }
       if (['playerReadyUpdate','playerJoined','lobbyUpdate'].includes(data.event)) {
         fetchLobby();
       }

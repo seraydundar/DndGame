@@ -93,6 +93,9 @@ const CharacterCreation = () => {
         data.classes && setClasses(data.classes);
         data.spells  && setAvailableSpells(data.spells);
       }
+      if (data.event === 'redirect' && data.target === 'battle') {
+        navigate(`/battle/${lobby_id}`);
+      }
     };
     socket.addEventListener('message', handler);
     return () => socket.removeEventListener('message', handler);

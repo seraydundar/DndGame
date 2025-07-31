@@ -13,10 +13,25 @@ import eyeBadge   from '../assets/ui/eye_badge.png';
 import shieldBadge from '../assets/ui/shield_badge.png';
 import { useNavigate } from "react-router-dom";
 import DiceRollModal               from '../components/DiceRollModal';
+import forestPng  from '../assets/backgrounds/forest.png';
+import dungeonJpg from '../assets/backgrounds/dungeon.jpg';
+import castleJpg  from '../assets/backgrounds/castle.jpg';
+import GMPanel                      from './GMPanel';
 
 
 const GRID_SIZE   = 20;
 const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
+
+const BG_MAP = { forest: forestPng, dungeon: dungeonJpg, castle: castleJpg };
+const bgNameFromPath = p => {
+  switch (p) {
+    case forestPng:  return 'forest';
+    case dungeonJpg: return 'dungeon';
+    case castleJpg:  return 'castle';
+    default:         return 'forest';
+  }
+};
+const resolveBg = b => BG_MAP[b] || b;
 
 export default function BattlePage() {
   const { id } = useParams();
@@ -38,6 +53,7 @@ export default function BattlePage() {
   const [attackType, setAttackType]               = useState(null);
   const [spellMode, setSpellMode]                 = useState(false);
   const [selectedSpell, setSelectedSpell]         = useState(null);
+  const [rollRequestMode, setRollRequestMode]     = useState(false);
   const [availableCreatures, setAvailableCreatures] = useState([]);
   const [aoeHoverCell,  setAoeHoverCell]  = useState(null);
 
@@ -55,11 +71,12 @@ export default function BattlePage() {
   const [movementRemaining, setMovementRemaining] = useState(3);
   const [rangedReachableCells, setRangedReachableCells] = useState(new Set());
 
-  const [selectedBg, setSelectedBg] = useState('/assets/backgrounds/forest.png');
+  const [selectedBg, setSelectedBg] = useState(forestPng);
 
   const [diceVisible, setDiceVisible] = useState(false);
   const [diceResult, setDiceResult] = useState(null);
   const [diceRolling, setDiceRolling] = useState(false);
+  const [diceRequester, setDiceRequester] = useState(null);
 
  const currentEntry = initiativeOrder[currentTurnIndex] || {};
 
@@ -109,6 +126,20 @@ export default function BattlePage() {
     document.body.style.background = '';
   };
 }, [selectedBg]);
+
+  // GM arkaplan değişimini diğer oyunculara iletsin
+  useEffect(() => {
+    if (!isGM || battleStarted) return;
+    const sock = getBattleSocket();
+    if (sock?.readyState === WebSocket.OPEN) {
+      sock.send(JSON.stringify({
+        event: 'battleUpdate',
+        lobbyId,
+        background: selectedBg,
+      }));
+    }
+  }, [selectedBg, isGM, battleStarted, lobbyId]);
+
 
   // --- Karakterleri çek ---
   useEffect(() => {
@@ -162,6 +193,7 @@ export default function BattlePage() {
           setInitiativeOrder(d.initiative_order);
           setPlacements(d.placements);
           setCurrentTurnIndex(d.current_turn_index || 0);
+          if (d.background) setSelectedBg(resolveBg(d.background));
           if (Array.isArray(d.chat_log)) {
             setChatLog(prev => {
               const news = d.chat_log.filter(m => !prev.includes(m));
@@ -221,6 +253,13 @@ export default function BattlePage() {
           replace: true                            // geri tuşunda eski sayfaya dönmesin
         });
         break;
+      
+      case 'requestRoll':
+        if (d.target_id === currentUserId) {
+          alert('GM sizden zar atmanızı istedi!');
+        }
+        break;
+
 
       case 'battleUpdate':
         // hem root-level hem de data altında gelebilen payload’ı çıkaralım
@@ -245,6 +284,10 @@ export default function BattlePage() {
       setCurrentTurnIndex(newIdx);
       /* hareket/aksiyon modlarını reset’leyin */
     }
+     if (payload.background) {
+      setSelectedBg(resolveBg(payload.background));
+    }
+
 
     // 4) chat log
     const msgs = payload.chat_log || payload.chatLog;
@@ -256,16 +299,20 @@ export default function BattlePage() {
     }
      break;
 
-      case 'diceRollRequest':
-        if (Number(d.playerId) === Number(currentUserId)) {
+      case 'diceRollRequest': {
+        const targetId = Number(d.playerId);
+        if (targetId === Number(currentUserId) || isGM) {
           setDiceVisible(true);
           setDiceResult(null);
+          setDiceRolling(isGM && targetId !== Number(currentUserId));
+          setDiceRequester(targetId);
         }
         break;
+      }
 
       case 'diceRoll':
         setChatLog(prev => prev.concat(`Oyuncu ${d.playerId} zar attı: ${d.result}`));
-        if (Number(d.playerId) === Number(currentUserId)) {
+        if (Number(d.playerId) === diceRequester) {
           setDiceResult(d.result);
           setDiceRolling(false);
         }
@@ -406,6 +453,7 @@ const handleStartBattle = async (childPlacements) => {
       character_ids:        placedIds,
       placements:           childPlacements,
       available_characters: availableCharacters.map(c => c.id),
+      background:           bgNameFromPath(selectedBg),
     });
 
     // 3) Setup’ı kapat, savaş moduna geç
@@ -428,6 +476,20 @@ const handleStartBattle = async (childPlacements) => {
 
   // --- Hücre tıklama: önce saldırı/büyü, sonra hareket ---
 const handleCellClick = (cellIndex, cellCharacter) => {
+   if (rollRequestMode && cellCharacter) {
+    const sock = getBattleSocket();
+    if (sock?.readyState === WebSocket.OPEN) {
+      sock.send(
+        JSON.stringify({
+          event: 'requestRoll',
+          target_id: cellCharacter.id,
+          lobbyId,
+        })
+      );
+    }
+    setRollRequestMode(false);
+    return;
+  }
   /* ---------- GM kontrollü yaratıklar ---------- */
   // 1) GM yaratığı için hareket
   if (
@@ -918,6 +980,12 @@ const handleSelectSpell = spell => {
   }
 };
 
+// --- Request dice roll from player ---
+const handleRequestRoll = () => {
+  setRollRequestMode(true);
+};
+
+
   
   // --- End battle (GM) ---
 const handleEndBattle = async () => {
@@ -1133,17 +1201,16 @@ if (!lobbyData) {
                 setMovementMode(false);
               }}
               onEndTurn={handleEndTurn}
-              onEndBattle={handleEndBattle}
-              onDiceRequest={() => {
-                if (selectedAttacker)
-                  getBattleSocket().send(JSON.stringify({
-                    event: 'diceRollRequest',
-                    playerId: selectedAttacker.player_id,
-                  }));
-              }}
-              isGM={isGM}
+              
             />
           </div>
+        )}
+        {isGM && (
+          <GMPanel
+            onEndBattle={handleEndBattle}
+            onRequestRoll={handleRequestRoll}
+            requestRollMode={rollRequestMode}
+          />
         )}
       </div>
 
@@ -1186,9 +1253,10 @@ if (!lobbyData) {
           playerId: currentUserId,
         }));
       }}
-      onClose={() => { setDiceVisible(false); setDiceResult(null); }}
+      onClose={() => { setDiceVisible(false); setDiceResult(null); setDiceRequester(null); }}
       isRolling={diceRolling}
       result={diceResult}
+      canRoll={diceRequester === Number(currentUserId)}
     />
     {/* ---------- Karakter Detay Paneli ---------- */}
      {selectedCharacter && (

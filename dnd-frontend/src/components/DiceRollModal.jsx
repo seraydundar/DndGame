@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './DiceRollModal.css';
 
-export default function DiceRollModal({ visible, onRoll, onClose, isRolling, result }) {
+export default function DiceRollModal({
+  visible,
+  onRoll,
+  onClose,
+  isRolling,
+  result,
+  canRoll,
+}) {
+  const [displayValue, setDisplayValue] = useState(null);
+
+  useEffect(() => {
+    if (isRolling && result == null) {
+      const id = setInterval(() => {
+        setDisplayValue(Math.ceil(Math.random() * 20));
+      }, 100);
+      return () => clearInterval(id);
+    }
+    if (result != null) setDisplayValue(result);
+  }, [isRolling, result]);
+
   if (!visible) return null;
   return (
     <div className="dice-modal-overlay">
@@ -9,9 +28,14 @@ export default function DiceRollModal({ visible, onRoll, onClose, isRolling, res
         {result == null ? (
           <>
             <p>D20 için zar atın</p>
-            <button onClick={onRoll} disabled={isRolling}>
-              {isRolling ? 'Atılıyor...' : 'Zar At'}
-            </button>
+            {isRolling && <div className="dice">{displayValue ?? '?'}</div>}
+            {canRoll ? (
+              <button onClick={onRoll} disabled={isRolling}>
+                {isRolling ? 'Atılıyor...' : 'Zar At'}
+              </button>
+            ) : (
+              <p>Oyuncu zar atacak...</p>
+            )}
           </>
         ) : (
           <>

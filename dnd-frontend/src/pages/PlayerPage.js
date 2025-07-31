@@ -4,6 +4,7 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend }                  from 'react-dnd-html5-backend';
 import { useNavigate }                   from 'react-router-dom';
 import api                               from '../services/api';
+import socket                            from '../services/socket';
 import './PlayerPage.css';
 
 /*------------------------------------------------------------
@@ -143,6 +144,22 @@ export default function PlayerPage() {
   const [viewItem,       setViewItem]       = useState(null);
   const [preparedSpells, setPreparedSpells] = useState([]); // Karakterin sahip olduğu büyüler
   const navigate = useNavigate();
+
+  
+   useEffect(() => {
+    const handler = e => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.event === 'redirect' && data.target === 'battle') {
+          const lobbyId = sessionStorage.getItem('lobby_id');
+          navigate(`/battle/${lobbyId}`);
+        }
+      } catch {}
+    };
+    socket.addEventListener('message', handler);
+    return () => socket.removeEventListener('message', handler);
+  }, [navigate]);
+
 
   /* ---------- İlk yükleme: karakter + item listesi ---------- */
   useEffect(() => {
