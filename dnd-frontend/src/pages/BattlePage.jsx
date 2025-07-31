@@ -542,8 +542,10 @@ const handleCellClick = (cellIndex, cellCharacter) => {
       sock.send(
         JSON.stringify({
           event: 'diceRollRequest',
-          playerId: targetId,
-          lobbyId,
+          data: {
+            playerId: targetId,
+            lobbyId,
+          },
         })
       );
     }
@@ -1134,8 +1136,10 @@ const handleCardRollRequest = () => {
     sock.send(
       JSON.stringify({
         event: 'diceRollRequest',
-        playerId: pid,
-        lobbyId,
+        data: {
+          playerId: pid,
+          lobbyId,
+        },
       })
     );
   }
@@ -1438,10 +1442,12 @@ if (!lobbyData) {
       visible={diceVisible}
       onRoll={() => {
         setDiceRolling(true);
-        getBattleSocket().send(JSON.stringify({
-          event: 'diceRoll',
-          playerId: currentUserId,
-        }));
+        getBattleSocket().send(
+          JSON.stringify({
+            event: 'diceRoll',
+            data: { playerId: currentUserId },
+          })
+        );
       }}
       onClose={() => { setDiceVisible(false); setDiceResult(null); setDiceRequester(null); }}
       isRolling={diceRolling}
@@ -1564,8 +1570,7 @@ if (!lobbyData) {
          
          {/* İstersen buraya daha fazla stat ekleyebilirsin */}
          {isGM && (
-           <div className="action-buttons">
-             <button onClick={() => navigate('/godpanel')}>Düzenle</button>
+           <div className="action-buttons">             
              <button onClick={handleCardRollRequest}>Zar İste</button>
            </div>
          )}
