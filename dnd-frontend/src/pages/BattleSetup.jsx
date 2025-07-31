@@ -21,9 +21,9 @@ export default function BattleSetup({
 }) {
   /* -------- GRID sabiti -------- */
   const COLS = 20;
-  const ROWS = 15;
-  const CELL_SIZE = 50;
-  const ICON_SIZE = 40;
+  const ROWS = 20;
+  const CELL_SIZE = 35;
+  const ICON_SIZE = 30;
   const TOTAL_CELLS = COLS * ROWS;
 
   const [placements, setPlacements] = useState(initialPlacements || {});

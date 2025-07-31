@@ -5,9 +5,9 @@
 
 /* ---------- Değişkenler -------------------------------------- */
 :root{
-  --cols:20;
-  --rows:15;             /* ⇦ yeni satır sayısı */
-  --cell:50px;           /* hücre boyutu */
+  --cols:20
+  --rows:20;             /* 20x20 grid */
+  --cell:35px;           /* hücre boyutu */
   --gap:2px;
   --board-w:calc(var(--cols)*var(--cell)+(var(--cols)-1)*var(--gap));
 
@@ -60,6 +60,7 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 /* Hücre – sadece sağ ve alt kenar çizilir */
 .battle-grid .cell{
   width:var(--cell);height:var(--cell);
+  box-sizing:border-box;
   border-right:1px solid rgba(121,95,47,.5);
   border-bottom:1px solid rgba(121,95,47,.5);
   /* Üst / sol kenarlar yok; böylece çift kalınlık oluşmaz */
@@ -72,6 +73,8 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 .character-list,
 .creature-list{
   width:260px;
+  max-height:400px;
+  overflow-y:auto;
   background:var(--bg-parch) repeat;
   padding:16px;
   box-shadow:0 4px 16px rgba(0,0,0,.45),
@@ -82,7 +85,7 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 
 /* Tile */
 .character-tile{
-  width:50px;height:70px;border-radius:6px;overflow:hidden;cursor:grab;
+  width:60px;height:80px;border-radius:6px;overflow:hidden;cursor:grab;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:linear-gradient(135deg,#3e8e41,#2e7d32);
   box-shadow:0 0 8px #4caf50;padding:4px;transition:.2s;
@@ -90,8 +93,8 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 .character-tile:hover{
   transform:scale(1.1);box-shadow:0 0 12px rgba(255,215,0,.7);
 }
-.character-tile img{width:70px;height:70px;object-fit:cover;border-radius:4px;}
-.character-tile span{margin-top:4px;font-weight:bold;font-size:12px;
+.character-tile img{width:60px;height:60px;object-fit:cover;border-radius:4px;}
+.character-tile span{margin-top:4px;font-weight:bold;font-size:13px;
                      color:#322810;text-shadow:1px 1px 2px #000;text-align:center;}
 
 /* ---------- Start Button ------------------------------------- */
@@ -114,9 +117,9 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
   .character-list,.creature-list,.available-list{width:220px;}
 }
 @media(max-width:860px){
-  :root{--cell:42px;--rows:15;--board-w:calc(var(--cols)*var(--cell)+(var(--cols)-1)*var(--gap));}
+  :root{--cell:30px;--rows:20;--board-w:calc(var(--cols)*var(--cell)+(var(--cols)-1)*var(--gap));}
   .grid-panel{width:auto;}
 }
 @media(max-width:600px){
-  :root{--cell:34px;}
+  :root{--cell:24px;}
 }

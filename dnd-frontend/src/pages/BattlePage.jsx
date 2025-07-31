@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 
 
 const GRID_SIZE   = 20;
-const TOTAL_CELLS = GRID_SIZE * 15;
+const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
 
 export default function BattlePage() {
   const { id } = useParams();
@@ -424,7 +424,11 @@ const handleCellClick = (cellIndex, cellCharacter) => {
     attackMode &&
     cellCharacter
   ) {
-    handleCreatureAttack(cellCharacter);
+    if (attackType === 'ranged') {
+      handleRangedAttack(cellCharacter);
+    } else {
+      handleCreatureAttack(cellCharacter);
+    }
     return;
   }
 
@@ -694,8 +698,15 @@ const handleCreatureAttack = async targetCharacter => {
         ? (dmg / 2 - dexMod)
         : (dmg - dexMod);
 
-      const enrichedMsg =
-        `${apiMsg} (Silah: ${weapon.name}, Zar Dice: ${weapon.damage_dice}, Zar Toplamı: ${diceTotal}) (Kalan HP: ${leftHp})`;
+      let enrichedMsg;
+      if (weapon) {
+        enrichedMsg =
+          `${apiMsg} (Silah: ${weapon.name}, Zar Dice: ${weapon.damage_dice}, Zar Toplamı: ${diceTotal}) (Kalan HP: ${leftHp})`;
+      } else {
+        const dice = selectedAttacker.ranged_dice || '1d4';
+        enrichedMsg =
+          `${apiMsg} (Zar Dice: ${dice}, Zar Toplamı: ${diceTotal}) (Kalan HP: ${leftHp})`;
+      }
 
       // Chat log’u güncelle
       setChatLog(prev => {

@@ -24,8 +24,11 @@ export default function BattleActions({
 
   // Ekipman bazlı koşullar; geçici yaratıklar her zaman melee yapabilir
   const weapon = selectedAttacker.melee_weapon || selectedAttacker.ranged_weapon || {};
-  const hasMeleeWeapon  = selectedAttacker.is_temporary || !!selectedAttacker.melee_weapon;
-  const hasRangedWeapon = !!selectedAttacker.ranged_weapon;
+  const hasMeleeWeapon =
+    selectedAttacker.is_temporary || !!selectedAttacker.melee_weapon;
+  const hasRangedWeapon = selectedAttacker.is_temporary
+    ? !!selectedAttacker.ranged_dice
+    : !!selectedAttacker.ranged_weapon;
   const hasSpells       = Array.isArray(availableSpells) && availableSpells.length > 0;
   const canMove         = movementRemaining > 0;
 
