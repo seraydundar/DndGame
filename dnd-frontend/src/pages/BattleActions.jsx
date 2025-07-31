@@ -18,6 +18,7 @@ export default function BattleActions({
   onCancel,
   onEndTurn,
   onEndBattle,
+  onDiceRequest,
   isGM
 }) {
   if (!selectedAttacker) return null;
@@ -99,13 +100,18 @@ export default function BattleActions({
         <button onClick={onCancel} style={{ marginRight: 8 }}>
           İptal
         </button>
-        <button onClick={onEndTurn} style={{ marginRight: 8 }}>
+         <button onClick={onEndTurn} style={{ marginRight: 8 }}>
           Tur Sonu
         </button>
         {isGM && (
-          <button onClick={onEndBattle}>
-            Savaşı Bitir
-          </button>
+          <>
+            <button onClick={onDiceRequest} style={{ marginRight: 8 }}>
+              Zar Attır
+            </button>
+            <button onClick={onEndBattle}>
+              Savaşı Bitir
+            </button>
+          </>
         )}
       </div>
     </div>

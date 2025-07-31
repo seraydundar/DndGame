@@ -47,7 +47,7 @@ function DraggableItem({ item, onView }) {
 //////////////////////////////////////
 // CharCard: Karakter kartı, sürükle-bırak envanter ve tıklayınca önizleme
 //////////////////////////////////////
-function CharCard({ char, allItems, onInventoryUpdate, onView }) {
+function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll }) {
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: 'ITEM',
@@ -110,6 +110,7 @@ function CharCard({ char, allItems, onInventoryUpdate, onView }) {
           })}
         </ul>
       </section>
+      <button onClick={() => onRoll(char)}>Zar İste</button>
     </div>
   );
 }
@@ -135,6 +136,20 @@ export default function GodPanel() {
       .then(r => setAllItems(r.data.results || r.data))
       .catch(console.error);
   }, [lobbyId]);
+
+    useEffect(() => {
+    socket.onmessage = evt => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.event === 'diceRoll') {
+          alert(`Oyuncu ${msg.playerId} zar attı: ${msg.result}`);
+        }
+      } catch (e) {
+        console.error('WS parse error', e);
+      }
+    };
+  }, []);
+
 
   // Envanter güncelleme callback
   const updateInv = (charId, inv) =>
@@ -197,6 +212,14 @@ export default function GodPanel() {
     navigate(`/battle/${lobbyId}`);
   };
 
+  const handleDiceRequest = (char) => {
+    socket.send(JSON.stringify({
+      event: 'diceRollRequest',
+      playerId: char.player_id,
+    }));
+  };
+
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="god-panel">
@@ -228,6 +251,7 @@ export default function GodPanel() {
                   allItems={allItems}
                   onInventoryUpdate={updateInv}
                   onView={openView}
+                  onRoll={handleDiceRequest}
                 />
               ))}
             </div>

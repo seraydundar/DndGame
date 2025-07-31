@@ -12,6 +12,7 @@ import bannerPng     from '../assets/ui/banner.png';
 import eyeBadge   from '../assets/ui/eye_badge.png';
 import shieldBadge from '../assets/ui/shield_badge.png';
 import { useNavigate } from "react-router-dom";
+import DiceRollModal               from '../components/DiceRollModal';
 
 
 const GRID_SIZE   = 20;
@@ -55,6 +56,10 @@ export default function BattlePage() {
   const [rangedReachableCells, setRangedReachableCells] = useState(new Set());
 
   const [selectedBg, setSelectedBg] = useState('/assets/backgrounds/forest.png');
+
+  const [diceVisible, setDiceVisible] = useState(false);
+  const [diceResult, setDiceResult] = useState(null);
+  const [diceRolling, setDiceRolling] = useState(false);
 
  const currentEntry = initiativeOrder[currentTurnIndex] || {};
 
@@ -250,8 +255,24 @@ export default function BattlePage() {
       });
     }
      break;
+
+      case 'diceRollRequest':
+        if (Number(d.playerId) === Number(currentUserId)) {
+          setDiceVisible(true);
+          setDiceResult(null);
+        }
+        break;
+
+      case 'diceRoll':
+        setChatLog(prev => prev.concat(`Oyuncu ${d.playerId} zar attı: ${d.result}`));
+        if (Number(d.playerId) === Number(currentUserId)) {
+          setDiceResult(d.result);
+          setDiceRolling(false);
+        }
+        break;
     }
   };
+  
 
   // WebSocket’i aç ve handler’ı ata
   const sock = createBattleSocket(lobbyId, handler);
@@ -1113,6 +1134,13 @@ if (!lobbyData) {
               }}
               onEndTurn={handleEndTurn}
               onEndBattle={handleEndBattle}
+              onDiceRequest={() => {
+                if (selectedAttacker)
+                  getBattleSocket().send(JSON.stringify({
+                    event: 'diceRollRequest',
+                    playerId: selectedAttacker.player_id,
+                  }));
+              }}
               isGM={isGM}
             />
           </div>
@@ -1149,6 +1177,19 @@ if (!lobbyData) {
     
       
     </div>
+    <DiceRollModal
+      visible={diceVisible}
+      onRoll={() => {
+        setDiceRolling(true);
+        getBattleSocket().send(JSON.stringify({
+          event: 'diceRoll',
+          playerId: currentUserId,
+        }));
+      }}
+      onClose={() => { setDiceVisible(false); setDiceResult(null); }}
+      isRolling={diceRolling}
+      result={diceResult}
+    />
     {/* ---------- Karakter Detay Paneli ---------- */}
      {selectedCharacter && (
        <div className="char-detail-panel">

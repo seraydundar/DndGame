@@ -1,4 +1,5 @@
 import json
+import random
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 class LobbyConsumer(AsyncWebsocketConsumer):
@@ -58,6 +59,23 @@ class LobbyConsumer(AsyncWebsocketConsumer):
                     "availableCharacters": data.get("availableCharacters")
                 }
             )
+        elif event == "diceRoll":
+            import random
+            result = random.randint(1, 20)
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "dice_roll",
+                    "playerId": data.get("playerId"),
+                    "result": result,
+                }
+            )
+        elif event == "diceRollRequest":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "dice_roll_request", "playerId": data.get("playerId")}
+            )    
+            
 
     async def game_started(self, event):
         await self.send(text_data=json.dumps({
@@ -86,4 +104,17 @@ class LobbyConsumer(AsyncWebsocketConsumer):
             "lobbyId": event.get("lobbyId"),
             "placements": event.get("placements"),
             "availableCharacters": event.get("availableCharacters")
+        }))
+
+    async def dice_roll_request(self, event):
+        await self.send(text_data=json.dumps({
+            "event": "diceRollRequest",
+            "playerId": event.get("playerId")
+        }))
+
+    async def dice_roll(self, event):
+        await self.send(text_data=json.dumps({
+            "event": "diceRoll",
+            "playerId": event.get("playerId"),
+            "result": event.get("result")
         }))

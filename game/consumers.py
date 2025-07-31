@@ -33,6 +33,26 @@ class BattleConsumer(AsyncJsonWebsocketConsumer):
             # GM manuel başlattıysa inisiyatif hesapla (opsiyonel)
             await self._initiate_battle_queue(data)
             return
+        
+        if event == "diceRoll":
+            result = random.randint(1, 20)
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "dice_roll",
+                    "playerId": data.get("playerId"),
+                    "result": result,
+                }
+            )
+            return
+
+        if event == "diceRollRequest":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "dice_roll_request", "playerId": data.get("playerId")}
+            )
+            return
+
 
         # Diğer her şeyi odadaki herkese ilet
         # NOTE: type key’i Channels’ta handler adını belirler
@@ -118,3 +138,19 @@ class BattleConsumer(AsyncJsonWebsocketConsumer):
 
     async def joinLobby(self, event):
         await self.send_json({"event": "joinLobby", **event})
+
+
+
+
+    async def dice_roll_request(self, event):
+        await self.send_json({
+            "event": "diceRollRequest",
+            "playerId": event.get("playerId"),
+        })
+
+    async def dice_roll(self, event):
+        await self.send_json({
+            "event": "diceRoll",
+            "playerId": event.get("playerId"),
+            "result": event.get("result"),
+        })
