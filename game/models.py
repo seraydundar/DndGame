@@ -154,6 +154,8 @@ class Character(models.Model):
         # Ensure hp does not exceed max_hp
         if self.max_hp is not None:
             self.hp = min(self.hp, self.max_hp)
+            # Recalculate AC whenever the character is saved
+        self.ac = self.get_total_ac()
         return super().save(*args, **kwargs)
 
     def xp_for_next_level(self):
@@ -197,6 +199,67 @@ class Character(models.Model):
         strength_mod = (self.strength - 10) // 2 if self.strength >= 10 else 0
         damage_roll = random.randint(1, 6)
         return damage_roll + strength_mod
+    
+     # --- Combat utility methods ---
+    def get_total_ac(self):
+        """Calculate total armor class based on dex mod and equipped items."""
+        dex_mod = (self.dexterity - 10) // 2
+        base_ac = 10 + dex_mod
+        total_bonus = 0
+        for slot in [
+            "head_armor", "chest_armor", "hand_armor", "legs_armor",
+            "ring1", "ring2", "necklace", "ear1", "ear2",
+            "melee_weapon", "ranged_weapon", "off_hand",
+        ]:
+            item = getattr(self, slot, None)
+            if item and getattr(item, "ac_bonus", 0):
+                total_bonus += item.ac_bonus
+        return base_ac + total_bonus
+
+    def get_melee_damage(self, critical=False):
+        """Roll melee damage according to weapon or monster dice."""
+        if self.is_temporary:
+            dice_str = self.melee_dice or "1d4"
+            mod = (self.strength - 10) // 2
+        else:
+            weapon = self.melee_weapon
+            dice_str = getattr(weapon, "damage_dice", "1d4") if weapon else "1d4"
+            mod = (self.strength - 10) // 2
+            if weapon and weapon.damage_modifier:
+                mod += weapon.damage_modifier
+
+        try:
+            num, die = map(int, dice_str.lower().split("d"))
+        except Exception:
+            num, die = 1, 6
+
+        total = sum(random.randint(1, die) for _ in range(num)) + mod
+        if critical:
+            total *= 2
+        return max(total, 0)
+
+    def get_ranged_damage(self, critical=False):
+        """Roll ranged damage according to weapon or monster dice."""
+        if self.is_temporary:
+            dice_str = self.ranged_dice or "1d4"
+            mod = (self.dexterity - 10) // 2
+        else:
+            weapon = self.ranged_weapon
+            dice_str = getattr(weapon, "damage_dice", "1d4") if weapon else "1d4"
+            mod = (self.dexterity - 10) // 2
+            if weapon and weapon.damage_modifier:
+                mod += weapon.damage_modifier
+
+        try:
+            num, die = map(int, dice_str.lower().split("d"))
+        except Exception:
+            num, die = 1, 6
+
+        total = sum(random.randint(1, die) for _ in range(num)) + mod
+        if critical:
+            total *= 2
+        return max(total, 0)
+
 
 
 class CharacterTemplate(models.Model):

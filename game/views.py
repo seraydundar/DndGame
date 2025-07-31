@@ -336,31 +336,28 @@ class MeleeAttackView(APIView):
         else:
             attack_score = roll + str_mod + lvl
             is_crit      = roll == 20
-            hit          = is_crit or attack_score >= target.ac
+            target_ac    = target.get_total_ac()
+            hit          = is_crit or attack_score >= target_ac
 
             if hit:
-                try:
-                    dice_str = get_melee_dice(attacker)
-                    num, die = map(int, dice_str.split('d'))
-                except Exception:
-                    num, die = 1, 6
-
-                dice_total  = sum(random.randint(1, die) for _ in range(num))
-                base_damage = dice_total + str_mod
-                damage      = base_damage * 2 if is_crit else base_damage
+                damage = attacker.get_melee_damage(critical=is_crit)
 
                 if is_crit:
                     chat_msg = (f"{attacker.name} zar attı: 20 → Kritik! "
-                                f"Dice {dice_str} toplamı {dice_total}, "
-                                f"STR mod {str_mod} → Hasar = {damage}")
-                else:
-                    chat_msg = (f"Roll: {roll} + STR {str_mod} + LVL {lvl} = "
-                                f"{attack_score} vs AC {target.ac} → İsabet! "
+                 
                                 f"Hasar = {damage}")
+                    
+                else:
+                    chat_msg = (
+                        f"Roll: {roll} + STR {str_mod} + LVL {lvl} = {attack_score} "
+                        f"vs AC {target_ac} → İsabet! Hasar = {damage}"
+                    )    
             else:
                 damage   = 0
-                chat_msg = (f"Roll: {roll} + STR {str_mod} + LVL {lvl} = "
-                            f"{attack_score} vs AC {target.ac} → Kaçırma!")
+                chat_msg = (
+                    f"Roll: {roll} + STR {str_mod} + LVL {lvl} = {attack_score} "
+                    f"vs AC {target_ac} → Kaçırma!"
+                )
 
         # -------- İSTATİSTİK GÜNCELLEME --------
         if damage > 0:
@@ -482,7 +479,7 @@ class RangedAttackView(APIView):
 
         # 3) Menzil & zar bilgisi
         try:
-            dice_str = get_ranged_dice(attacker)
+            _ = get_ranged_dice(attacker)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -517,31 +514,30 @@ class RangedAttackView(APIView):
         lvl       = attacker.level
         is_crit   = roll == 20
         atk_score = roll + dex_mod + lvl
-        hit       = is_crit or atk_score >= target.ac
+        target_ac = target.get_total_ac()
+        hit       = is_crit or atk_score >= target_ac
 
         if roll == 1:
             damage   = 0
             chat_msg = f"{attacker.name} zar attı: 1 → Otomatik kaçırma!"
         elif hit:
-            try:
-                num, die = map(int, dice_str.split('d'))
-            except ValueError:
-                num, die = 1, 6
-            dice_tot   = sum(random.randint(1, die) for _ in range(num))
-            base_dmg   = dice_tot + dex_mod
-            damage     = base_dmg * 2 if is_crit else base_dmg
+            damage = attacker.get_ranged_damage(critical=is_crit)
 
             if is_crit:
-                chat_msg = (f"{attacker.name} zar attı: 20 → Kritik! "
-                            f"Dice {dice_str} toplamı {dice_tot}, "
-                            f"DEX mod {dex_mod} → Hasar = {damage}")
+                chat_msg = (
+                    f"{attacker.name} zar attı: 20 → Kritik! Hasar = {damage}"
+                )
             else:
-                chat_msg = (f"Roll: {roll}+DEX {dex_mod}+LVL {lvl}={atk_score} "
-                            f"vs AC {target.ac} → İsabet! Hasar = {damage}")
+                chat_msg = (
+                    f"Roll: {roll}+DEX {dex_mod}+LVL {lvl}={atk_score} "
+                    f"vs AC {target_ac} → İsabet! Hasar = {damage}"
+                )
         else:
             damage   = 0
-            chat_msg = (f"Roll: {roll}+DEX {dex_mod}+LVL {lvl}={atk_score} "
-                        f"vs AC {target.ac} → Kaçırma!")
+            chat_msg = (
+                f"Roll: {roll}+DEX {dex_mod}+LVL {lvl}={atk_score} "
+                f"vs AC {target_ac} → Kaçırma!"
+            )
 
         # ---------- İSTATİSTİK GÜNCELLEME ----------
         if damage > 0:
