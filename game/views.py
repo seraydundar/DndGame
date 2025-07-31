@@ -152,9 +152,9 @@ class CharacterViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='cleanup-temp')
     def cleanup_temp(self, request):
         """
-        Savaş bittikten sonra çağrılır: verilen lobby_id için
-        is_temporary=True ve hp<=0 olan tüm Character kayıtlarını siler.
-        İstek gövdesi: { lobby_id: int }
+        Savaş bittikten sonra çağrılır: verilen ``lobby_id`` için
+        ``is_temporary=True`` olan tüm ``Character`` kayıtlarını siler.
+        İstek gövdesi: ``{ lobby_id: int }``
         """
         lobby_id = request.data.get('lobby_id')
         if lobby_id is None:
@@ -163,11 +163,11 @@ class CharacterViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Sadece is_temporary ve HP'si 0 veya daha az olanları sil
+        # Sadece is_temporary olanları sil
         deleted_count, _ = Character.objects.filter(
             lobby_id=lobby_id,
             is_temporary=True,
-            hp__lte=0
+            
         ).delete()
 
         return Response(
@@ -234,10 +234,18 @@ class InitiateCombatView(APIView):
             "chat_log":             []
         }
 
-        # Karakterlerin action points’ını resetle
-        for character in combatants:
-            character.action_points = character.max_action_points
-            character.save(update_fields=["action_points"])
+         # ve placements objesindeki değerleri de güncelle
+        id_map = {c.id: c for c in combatants}
+        for cell_key, data in placements.items():
+            if not isinstance(data, dict):
+                continue
+            char_id = data.get("id") or data.get("character_id")
+            character = id_map.get(char_id)
+            if character:
+                character.action_points = character.max_action_points
+                character.save(update_fields=["action_points"])
+                data["action_points"] = character.action_points
+                data["max_action_points"] = character.max_action_points
             
 
         # WS ile tüm grup üyelerine battleStart event’i broadcast et

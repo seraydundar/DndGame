@@ -27989,3 +27989,20 @@ Traceback (most recent call last):
 AttributeError: 'Character' object has no attribute 'select_for_update'
 Bad Request: /api/combat/melee-attack/
 Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/ranged-attack/
+Bad Request: /api/combat/melee-attack/
