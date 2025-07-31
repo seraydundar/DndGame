@@ -97,7 +97,10 @@ html, body {
   align-items: center;
   justify-content: center;
 }
-.cell.reachable { background: #d4f2d4; }
+.cell.reachable {
+  background: #d4f2d4 !important;
+  border-color: #4caf50;
+}
 .cell.ranged    { border-color: #ff9800; }
 
 /* ---------- PANEL (Actions + Chat) ------------------------------ */
