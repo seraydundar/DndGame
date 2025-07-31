@@ -718,11 +718,15 @@ class EndTurnView(APIView):
         BATTLE_STATE[str(lobby_id)]        = battle_state
 
         # Sıradaki karakterin action_points'unu resetle
+        next_action_points = None
+        next_character_id = None
         if new_initiative:
             next_id   = new_initiative[0]["character_id"]
             next_char = get_object_or_404(Character, id=next_id)
-            next_char.action_points = 1
+            next_char.action_points = next_char.max_action_points
             next_char.save(update_fields=["action_points"])
+            next_action_points = next_char.action_points
+            next_character_id = next_char.id
 
         # Ölü temporary karakterleri DB'den sil
         Character.objects.filter(
@@ -750,7 +754,9 @@ class EndTurnView(APIView):
         return Response({
             "message":           "Turn ended.",
             "initiative_order":  new_initiative,
-            "placements":        placements
+            "placements":        placements,
+            "next_action_points": next_action_points,
+            "next_character_id":  next_character_id,
         })
 
 # BattleState endpoint: Global battle state'i döner.

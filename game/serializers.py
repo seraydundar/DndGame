@@ -212,6 +212,7 @@ class CharacterSerializer(serializers.ModelSerializer):
             'level', 'hp', 'max_hp', 'icon',
             'strength', 'dexterity', 'constitution', 'intelligence',
             'wisdom', 'charisma', 'ac', 'xp', 'gold', 'inventory',
+            'action_points', 'max_action_points',
             'head_armor', 'head_armor_id',
             'chest_armor', 'chest_armor_id',
             'hand_armor', 'hand_armor_id',
@@ -229,4 +230,5 @@ class CharacterSerializer(serializers.ModelSerializer):
             # ——————————————————
             'prepared_spells', 'prepared_spells_input', 'class_features'
         ]
-        read_only_fields = ['prepared_spells', 'is_temporary']
+        read_only_fields = ['prepared_spells', 'is_temporary',
+                           'action_points', 'max_action_points']

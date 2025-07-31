@@ -27987,3 +27987,5 @@ Traceback (most recent call last):
     character = self.get_object().select_for_update()
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AttributeError: 'Character' object has no attribute 'select_for_update'
+Bad Request: /api/combat/melee-attack/
+Bad Request: /api/combat/melee-attack/

@@ -984,7 +984,11 @@ const handleSelectSpell = spell => {
 
     // **YENİ EKLENECEK SATIR:** Hareket haklarını başa döndür
     setMovementRemaining(3);
-    setActionPointsRemaining(1);
+    if (typeof res.data.next_action_points === 'number') {
+      setActionPointsRemaining(res.data.next_action_points);
+    } else {
+      setActionPointsRemaining(1);
+    }
     
 
   } catch (err) {
@@ -1185,6 +1189,7 @@ if (!lobbyData) {
               availableSpells={selectedAttacker?.prepared_spells}
               movementRemaining={movementRemaining}
               actionUsed={actionUsed}
+              actionPointsRemaining={actionPointsRemaining}
 
               onChooseMelee={() => {
                 setAttackMode(true);
