@@ -332,6 +332,16 @@ button:hover {
   cursor: pointer;
 }
 
+.char-detail-panel .action-buttons {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.char-detail-panel .action-buttons button {
+  flex: 1;
+}
+
 /* ---------- Sol Olay/Aksiyon Paneli ---------- */
 .left-panel {
   position: fixed;

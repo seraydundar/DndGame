@@ -1117,6 +1117,31 @@ const handleRequestRoll = () => {
 };
 
 
+
+// --- Request dice roll for selected character ---
+const handleCardRollRequest = () => {
+  if (!selectedCharacter) return;
+  const pid =
+    selectedCharacter.player_id ??
+    selectedCharacter.playerId ??
+    selectedCharacter.player?.id;
+  if (!pid) {
+    alert('Bu karakter bir oyuncuya ait değil.');
+    return;
+  }
+  const sock = getBattleSocket();
+  if (sock?.readyState === WebSocket.OPEN) {
+    sock.send(
+      JSON.stringify({
+        event: 'diceRollRequest',
+        playerId: pid,
+        lobbyId,
+      })
+    );
+  }
+};
+
+
   
   // --- End battle (GM) ---
 const handleEndBattle = async () => {
@@ -1538,6 +1563,12 @@ if (!lobbyData) {
          )}
          
          {/* İstersen buraya daha fazla stat ekleyebilirsin */}
+         {isGM && (
+           <div className="action-buttons">
+             <button onClick={() => navigate('/godpanel')}>Düzenle</button>
+             <button onClick={handleCardRollRequest}>Zar İste</button>
+           </div>
+         )}
        </div>
      )}
   </>
