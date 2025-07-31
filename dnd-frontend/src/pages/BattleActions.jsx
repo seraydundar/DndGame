@@ -10,6 +10,7 @@ export default function BattleActions({
   selectedSpell,
   availableSpells,
   movementRemaining,
+  actionPointsRemaining,
   onChooseMelee,
   onChooseRanged,
   onChooseSpell,
@@ -41,6 +42,7 @@ export default function BattleActions({
     }}>
       <h3>{selectedAttacker.name} – Aksiyon Seçimi</h3>
       <p><strong>Hareket Hakkı:</strong> {movementRemaining}</p>
+      <p><strong>Aksiyon Puanı:</strong> {actionPointsRemaining}</p>
 
       {/* 1. Seçim Blokları */}
       {!attackMode && !spellMode && (

@@ -69,6 +69,7 @@ export default function BattlePage() {
   const [chatLog, setChatLog]                     = useState([]);
   const [actionUsed, setActionUsed]               = useState(false);
   const [movementRemaining, setMovementRemaining] = useState(3);
+  const [actionPointsRemaining, setActionPointsRemaining] = useState(1);
   const [rangedReachableCells, setRangedReachableCells] = useState(new Set());
 
   const [selectedBg, setSelectedBg] = useState(forestPng);
@@ -577,6 +578,7 @@ const handleCellClick = (cellIndex, cellCharacter) => {
         return;
       }
       setSelectedAttacker(cellCharacter);
+      setActionPointsRemaining(cellCharacter.action_points ?? 1);
     }
   };
 
@@ -718,6 +720,9 @@ const handleMeleeAttack = async targetCharacter => {
   setCurrentTurnIndex(state.data.current_turn_index || 0);
   if (state.data.background) setSelectedBg(state.data.background);
 
+
+  setActionPointsRemaining(p => Math.max(0, p - 1));
+
   } catch (err) {
     if (err.response?.status === 400 && err.response.data?.error) {
       console.log('[BattlePage] Yakın dövüş hatası:', err.response.data.error);
@@ -816,6 +821,8 @@ const handleCreatureAttack = async targetCharacter => {
       setPlacements(state.data.placements);
       setCurrentTurnIndex(state.data.current_turn_index || 0);
       if (state.data.background) setSelectedBg(state.data.background);
+
+      setActionPointsRemaining(p => Math.max(0, p - 1));
 
     } catch (err) {
       if (err.response?.status === 400 && err.response.data?.error) {
@@ -937,6 +944,7 @@ const handleSpellCast = async (spellId, targetIds = [], extra = {}) => {
   setPlacements(state.data.placements);
   setCurrentTurnIndex(state.data.current_turn_index || 0);
   if (state.data.background) setSelectedBg(state.data.background);
+  setActionPointsRemaining(p => Math.max(0, p - 1));
   setActionUsed(true);
   } catch (err) {
     console.error('Büyü kullanım hata:', err);
@@ -976,6 +984,8 @@ const handleSelectSpell = spell => {
 
     // **YENİ EKLENECEK SATIR:** Hareket haklarını başa döndür
     setMovementRemaining(3);
+    setActionPointsRemaining(1);
+    
 
   } catch (err) {
     console.error("Tur sonlandırma hata:", err);

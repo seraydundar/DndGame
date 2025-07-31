@@ -184,10 +184,25 @@ class CharacterSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         spells = validated_data.pop('prepared_spells_input', None)
+        
+        # Track constitution before applying updates
+        old_constitution = instance.constitution
+
+        instance = super().update(instance, validated_data)
+
+        # Apply prepared spells if provided
         instance = super().update(instance, validated_data)
         if spells is not None:
             instance.prepared_spells = spells
-            instance.save()
+            
+        # If constitution increased, give bonus HP (5 per point)
+        new_constitution = instance.constitution
+        if new_constitution > old_constitution:
+            bonus = (new_constitution - old_constitution) * 5
+            instance.max_hp += bonus
+            instance.hp += bonus
+
+        instance.save()
         return instance
 
     class Meta:

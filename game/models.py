@@ -69,6 +69,20 @@ class Character(models.Model):
     gold = models.IntegerField(default=10)
     action_points = models.IntegerField(default=1)
 
+    @property
+    def max_action_points(self):
+        """Return action points based on character level."""
+        if self.level >= 20:
+            return 5
+        elif self.level >= 15:
+            return 4
+        elif self.level >= 10:
+            return 3
+        elif self.level >= 5:
+            return 2
+        return 1
+
+
     # Icon for character portrait
     icon = models.ImageField(
         upload_to='character_icons/',

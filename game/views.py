@@ -82,7 +82,8 @@ class CharacterViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='confirm-level-up')
     def confirm_level_up(self, request, pk=None):
         with transaction.atomic():
-            character = self.get_object().select_for_update()
+            # Acquire a row-level lock on the character while leveling up
+            character = self.get_queryset().select_for_update().get(pk=pk)
         
         if not character.can_level_up:
             return Response(
@@ -235,8 +236,9 @@ class InitiateCombatView(APIView):
 
         # Karakterlerin action points’ını resetle
         for character in combatants:
-            character.action_points = 1
+            character.action_points = character.max_action_points
             character.save(update_fields=["action_points"])
+            
 
         # WS ile tüm grup üyelerine battleStart event’i broadcast et
         channel_layer = get_channel_layer()
