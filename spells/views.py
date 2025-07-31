@@ -158,6 +158,14 @@ class SpellCastView(APIView):
         # -------- AP düşür (isteğe bağlı) ----------
         attacker.action_points = max(0, attacker.action_points - 1)
         attacker.save(update_fields=["action_points"])
+        
+        
+        for cell, unit in placements.items():
+            if unit and unit.get("id") == attacker.id:
+                unit["action_points"] = attacker.action_points
+                unit["max_action_points"] = attacker.max_action_points
+                break
+
 
         # -------- state sakla & WS broadcast -------
         BATTLE_STATE[str(lobby_id)] = battle_state
