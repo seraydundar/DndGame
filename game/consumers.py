@@ -106,6 +106,7 @@ class BattleConsumer(AsyncJsonWebsocketConsumer):
             "event":     "battleStart",
             "lobbyId":   event.get("lobbyId"),
             "turnQueue": event.get("turnQueue"),
+            "background": event.get("background"),
         })
      #    -> Frontend’de handleBattleUpdate zaten chatLog’u bu objeyle overwrite ediyor
         await self.send_json({

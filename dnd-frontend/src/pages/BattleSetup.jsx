@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import './BattleSetup.css';
 import api from '../services/api';
+import { getBattleSocket } from '../services/battleSocket';
 
 import forestPng  from '../assets/backgrounds/forest.png';
 import dungeonJpg from '../assets/backgrounds/dungeon.jpg';
@@ -27,6 +28,21 @@ export default function BattleSetup({
   const TOTAL_CELLS = COLS * ROWS;
 
   const [placements, setPlacements] = useState(initialPlacements || {});
+
+  const handleBgChange = (e) => {
+    const newBg = e.target.value;
+    setSelectedBg(newBg);
+    const sock = getBattleSocket();
+    if (sock?.readyState === WebSocket.OPEN) {
+      sock.send(
+        JSON.stringify({
+          event: 'battleUpdate',
+          lobbyId,
+          background: newBg,
+        })
+      );
+    }
+  };
 
   /* -------- Sunucuda canavar oluştur -------- */
   const spawnMonster = async (monsterId) => {
@@ -130,7 +146,7 @@ export default function BattleSetup({
         <select
           id="bgSelect"
           value={selectedBg}
-          onChange={(e) => setSelectedBg(e.target.value)}
+          onChange={handleBgChange}
           style={{ marginLeft: 8 }}
         >
           <option value={forestPng}>Orman</option>

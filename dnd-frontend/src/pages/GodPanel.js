@@ -5,6 +5,7 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend }                  from 'react-dnd-html5-backend';
 import socket                            from '../services/socket';
 import api                               from '../services/api';
+import DiceRollModal                     from '../components/DiceRollModal'
 import './GodPanel.css';
 
 // Helper: Base URL’den '/api' kısmını kırpıp yolu birleştirir; eğer path tam URL ise direkt döner
@@ -126,6 +127,11 @@ export default function GodPanel() {
   const [viewItem, setViewItem]     = useState(null);
   const [editItem, setEditItem]     = useState(null);
   const [formValues, setFormValues] = useState({});
+  const [diceVisible, setDiceVisible] = useState(false);
+  const [diceResult, setDiceResult] = useState(null);
+  const [diceRolling, setDiceRolling] = useState(false);
+  const [diceRequester, setDiceRequester] = useState(null);
+  const currentUserId = Number(localStorage.getItem('user_id') || 0);
 
    useEffect(() => {
     const handler = e => {
@@ -152,17 +158,28 @@ export default function GodPanel() {
   }, [lobbyId]);
 
     useEffect(() => {
-    socket.onmessage = evt => {
+    const handler = evt => {
       try {
         const msg = JSON.parse(evt.data);
+        if (msg.event === 'diceRollRequest') {
+          setDiceVisible(true);
+          setDiceResult(null);
+          setDiceRolling(true);
+          setDiceRequester(Number(msg.playerId));
+        }
         if (msg.event === 'diceRoll') {
-          alert(`Oyuncu ${msg.playerId} zar attı: ${msg.result}`);
+          if (Number(msg.playerId) === diceRequester) {
+            setDiceResult(msg.result);
+            setDiceRolling(false);
+          }
         }
       } catch (e) {
         console.error('WS parse error', e);
       }
     };
-  }, []);
+  socket.addEventListener('message', handler);
+    return () => socket.removeEventListener('message', handler);
+  }, [diceRequester])
 
 
   // Envanter güncelleme callback
@@ -231,6 +248,11 @@ export default function GodPanel() {
       event: 'diceRollRequest',
       playerId: char.player_id,
     }));
+    // show modal until result arrives
+    setDiceVisible(true);
+    setDiceResult(null);
+    setDiceRolling(true);
+    setDiceRequester(char.player_id);
   };
 
 
@@ -309,8 +331,8 @@ export default function GodPanel() {
 
         {/* Düzenleme Modal */}
         {editItem && (
-          <div className="gp-modal-overlay">
-            <div className="gp-modal">
+            <div className="gp-modal-overlay">
+              <div className="gp-modal">
               <h3>Eşyayı Düzenle</h3>
               <label>Tür<input name="item_type" value={formValues.item_type} disabled/></label>
               <label>Alt Tür<input name="subtype" value={formValues.subtype} onChange={onChange}/></label>
@@ -339,11 +361,31 @@ export default function GodPanel() {
                 <button onClick={saveEdit}>Kaydet</button>
                 <button onClick={()=>setEditItem(null)}>İptal</button>
               </div>
+              </div>
             </div>
-          </div>
+          
         )}
+        
 
-      </div>
-    </DndProvider>
-  );
-}
+              <DiceRollModal
+            visible={diceVisible}
+            onRoll={() => {
+              setDiceRolling(true);
+              socket.send(
+                JSON.stringify({ event: 'diceRoll', playerId: currentUserId })
+              );
+            }}
+            onClose={() => {
+              setDiceVisible(false);
+              setDiceResult(null);
+              setDiceRequester(null);
+            }}
+            isRolling={diceRolling}
+            result={diceResult}
+            canRoll={diceRequester === currentUserId}
+          />
+
+        </div>
+      </DndProvider>
+    );
+  }

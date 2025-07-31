@@ -240,6 +240,8 @@ export default function BattlePage() {
         });
         setPlacements(allUnits);
 
+        if (d.background) setSelectedBg(d.background);
+
         // 4) İnisiyatif sırasını sıraya koy
         setInitiativeOrder(d.turnQueue || []);
         setCurrentTurnIndex(0);
@@ -296,6 +298,10 @@ export default function BattlePage() {
         const news = msgs.filter(m => !prev.includes(m));
         return prev.concat(news);
       });
+    }
+
+     if (payload.background) {
+      setSelectedBg(payload.background);
     }
      break;
 
@@ -468,6 +474,7 @@ const handleStartBattle = async (childPlacements) => {
     setInitiativeOrder(res.data.initiative_order);
     setPlacements(res.data.placements);
     setCurrentTurnIndex(res.data.current_turn_index || 0);
+    if (res.data.background) setSelectedBg(res.data.background);
 
   } catch (err) {
     console.error("Savaş başlatma hata:", err);
@@ -706,9 +713,10 @@ const handleMeleeAttack = async targetCharacter => {
 
     // 4) Son durumu çek ve ekranı güncelle
     const state = await api.get(`battle-state/${lobbyId}/`);
-    setInitiativeOrder(state.data.initiative_order);
-    setPlacements(state.data.placements);
-    setCurrentTurnIndex(state.data.current_turn_index || 0);
+  setInitiativeOrder(state.data.initiative_order);
+  setPlacements(state.data.placements);
+  setCurrentTurnIndex(state.data.current_turn_index || 0);
+  if (state.data.background) setSelectedBg(state.data.background);
 
   } catch (err) {
     if (err.response?.status === 400 && err.response.data?.error) {
@@ -807,6 +815,7 @@ const handleCreatureAttack = async targetCharacter => {
       setInitiativeOrder(state.data.initiative_order);
       setPlacements(state.data.placements);
       setCurrentTurnIndex(state.data.current_turn_index || 0);
+      if (state.data.background) setSelectedBg(state.data.background);
 
     } catch (err) {
       if (err.response?.status === 400 && err.response.data?.error) {
@@ -924,10 +933,11 @@ const handleSpellCast = async (spellId, targetIds = [], extra = {}) => {
 
     /* ---------- 3) Durum tazele ---------- */
     const state = await api.get(`battle-state/${lobbyId}/`);
-    setInitiativeOrder(state.data.initiative_order);
-    setPlacements(state.data.placements);
-    setCurrentTurnIndex(state.data.current_turn_index || 0);
-    setActionUsed(true);
+  setInitiativeOrder(state.data.initiative_order);
+  setPlacements(state.data.placements);
+  setCurrentTurnIndex(state.data.current_turn_index || 0);
+  if (state.data.background) setSelectedBg(state.data.background);
+  setActionUsed(true);
   } catch (err) {
     console.error('Büyü kullanım hata:', err);
   }

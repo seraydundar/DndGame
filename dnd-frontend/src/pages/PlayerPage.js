@@ -5,6 +5,7 @@ import { HTML5Backend }                  from 'react-dnd-html5-backend';
 import { useNavigate }                   from 'react-router-dom';
 import api                               from '../services/api';
 import socket                            from '../services/socket';
+import DiceRollModal                     from '../components/DiceRollModal';
 import './PlayerPage.css';
 
 /*------------------------------------------------------------
@@ -144,8 +145,12 @@ export default function PlayerPage() {
   const [viewItem,       setViewItem]       = useState(null);
   const [preparedSpells, setPreparedSpells] = useState([]); // Karakterin sahip olduğu büyüler
   const navigate = useNavigate();
+  const currentUserId = Number(localStorage.getItem('user_id') || 0);
+  const [diceVisible, setDiceVisible] = useState(false);
+  const [diceResult, setDiceResult] = useState(null);
+  const [diceRolling, setDiceRolling] = useState(false);
 
-  
+
    useEffect(() => {
     const handler = e => {
       try {
@@ -216,6 +221,28 @@ export default function PlayerPage() {
       .then(r => setAllItems(r.data.results || r.data))
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const handler = evt => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.event === 'diceRollRequest' && Number(msg.playerId) === currentUserId) {
+          setDiceVisible(true);
+          setDiceResult(null);
+          setDiceRolling(false);
+        }
+        if (msg.event === 'diceRoll' && Number(msg.playerId) === currentUserId) {
+          setDiceResult(msg.result);
+          setDiceRolling(false);
+        }
+      } catch (e) {
+        console.error('WS parse error', e);
+      }
+    };
+    socket.addEventListener('message', handler);
+    return () => socket.removeEventListener('message', handler);
+  }, [currentUserId]);
+
 
   /* ---------- Slot ekip / çıkar işlemleri ---------- */
   const handleEquip = async (slot, id) => {
@@ -350,8 +377,22 @@ export default function PlayerPage() {
               <button onClick={closeView}>Kapat</button>
             </div>
           </div>
-        )}
-      </div>
-    </DndProvider>
-  );
-}
+         )}
+
+          <DiceRollModal
+            visible={diceVisible}
+            onRoll={() => {
+              setDiceRolling(true);
+              socket.send(
+                JSON.stringify({ event: 'diceRoll', playerId: currentUserId })
+              );
+            }}
+            onClose={() => { setDiceVisible(false); setDiceResult(null); }}
+            isRolling={diceRolling}
+            result={diceResult}
+            canRoll={true}
+          />
+        </div>
+      </DndProvider>
+    );
+  }
