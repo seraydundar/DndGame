@@ -15,6 +15,7 @@ export default function usePersistentWebSocket(
   const retries = useRef(0);
 
   const connect = useCallback(() => {
+    if (!url) return;              // geçersiz URL'de bağlanma
     wsRef.current = new WebSocket(url, protocols);
 
     wsRef.current.onopen = () => {

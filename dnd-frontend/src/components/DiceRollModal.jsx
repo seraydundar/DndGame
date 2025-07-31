@@ -12,14 +12,20 @@ export default function DiceRollModal({
   const [displayValue, setDisplayValue] = useState(null);
 
   useEffect(() => {
+    if (!visible) {
+      setDisplayValue(null);
+      return;
+    }
+
     if (isRolling && result == null) {
       const id = setInterval(() => {
         setDisplayValue(Math.ceil(Math.random() * 20));
       }, 100);
       return () => clearInterval(id);
     }
+
     if (result != null) setDisplayValue(result);
-  }, [isRolling, result]);
+  }, [visible, isRolling, result]);
 
   if (!visible) return null;
   return (
@@ -28,7 +34,7 @@ export default function DiceRollModal({
         {result == null ? (
           <>
             <p>D20 için zar atın</p>
-            {isRolling && <div className="dice">{displayValue ?? '?'}</div>}
+            <div className={`dice ${isRolling ? 'rolling' : ''}`}>{displayValue ?? '?'}</div>
             {canRoll ? (
               <button onClick={onRoll} disabled={isRolling}>
                 {isRolling ? 'Atılıyor...' : 'Zar At'}

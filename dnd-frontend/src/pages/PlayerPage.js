@@ -232,8 +232,10 @@ export default function PlayerPage() {
           setDiceRolling(false);
         }
         if (msg.event === 'diceRoll' && Number(msg.playerId) === currentUserId) {
-          setDiceResult(msg.result);
-          setDiceRolling(false);
+          setTimeout(() => {
+            setDiceResult(msg.result);
+            setDiceRolling(false);
+          }, 3000);
         }
       } catch (e) {
         console.error('WS parse error', e);

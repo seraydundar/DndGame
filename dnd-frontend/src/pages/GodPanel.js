@@ -169,8 +169,10 @@ export default function GodPanel() {
         }
         if (msg.event === 'diceRoll') {
           if (Number(msg.playerId) === diceRequester) {
-            setDiceResult(msg.result);
-            setDiceRolling(false);
+            setTimeout(() => {
+              setDiceResult(msg.result);
+              setDiceRolling(false);
+            }, 3000);
           }
         }
       } catch (e) {

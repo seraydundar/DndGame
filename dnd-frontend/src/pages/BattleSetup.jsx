@@ -100,7 +100,9 @@ export default function BattleSetup({
   };
 
   /* -------- Havuzlar -------- */
-  const placedIds = Object.values(placements).map((p) => p.id);
+  const placedIds = Object.values(placements)
+    .filter(Boolean)            // null/undefined hücreler hariç
+    .map((p) => p.id);
   const remainingCharacters = availableCharacters.filter(
     (c) => !placedIds.includes(c.id),
   );

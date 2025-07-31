@@ -114,7 +114,8 @@ export default function EndBattle() {
   );
 
   return (
-    <div className="summary-card">
+    <div className="end-battle-page">
+      <div className="summary-card">
       {/* ----- HEADER ----- */}
       <header className="summary-header">
         <h1>Battle Summary</h1>
@@ -158,6 +159,7 @@ export default function EndBattle() {
           )}
         </section>
       )}
+      </div>
     </div>
   );
 }

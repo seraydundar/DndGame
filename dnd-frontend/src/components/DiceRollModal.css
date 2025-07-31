@@ -27,6 +27,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.dice.rolling {
   animation: roll 1s infinite linear;
 }
 
