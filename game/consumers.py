@@ -155,3 +155,10 @@ class BattleConsumer(AsyncJsonWebsocketConsumer):
             "playerId": event.get("playerId"),
             "result": event.get("result"),
         })
+
+    async def character_update(self, event):
+        await self.send_json({
+            "event": "characterUpdate",
+            "character": event.get("character"),
+        })
+        

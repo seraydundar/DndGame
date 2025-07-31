@@ -48,7 +48,7 @@ function DraggableItem({ item, onView }) {
 //////////////////////////////////////
 // CharCard: Karakter kartı, sürükle-bırak envanter ve tıklayınca önizleme
 //////////////////////////////////////
-function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll }) {
+function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll, onUpdate }) {
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: 'ITEM',
@@ -64,28 +64,87 @@ function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll }) {
   );
 
   // ■■■ Burada güncelleme: undefined item’ları atıyoruz ■■■
+
+  const [editMode, setEditMode]   = useState(false);
+  const [editVals, setEditVals]   = useState({});
+
   const inventoryItems = (char.inventory || [])
     .map(itemId => allItems.find(i => i.id === itemId))
     .filter(it => it);
+
+    const startEdit = () => {
+    setEditVals({
+      hp: char.hp,
+      max_hp: char.max_hp,
+      gold: char.gold,
+      strength: char.strength,
+      dexterity: char.dexterity,
+      constitution: char.constitution,
+      intelligence: char.intelligence,
+      wisdom: char.wisdom,
+      charisma: char.charisma,
+    });
+    setEditMode(true);
+  };
+
+  const saveEdit = async () => {
+    const res = await api.patch(`characters/${char.id}/gm-update/`, editVals);
+    Object.assign(char, res.data);
+    if (onUpdate) onUpdate(res.data);
+    setEditMode(false);
+  };
+
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setEditVals(v => ({ ...v, [name]: Number(value) }));
+  };
+  
 
   return (
     <div ref={drop} className={`gp-char-card ${isOver ? 'gp-char-card-over' : ''}`}>
       <h4>{char.name}</h4>
       <p><strong>Level:</strong> {char.level}</p>
-      <p><strong>HP:</strong>    {char.hp}</p>
-      <p><strong>XP:</strong>    {char.xp}</p>
-      <p><strong>Gold:</strong>  {char.gold}</p>
+      {editMode ? (
+        <>
+          <label>HP
+            <input name="hp" type="number" value={editVals.hp} onChange={handleChange} />
+          </label>
+          <label>Max HP
+            <input name="max_hp" type="number" value={editVals.max_hp} onChange={handleChange} />
+          </label>
+          <label>Gold
+            <input name="gold" type="number" value={editVals.gold} onChange={handleChange} />
+          </label>
+        </>
+      ) : (
+        <>
+          <p><strong>HP:</strong>    {char.hp}</p>
+          <p><strong>XP:</strong>    {char.xp}</p>
+          <p><strong>Gold:</strong>  {char.gold}</p>
+        </>
+      )}
 
       <section className="gp-stats">
         <h5>Stats</h5>
-        <ul>
-          <li>STR: {char.strength}</li>
-          <li>DEX: {char.dexterity}</li>
-          <li>CON: {char.constitution}</li>
-          <li>INT: {char.intelligence}</li>
-          <li>WIS: {char.wisdom}</li>
-          <li>CHA: {char.charisma}</li>
-        </ul>
+        {editMode ? (
+          <ul>
+            {['strength','dexterity','constitution','intelligence','wisdom','charisma'].map(s => (
+              <li key={s}>
+                {s.toUpperCase().slice(0,3)}:
+                <input name={s} type="number" value={editVals[s]} onChange={handleChange} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul>
+            <li>STR: {char.strength}</li>
+            <li>DEX: {char.dexterity}</li>
+            <li>CON: {char.constitution}</li>
+            <li>INT: {char.intelligence}</li>
+            <li>WIS: {char.wisdom}</li>
+            <li>CHA: {char.charisma}</li>
+          </ul>
+        )}
       </section>
 
       <section className="gp-inventory">
@@ -111,7 +170,17 @@ function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll }) {
           })}
         </ul>
       </section>
-      <button onClick={() => onRoll(char)}>Zar İste</button>
+       {editMode ? (
+        <div className="gp-edit-actions">
+          <button onClick={saveEdit}>Kaydet</button>
+          <button onClick={() => setEditMode(false)}>İptal</button>
+        </div>
+      ) : (
+        <>
+          <button onClick={startEdit}>Düzenle</button>
+          <button onClick={() => onRoll(char)}>Zar İste</button>
+        </>
+      )}
     </div>
   );
 }
@@ -175,6 +244,10 @@ export default function GodPanel() {
             }, 3000);
           }
         }
+
+        if (msg.event === 'characterUpdate') {
+          setChars(cs => cs.map(c => c.id === msg.character.id ? msg.character : c));
+        }
       } catch (e) {
         console.error('WS parse error', e);
       }
@@ -187,6 +260,10 @@ export default function GodPanel() {
   // Envanter güncelleme callback
   const updateInv = (charId, inv) =>
     setChars(cs => cs.map(c => c.id === charId ? { ...c, inventory: inv } : c));
+
+  const updateChar = updated =>
+    setChars(cs => cs.map(c => c.id === updated.id ? updated : c));
+
 
   // Modal: Önizleme aç/kapa
   const openView = item => { setViewItem(item); setEditItem(null); };
@@ -290,6 +367,7 @@ export default function GodPanel() {
                   onInventoryUpdate={updateInv}
                   onView={openView}
                   onRoll={handleDiceRequest}
+                  onUpdate={updateChar}
                 />
               ))}
             </div>

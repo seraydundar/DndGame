@@ -237,13 +237,25 @@ export default function PlayerPage() {
             setDiceRolling(false);
           }, 3000);
         }
+        if (msg.event === 'characterUpdate' && msg.character?.id === char?.id) {
+          setChar(msg.character);
+          setInventory(msg.character.inventory || []);
+          const eq = {};
+          Object.entries(SLOT_FIELD_MAP).forEach(([slot, field]) => {
+            const idField = msg.character[field];
+            const nested  = msg.character[field.replace(/_id$/, '')]?.id;
+            const fid     = idField ?? nested;
+            if (fid) eq[slot] = fid;
+          });
+          setEquipped(eq);
+        }
       } catch (e) {
         console.error('WS parse error', e);
       }
     };
     socket.addEventListener('message', handler);
     return () => socket.removeEventListener('message', handler);
-  }, [currentUserId]);
+  }, [currentUserId, char]);
 
 
   /* ---------- Slot ekip / çıkar işlemleri ---------- */

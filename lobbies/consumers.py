@@ -117,4 +117,10 @@ class LobbyConsumer(AsyncWebsocketConsumer):
             "event": "diceRoll",
             "playerId": event.get("playerId"),
             "result": event.get("result")
+         }))
+
+    async def character_update(self, event):
+        await self.send(text_data=json.dumps({
+            "event": "characterUpdate",
+            "character": event.get("character")
         }))

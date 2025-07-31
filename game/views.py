@@ -100,6 +100,38 @@ class CharacterViewSet(viewsets.ModelViewSet):
             })
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(detail=True, methods=['patch'], url_path='gm-update')
+    def gm_update(self, request, pk=None):
+        """Allow GM to update arbitrary character fields and broadcast."""
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response({"error": "Only GM can update."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        character  = self.get_object()
+        serializer = self.get_serializer(character, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"lobby_{character.lobby_id}",
+            {
+                "type": "character_update",
+                "character": serializer.data,
+            }
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            f"battle_{character.lobby_id}",
+            {
+                "type": "character_update",
+                "character": serializer.data,
+            }
+        )
+
+        return Response(serializer.data)
+
 
     @action(detail=False, methods=['post'], url_path='spawn-monster')
     def spawn_monster(self, request):

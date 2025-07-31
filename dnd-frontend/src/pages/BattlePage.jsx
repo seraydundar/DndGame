@@ -280,12 +280,14 @@ export default function BattlePage() {
           replace: true                            // geri tuşunda eski sayfaya dönmesin
         });
         break;
-      
-      case 'requestRoll':
-        if (d.target_id === currentUserId) {
+
+      case 'diceRollRequest':
+        if (Number(d.playerId) === Number(currentUserId)) {
           alert('GM sizden zar atmanızı istedi!');
         }
-        break;
+        break;  
+      
+      
 
 
       case 'battleUpdate':
@@ -518,8 +520,8 @@ const handleCellClick = (cellIndex, cellCharacter) => {
     if (sock?.readyState === WebSocket.OPEN) {
       sock.send(
         JSON.stringify({
-          event: 'requestRoll',
-          target_id: cellCharacter.id,
+          event: 'diceRollRequest',
+          playerId: cellCharacter.player_id,
           lobbyId,
         })
       );
