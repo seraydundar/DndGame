@@ -613,10 +613,14 @@ const handleCellClick = (cellIndex, cellCharacter) => {
 
   // --- Karakteri hareket ettir ---
   const handleMoveCharacter = async targetCell => {
-    const entry = Object.entries(placements)
-      .find(([_, ch]) => ch?.id === selectedAttacker.id);
-    if (!entry) return;
-    const origin = Number(entry[0]);
+  const entry = Object.entries(placements)
+    .find(([_, ch]) => ch?.id === selectedAttacker.id);
+  if (!entry) return;
+  if (obstacles[targetCell]) {
+    alert('Bu hücrede bir engel var.');
+    return;
+  }
+  const origin = Number(entry[0]);
     const or = Math.floor(origin/GRID_SIZE), oc = origin%GRID_SIZE;
     const tr = Math.floor(targetCell/GRID_SIZE), tc = targetCell%GRID_SIZE;
     const dist = Math.abs(or - tr) + Math.abs(oc - tc);
@@ -651,6 +655,10 @@ const handleCellClick = (cellIndex, cellCharacter) => {
   // --- Canavarı hareket ettir ---
 const handleMoveCreature = async targetCell => {
   if (!selectedAttacker) return;
+  if (obstacles[targetCell]) {
+    alert('Bu hücrede bir engel var.');
+    return;
+  }
   // distance hesabı (handleMoveCharacter ile aynı)
   const entry = Object.entries(placements)
     .find(([_, u]) => u?.id === selectedAttacker.id && u?.type === 'creature');
@@ -1093,7 +1101,11 @@ const handleEndBattle = async () => {
 
   // 3) (ops.) REST – sunucuya final bildirimi
   try {
-    await api.post("combat/end-battle/", { lobby_id: lobbyId });
+    const res = await api.post("combat/end-battle/", { lobby_id: lobbyId });
+    navigate(`/endbattle/${lobbyId}`, {
+      state: { summary: res.data || null },
+      replace: true,
+    });
   } catch (err) {
     console.warn("REST combat/end-battle/ başarısız:", err);
   }
@@ -1120,26 +1132,52 @@ const handleEndBattle = async () => {
   // --- Reachable hesapla ---
   useEffect(() => {
   if (!movementMode || !selectedAttacker || movementRemaining <= 0) {
-    setReachableCells(new Set());
-    return;
-  }
-  const entry = Object.entries(placements)
-    .find(([_, c]) => c?.id === selectedAttacker.id);
-  if (!entry) { setReachableCells(new Set()); return; }
+      setReachableCells(new Set());
+      return;
+    }
 
-  const originIdx = Number(entry[0]);
-  const row = Math.floor(originIdx / GRID_SIZE);
-  const col = originIdx % GRID_SIZE;
-  const range = movementRemaining;
+  const entry = Object.entries(placements).find(
+      ([_, c]) => c?.id === selectedAttacker.id,
+    );
+    if (!entry) {
+      setReachableCells(new Set());
+      return;
+    }
 
-  const cells = new Set();
-  for (let i = 0; i < TOTAL_CELLS; i++) {
-    if (placements[i]) continue;            // dolu kareler hariç
-    const r = Math.floor(i / GRID_SIZE), c = i % GRID_SIZE;
-    if (Math.abs(r - row) + Math.abs(c - col) <= range) cells.add(i);
-  }
-  setReachableCells(cells);
-}, [movementMode, selectedAttacker, placements, movementRemaining]);
+  const origin = Number(entry[0]);
+    const cells = new Set();
+
+    const visited = new Set([origin]);
+    const queue = [{ idx: origin, dist: 0 }];
+    const dirs = [
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: 0, dy: -1 },
+    ];
+
+    while (queue.length > 0) {
+      const { idx, dist } = queue.shift();
+      if (dist === movementRemaining) continue;
+      const x = idx % GRID_SIZE;
+      const y = Math.floor(idx / GRID_SIZE);
+
+      for (const { dx, dy } of dirs) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || nx >= GRID_SIZE || ny < 0 || ny >= GRID_SIZE) continue;
+        const nIdx = ny * GRID_SIZE + nx;
+        if (visited.has(nIdx)) continue;
+        if (placements[nIdx]) continue; // occupied
+        if (obstacles[nIdx]) continue;  // obstacle
+        visited.add(nIdx);
+        cells.add(nIdx);
+        queue.push({ idx: nIdx, dist: dist + 1 });
+      }
+    }
+
+    setReachableCells(cells);
+  }, [movementMode, selectedAttacker, placements, obstacles, movementRemaining]);
 
 /* ---------------------- RENDER ---------------------- */
 if (!lobbyData) {

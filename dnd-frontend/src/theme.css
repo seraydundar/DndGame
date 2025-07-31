@@ -1,0 +1,8 @@
+body.app-theme {
+  background: url('./assets/ui/parchment_tile.jpg');
+  background-size: cover;
+  font-family: 'Cinzel', serif;
+  color: #3a2b1f;
+  margin: 0;
+  min-height: 100vh;
+}

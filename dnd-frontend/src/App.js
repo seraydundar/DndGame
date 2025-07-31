@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 
 // Pages
 import Home               from "./pages/Home";
@@ -65,6 +65,19 @@ function LobbyWrapper({ children }) {
   return children;
 }
 
+function BodyClassController() {
+  const location = useLocation();
+  useEffect(() => {
+    if (location.pathname.startsWith('/battle')) {
+      document.body.classList.remove('app-theme');
+    } else {
+      document.body.classList.add('app-theme');
+    }
+  }, [location]);
+  return null;
+}
+
+
 export default function App() {
   // Uygulama açıldığında CSRF çerezini al
   useEffect(() => {
@@ -76,6 +89,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <BodyClassController />
         <AuthContext.Consumer>
           {({ userId }) => (
             <WebSocketProvider userId={userId}>

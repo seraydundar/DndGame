@@ -4,6 +4,7 @@ import App from './App';
 import { FriendProvider } from './contexts/FriendContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import axios from 'axios';
+import './theme.css';
 
 // Proxy sayesinde aynı origin olarak sayılacağız
 axios.defaults.withCredentials = true;
