@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import './BattleSetup.css';
 import api from '../services/api';
 import { getBattleSocket } from '../services/battleSocket';
+import { obstacleIcons, obstacleList } from '../utils/obstacles';
 
 import forestPng  from '../assets/backgrounds/forest.png';
 import dungeonJpg from '../assets/backgrounds/dungeon.jpg';
@@ -16,6 +17,8 @@ export default function BattleSetup({
   placements: initialPlacements,
   availableCharacters,
   availableCreatures,
+  obstacles: initialObstacles = {},
+  setObstacles,
   onStartBattle,
   selectedBg,
   setSelectedBg,
@@ -28,6 +31,8 @@ export default function BattleSetup({
   const TOTAL_CELLS = COLS * ROWS;
 
   const [placements, setPlacements] = useState(initialPlacements || {});
+  const [obstaclesState, setObstaclesState] = useState(initialObstacles);
+  const obstacles = obstaclesState;
 
   const handleBgChange = (e) => {
     const newBg = e.target.value;
@@ -67,7 +72,8 @@ export default function BattleSetup({
   const handleDrop = async (e, targetIndex) => {
     e.preventDefault();
     const type        = e.dataTransfer.getData('type');
-    const id          = parseInt(e.dataTransfer.getData('id'), 10);
+    const rawId       = e.dataTransfer.getData('id');
+    const id          = type === 'obstacle' ? rawId : parseInt(rawId, 10);
     const sourceIndex = e.dataTransfer.getData('sourceIndex');
 
     if (type === 'move' && sourceIndex !== '') {
@@ -86,6 +92,10 @@ export default function BattleSetup({
       catch(er){ console.error('spawn-monster', er); return; }
     } else if (type === 'move') {
       entity = placements[sourceIndex];
+    } else if (type === 'obstacle') {
+      if (placements[targetIndex] || obstacles[targetIndex]) return;
+      setObstaclesState((p) => ({ ...p, [targetIndex]: { id } }));
+      return;
     }
 
     if (entity) setPlacements((p) => ({ ...p, [targetIndex]: entity }));
@@ -96,7 +106,10 @@ export default function BattleSetup({
     if (Object.keys(placements).length === 0) {
       return alert('Haritaya en az bir birim yerleştirmelisiniz.');
     }
-    onStartBattle(placements);
+    if (typeof setObstacles === 'function') {
+      setObstacles(obstacles);
+    }
+    onStartBattle(placements, obstacles);
   };
 
   /* -------- Havuzlar -------- */
@@ -111,6 +124,7 @@ export default function BattleSetup({
   /* -------- Grid Hücreleri -------- */
   const cells = Array.from({ length: TOTAL_CELLS }, (_, i) => {
     const placed = placements[i];
+    const obstacle = obstacles[i];
     return (
       <div
         key={i}
@@ -132,6 +146,12 @@ export default function BattleSetup({
               borderRadius: '50%',
             }}
           />
+        )}
+        {!placed && obstacle && (
+          (() => {
+            const Icon = obstacleIcons[obstacle.id];
+            return <Icon size={ICON_SIZE} />;
+          })()
         )}
       </div>
     );
@@ -206,6 +226,25 @@ export default function BattleSetup({
                   <span>{cr.name}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div>
+            <h3>Obje Havuzu</h3>
+            <div className="creature-list">
+              {obstacleList.map((ob) => {
+                const Icon = obstacleIcons[ob];
+                return (
+                  <div
+                    key={ob}
+                    className="character-tile"
+                    draggable={isGM}
+                    onDragStart={(ev) => handleDragStart(ev, { id: ob }, 'obstacle')}
+                  >
+                    <Icon size={ICON_SIZE} />
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

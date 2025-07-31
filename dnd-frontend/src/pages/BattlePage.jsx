@@ -33,6 +33,28 @@ const bgNameFromPath = p => {
 };
 const resolveBg = b => BG_MAP[b] || b;
 
+// Basit Bresenham algoritması ile görüş hattı kontrolü
+const hasLineOfSight = (startIdx, endIdx, obstacles, size) => {
+  let x0 = startIdx % size;
+  let y0 = Math.floor(startIdx / size);
+  const x1 = endIdx % size;
+  const y1 = Math.floor(endIdx / size);
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  while (!(x0 === x1 && y0 === y1)) {
+    const idx = y0 * size + x0;
+    if (idx !== startIdx && idx !== endIdx && obstacles[idx]) return false;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx) { err += dx; y0 += sy; }
+  }
+  return true;
+};
+
+
 export default function BattlePage() {
   const { id } = useParams();
   const currentUserId = +localStorage.getItem('user_id') || 0;
@@ -45,6 +67,7 @@ export default function BattlePage() {
   const [allCharacters, setAllCharacters]         = useState([]);
   const [availableCharacters, setAvailableCharacters] = useState([]);
   const [placements, setPlacements]               = useState({});
+  const [obstacles, setObstacles]                 = useState({});
   const [battleStarted, setBattleStarted]         = useState(false);
   const [initiativeOrder, setInitiativeOrder]     = useState([]);
   const [currentTurnIndex, setCurrentTurnIndex]   = useState(0);
@@ -193,6 +216,7 @@ export default function BattlePage() {
           const d = res.data;
           setInitiativeOrder(d.initiative_order);
           setPlacements(d.placements);
+          setObstacles(d.obstacles || {});
           setCurrentTurnIndex(d.current_turn_index || 0);
           if (d.background) setSelectedBg(resolveBg(d.background));
           if (Array.isArray(d.chat_log)) {
@@ -275,6 +299,9 @@ export default function BattlePage() {
       setPlacements(prev => {
         /* aynı eski creatures logic’iniz */
       });
+    }
+     if (payload.obstacles) {
+      setObstacles(payload.obstacles);
     }
 
     // 2) initiative sırası
@@ -440,7 +467,7 @@ const handleDrop = async (e, cellIndex) => {
 };
 
 // --- Savaş başlat (GM) ---
-const handleStartBattle = async (childPlacements) => {
+const handleStartBattle = async (childPlacements, childObstacles = {}) => {
   if (!isGM) return;
 
   try {
@@ -459,6 +486,7 @@ const handleStartBattle = async (childPlacements) => {
       lobby_id:             lobbyId,
       character_ids:        placedIds,
       placements:           childPlacements,
+      obstacles:            childObstacles,
       available_characters: availableCharacters.map(c => c.id),
       background:           bgNameFromPath(selectedBg),
     });
@@ -474,6 +502,7 @@ const handleStartBattle = async (childPlacements) => {
     const res = await api.get(`battle-state/${lobbyId}/`);
     setInitiativeOrder(res.data.initiative_order);
     setPlacements(res.data.placements);
+    setObstacles(res.data.obstacles || {});
     setCurrentTurnIndex(res.data.current_turn_index || 0);
     if (res.data.background) setSelectedBg(res.data.background);
 
@@ -670,6 +699,18 @@ const handleMoveCreature = async targetCell => {
 const handleMeleeAttack = async targetCharacter => {
   if (!selectedAttacker || !targetCharacter) return;
 
+  const attackerEntry = Object.entries(placements)
+    .find(([_, u]) => u?.id === selectedAttacker.id);
+  const targetEntry = Object.entries(placements)
+    .find(([_, u]) => u?.id === targetCharacter.id);
+  if (!attackerEntry || !targetEntry) return;
+  const attackerIdx = Number(attackerEntry[0]);
+  const targetIdx = Number(targetEntry[0]);
+  if (!hasLineOfSight(attackerIdx, targetIdx, obstacles, GRID_SIZE)) {
+    alert('Hedef engel arkasında!');
+    return;
+  }
+
   try {
     // 1) API çağrısı
     const res = await api.post('combat/melee-attack/', {
@@ -714,9 +755,10 @@ const handleMeleeAttack = async targetCharacter => {
     });
 
     // 4) Son durumu çek ve ekranı güncelle
-    const state = await api.get(`battle-state/${lobbyId}/`);
+  const state = await api.get(`battle-state/${lobbyId}/`);
   setInitiativeOrder(state.data.initiative_order);
   setPlacements(state.data.placements);
+  setObstacles(state.data.obstacles || {});
   setCurrentTurnIndex(state.data.current_turn_index || 0);
   if (state.data.background) setSelectedBg(state.data.background);
 
@@ -773,6 +815,18 @@ const handleCreatureAttack = async targetCharacter => {
   const handleRangedAttack = async targetCharacter => {
     if (!selectedAttacker || !targetCharacter) return;
 
+    const attackerEntry = Object.entries(placements)
+      .find(([_, u]) => u?.id === selectedAttacker.id);
+    const targetEntry = Object.entries(placements)
+      .find(([_, u]) => u?.id === targetCharacter.id);
+    if (!attackerEntry || !targetEntry) return;
+    const attackerIdx = Number(attackerEntry[0]);
+    const targetIdx = Number(targetEntry[0]);
+    if (!hasLineOfSight(attackerIdx, targetIdx, obstacles, GRID_SIZE)) {
+      alert('Hedef engel arkasında!');
+      return;
+    }
+
     try {
       const res = await api.post('combat/ranged-attack/', {
         attacker_id: selectedAttacker.id,
@@ -819,6 +873,7 @@ const handleCreatureAttack = async targetCharacter => {
       const state = await api.get(`battle-state/${lobbyId}/`);
       setInitiativeOrder(state.data.initiative_order);
       setPlacements(state.data.placements);
+      setObstacles(state.data.obstacles || {});
       setCurrentTurnIndex(state.data.current_turn_index || 0);
       if (state.data.background) setSelectedBg(state.data.background);
 
@@ -841,6 +896,21 @@ const handleCreatureAttack = async targetCharacter => {
   // --- Spell Cast (tek hedef + alan) ---
 const handleSpellCast = async (spellId, targetIds = [], extra = {}) => {
   if (!selectedAttacker) return;
+
+   if (targetIds.length === 1) {
+    const attackerEntry = Object.entries(placements)
+      .find(([_, u]) => u?.id === selectedAttacker.id);
+    const targetEntry = Object.entries(placements)
+      .find(([_, u]) => u?.id === targetIds[0]);
+    if (attackerEntry && targetEntry) {
+      const attackerIdx = Number(attackerEntry[0]);
+      const targetIdx = Number(targetEntry[0]);
+      if (!hasLineOfSight(attackerIdx, targetIdx, obstacles, GRID_SIZE)) {
+        alert('Hedef engel arkasında!');
+        return;
+      }
+    }
+  }
 
   try {
     /* ---------- 1) Alan etkili (“area”) büyü ---------- */
@@ -942,6 +1012,7 @@ const handleSpellCast = async (spellId, targetIds = [], extra = {}) => {
     const state = await api.get(`battle-state/${lobbyId}/`);
   setInitiativeOrder(state.data.initiative_order);
   setPlacements(state.data.placements);
+  setObstacles(state.data.obstacles || {});
   setCurrentTurnIndex(state.data.current_turn_index || 0);
   if (state.data.background) setSelectedBg(state.data.background);
   setActionPointsRemaining(p => Math.max(0, p - 1));
@@ -1082,6 +1153,8 @@ if (!lobbyData) {
           lobbyId={lobbyId}
           characters={allCharacters}
           placements={placements}
+          obstacles={obstacles}
+          setObstacles={setObstacles}
           availableCharacters={availableCharacters}
           availableCreatures={availableCreatures}
           gridSize={GRID_SIZE}
@@ -1136,6 +1209,7 @@ if (!lobbyData) {
 
         <BattleMap
           placements={placements}
+          obstacles={obstacles}
           reachableCells={reachableCells}
           rangedReachableCells={rangedReachableCells}
           gridSize={GRID_SIZE}

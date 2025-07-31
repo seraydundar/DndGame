@@ -1,5 +1,6 @@
 // src/pages/BattleMap.jsx
 import React from 'react';
+import { obstacleIcons } from '../utils/obstacles';
 
 /**
  * BattleMap – kare grid üzerine karakter ikon + isim + HP bar çizer.
@@ -10,6 +11,7 @@ import React from 'react';
  */
 export default function BattleMap({
   placements,
+  obstacles = {},
   reachableCells,
   rangedReachableCells = new Set(),
   gridSize,
@@ -51,6 +53,7 @@ export default function BattleMap({
   /* ------------ Hücreleri oluştur ------------ */
   const cells = Array.from({ length: totalCells }, (_, i) => {
     const ch = placements[i];
+    const obs = obstacles[i];
 
     /* HP yüzdesi */
     const hpPerc =
@@ -73,13 +76,13 @@ export default function BattleMap({
 
     return (
       <div
-        key={i}
-        className={cellClasses}
-        onClick={() => onCellClick(i, ch)}
-        onMouseEnter={() => onCellHover && onCellHover(i)}
-        onDragOver={onDragOver}
-        onDrop={(e) => onDrop(e, i)}
-        style={{
+          key={i}
+          className={cellClasses}
+          onClick={() => onCellClick(i, ch)}
+          onMouseEnter={() => onCellHover && onCellHover(i)}
+          onDragOver={onDragOver}
+          onDrop={(e) => onDrop(e, i)}
+          style={{
           width: CELL_SIZE,
           height: CELL_SIZE,
           display: 'flex',
@@ -163,6 +166,12 @@ export default function BattleMap({
               </div>
             )}
           </div>
+        )}
+        {!ch && obs && (
+          (() => {
+            const Icon = obstacleIcons[obs.id];
+            return <Icon size={ICON_SIZE} />;
+          })()
         )}
       </div>
     );
