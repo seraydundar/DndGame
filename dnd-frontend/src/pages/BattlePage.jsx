@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams }                  from 'react-router-dom';
 import api                            from '../services/api';
 import { createBattleSocket,
@@ -86,6 +86,9 @@ export default function BattlePage() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const [selectedCharacter, setSelectedCharacter] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editVals, setEditVals] = useState({});
+  const selectedCharRef = useRef(null);
   const [movementMode, setMovementMode]           = useState(false);  // ← Yeni
   const [reachableCells, setReachableCells]       = useState(new Set());
   const [moving, setMoving]                       = useState(false);
@@ -101,6 +104,7 @@ export default function BattlePage() {
   const [diceResult, setDiceResult] = useState(null);
   const [diceRolling, setDiceRolling] = useState(false);
   const [diceRequester, setDiceRequester] = useState(null);
+  useEffect(() => { selectedCharRef.current = selectedCharacter; }, [selectedCharacter]);
 
  const currentEntry = initiativeOrder[currentTurnIndex] || {};
 
@@ -353,6 +357,22 @@ export default function BattlePage() {
           setDiceRolling(false);
         }
         break;
+        case 'characterUpdate': {
+        const ch = d.character;
+        if (ch) {
+          setPlacements(prev => {
+            const np = { ...prev };
+            Object.keys(np).forEach(k => {
+              if (np[k]?.id === ch.id) np[k] = { ...ch, type: np[k].type };
+            });
+            return np;
+          });
+          if (selectedCharRef.current?.id === ch.id) {
+            setSelectedCharacter(ch);
+          }
+        }
+        break;
+      }
     }
   };
   
@@ -1408,35 +1428,115 @@ if (!lobbyData) {
        <div className="char-detail-panel">
          <button
            className="close-btn"
-           onClick={() => setSelectedCharacter(null)}
+           onClick={() => { setSelectedCharacter(null); setEditMode(false); }}
          >✖</button>
 
          <h2>{selectedCharacter.name}</h2>
-         <p>
-           <strong>HP:</strong> {selectedCharacter.hp ?? selectedCharacter.current_hp} /
-           {" "}
-           {selectedCharacter.maxHp ?? selectedCharacter.max_hp}
-         </p>
-         {selectedCharacter.xp != null && (
-           <p>
-             <strong>XP:</strong> {selectedCharacter.xp}
-           </p>
+         {editMode ? (
+           <>
+             <label>HP
+               <input
+                 name="hp"
+                 type="number"
+                 value={editVals.hp}
+                 onChange={e => setEditVals(v => ({ ...v, [e.target.name]: Number(e.target.value) }))}
+               />
+             </label>
+             <label>Max HP
+               <input
+                 name="max_hp"
+                 type="number"
+                 value={editVals.max_hp}
+                 onChange={e => setEditVals(v => ({ ...v, [e.target.name]: Number(e.target.value) }))}
+               />
+             </label>
+             <label>Gold
+               <input
+                 name="gold"
+                 type="number"
+                 value={editVals.gold}
+                 onChange={e => setEditVals(v => ({ ...v, [e.target.name]: Number(e.target.value) }))}
+               />
+             </label>
+             <div>
+               {['strength','dexterity','constitution','intelligence','wisdom','charisma'].map(s => (
+                 <label key={s} style={{ marginRight: 8 }}>
+                   {s.slice(0,3).toUpperCase()}:
+                   <input
+                     name={s}
+                     type="number"
+                     value={editVals[s]}
+                     onChange={e => setEditVals(v => ({ ...v, [e.target.name]: Number(e.target.value) }))}
+                   />
+                 </label>
+               ))}
+             </div>
+             <button
+               onClick={async () => {
+                 try {
+                   const res = await api.patch(`characters/${selectedCharacter.id}/gm-update/`, editVals);
+                   setSelectedCharacter(res.data);
+                   setPlacements(prev => {
+                     const np = { ...prev };
+                     Object.keys(np).forEach(k => {
+                       if (np[k]?.id === res.data.id) np[k] = { ...res.data, type: np[k].type };
+                     });
+                     return np;
+                   });
+                   setEditMode(false);
+                 } catch (err) {
+                   console.error('GM update failed', err);
+                 }
+               }}
+             >Kaydet</button>
+             <button onClick={() => setEditMode(false)}>İptal</button>
+           </>
+         ) : (
+           <>
+             <p>
+               <strong>HP:</strong> {selectedCharacter.hp ?? selectedCharacter.current_hp} {" / "}
+               {selectedCharacter.maxHp ?? selectedCharacter.max_hp}
+             </p>
+             {selectedCharacter.xp != null && (
+               <p>
+                 <strong>XP:</strong> {selectedCharacter.xp}
+               </p>
+             )}
+             {selectedCharacter.level != null && (
+               <p>
+                 <strong>Level:</strong> {selectedCharacter.level}
+               </p>
+             )}
+             <p>
+               <strong>Str:</strong> {selectedCharacter.strength}&nbsp;
+               <strong>Dex:</strong> {selectedCharacter.dexterity}&nbsp;
+               <strong>Con:</strong> {selectedCharacter.constitution}
+               <strong>Int:</strong> {selectedCharacter.intelligence}&nbsp;
+               <strong>Wis:</strong> {selectedCharacter.wisdom}&nbsp;
+               <strong>Cha:</strong> {selectedCharacter.charisma}
+               <strong>AC:</strong> {selectedCharacter.ac}
+             </p>
+             {isGM && (
+               <button
+                 onClick={() => {
+                   setEditVals({
+                     hp: selectedCharacter.hp,
+                     max_hp: selectedCharacter.max_hp,
+                     gold: selectedCharacter.gold,
+                     strength: selectedCharacter.strength,
+                     dexterity: selectedCharacter.dexterity,
+                     constitution: selectedCharacter.constitution,
+                     intelligence: selectedCharacter.intelligence,
+                     wisdom: selectedCharacter.wisdom,
+                     charisma: selectedCharacter.charisma,
+                   });
+                   setEditMode(true);
+                 }}
+               >Düzenle</button>
+             )}
+           </>
          )}
-         {selectedCharacter.level != null && (
-           <p>
-             <strong>Level:</strong> {selectedCharacter.level}
-           </p>
-         )}
-         <p>
-           <strong>Str:</strong> {selectedCharacter.strength}&nbsp;
-           <strong>Dex:</strong> {selectedCharacter.dexterity}&nbsp;
-           <strong>Con:</strong> {selectedCharacter.constitution}
-           <strong>Int:</strong> {selectedCharacter.intelligence}&nbsp;
-           <strong>Wis:</strong> {selectedCharacter.wisdom}&nbsp;
-           <strong>Cha:</strong> {selectedCharacter.charisma}
-           <strong>AC:</strong> {selectedCharacter.ac}
-
-         </p>
+         
          {/* İstersen buraya daha fazla stat ekleyebilirsin */}
        </div>
      )}
