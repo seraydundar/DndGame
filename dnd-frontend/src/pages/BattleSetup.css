@@ -7,7 +7,7 @@
 :root{
   --cols:20
   --rows:20;             /* 20x20 grid */
-  --cell:35px;           /* hücre boyutu */
+  --cell:80px;           /* hücre boyutu */
   --gap:2px;
   --board-w:calc(var(--cols)*var(--cell)+(var(--cols)-1)*var(--gap));
 
@@ -24,8 +24,8 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
                  color:var(--edge);text-shadow:2px 2px 4px rgba(0,0,0,.7);}
 
 /* ---------- Layout ------------------------------------------- */
-.setup-row{display:flex;gap:24px;align-items:flex-start;margin-bottom:32px;}
-.pools-column{display:flex;flex-direction:column;gap:32px;}
+.setup-row{display:flex;gap:16px;align-items:flex-start;margin-bottom:32px;}
+.pools-column{display:flex;flex-direction:column;gap:24px;}
 
 /* ---------- Parşömen Panel ----------------------------------- */
 .parch-box{
@@ -38,7 +38,8 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 
 /* ---------- Grid Panel --------------------------------------- */
 .grid-panel{
-  width:calc(var(--board-w) + 40px);     /* sağ-sol nefes */
+  height:calc(var(--rows) * var(--cell) + (var(--rows) - 1) * var(--gap));
+  width:calc(var(--board-w) + px);     /* sağ-sol nefes */
   overflow-x:auto;
   background:var(--bg-parch) repeat;
   padding:16px;
@@ -72,8 +73,8 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 .available-list,
 .character-list,
 .creature-list{
-  width:260px;
-  max-height:400px;
+  width:620px;                       /* daha geniş panel */
+  max-height:300px;  
   overflow-y:auto;
   background:var(--bg-parch) repeat;
   padding:16px;
@@ -85,16 +86,16 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 
 /* Tile */
 .character-tile{
-  width:60px;height:80px;border-radius:6px;overflow:hidden;cursor:grab;
+  width:126px;height:160px;border-radius:12px;overflow:hidden;cursor:grab;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:linear-gradient(135deg,#3e8e41,#2e7d32);
-  box-shadow:0 0 8px #4caf50;padding:4px;transition:.2s;
+  box-shadow:0 0 1px #4caf50;padding:16px;transition:.2s;
 }
 .character-tile:hover{
-  transform:scale(1.1);box-shadow:0 0 12px rgba(255,215,0,.7);
+  transform:scale(1.1);box-shadow:0 0 1px rgba(255,215,0,.7);
 }
-.character-tile img{width:60px;height:60px;object-fit:cover;border-radius:4px;}
-.character-tile span{margin-top:4px;font-weight:bold;font-size:13px;
+.character-tile img{width:80px;height:80px;object-fit:cover;border-radius:4px;}
+.character-tile span{margin-top:1px;font-weight:bold;font-size:16px;
                      color:#322810;text-shadow:1px 1px 2px #000;text-align:center;}
 
 /* ---------- Start Button ------------------------------------- */
@@ -111,7 +112,7 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 }
 
 /* ---------- Responsive --------------------------------------- */
-@media(max-width:1300px){
+@media(max-width:2300px){
   .setup-row{flex-direction:column;align-items:center;}
   .pools-column{flex-direction:row;gap:24px;}
   .character-list,.creature-list,.available-list{width:220px;}

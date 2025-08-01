@@ -108,12 +108,13 @@ export default function BattlePage() {
 
  const currentEntry = initiativeOrder[currentTurnIndex] || {};
 
- // placements bir obje, bu yüzden önce değerleri diziye dönüştürüp find ile arayalım:
- const currentChar = Object.values(placements).find(
-   unit => unit?.id === currentEntry.character_id
- );
- // Şimdi gerçekten sıramızın bizde olup olmadığını kontrol edebiliriz:
- const isMyTurn = currentChar?.player_id === currentUserId;
+// placements bir obje, bu yüzden önce değerleri diziye dönüştürüp find ile arayalım:
+const currentChar = Object.values(placements).find(
+  unit => unit?.id === currentEntry.character_id
+);
+// Şimdi gerçekten sıramızın bizde olup olmadığını kontrol edebiliriz:
+const isMyTurn = currentChar?.player_id === currentUserId;
+const isActiveCharacter = selectedAttacker?.id === currentEntry.character_id;
   
 
   // --- lobbyId’yi belirle / sakla ---
@@ -621,8 +622,8 @@ const handleCellClick = (cellIndex, cellCharacter) => {
 
   /* ---------- Karakter seçimi ---------- */
   if (cellCharacter?.player_id === currentUserId) {
-      if (!isMyTurn) {
-        alert('Sıra sizde değil!');
+      if (!isMyTurn || cellCharacter.id !== currentEntry.character_id) {
+        alert('Sıra bu karakterde değil!');
         return;
       }
       setSelectedAttacker(cellCharacter);
