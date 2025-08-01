@@ -11,23 +11,42 @@
   z-index: 1000;
 }
 .dice-modal {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
+  background: linear-gradient(180deg, #2d333b, #24292e);
+  padding: 30px;
+  border-radius: 36px;
   text-align: center;
+  color: #f0f0f0;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.dice-modal button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dice-modal button:hover {
+  background: #15803d;
 }
 
 .dice {
-  width: 50px;
-  height: 50px;
-  margin: 10px auto;
-  font-size: 2rem;
-  border: 2px solid #333;
-  border-radius: 8px;
+  width: 80px;
+  height: 80px;
+  margin: 20px auto;
+  font-size: 3rem;
+  border: 3px solid #f0f0f0;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+  
+
 
 .dice.rolling {
   animation: roll 1s infinite linear;

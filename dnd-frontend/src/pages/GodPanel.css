@@ -183,21 +183,28 @@
 }
 .gp-inventory-remove {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -12px;
+  right: -12px;
   background: #f44336;
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 20px;
+  width: 10px;
   height: 20px;
-  font-size: 14px;
-  line-height: 18px;
+  font-size: 20px;
+  line-height: 5px;
   cursor: pointer;
 }
 .gp-inventory-remove:hover {
   background: #d32f2f;
 }
+/* Character card action buttons */
+.gp-char-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+}
+
 
 .gp-modal-overlay {
   position: fixed;

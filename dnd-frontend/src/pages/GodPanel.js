@@ -78,6 +78,7 @@ function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll, onUpdate 
       hp: char.hp,
       max_hp: char.max_hp,
       gold: char.gold,
+      xp: char.xp,
       strength: char.strength,
       dexterity: char.dexterity,
       constitution: char.constitution,
@@ -122,6 +123,9 @@ function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll, onUpdate 
           </label>
           <label>Gold
             <input name="gold" type="number" value={editVals.gold} onChange={handleChange} />
+          </label>
+          <label>XP
+            <input name="xp" type="number" value={editVals.xp} onChange={handleChange} />
           </label>
         </>
       ) : (
@@ -184,10 +188,10 @@ function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll, onUpdate 
           <button onClick={() => setEditMode(false)}>İptal</button>
         </div>
       ) : (
-        <>
-          <button onClick={startEdit}>Düzenle</button>
-          <button onClick={() => onRoll(char)}>Zar İste</button>
-        </>
+       <div className="gp-char-actions">
+          <button className="gp-button" onClick={startEdit}>Düzenle</button>
+          <button className="gp-button" onClick={() => onRoll(char)}>Zar İste</button>
+       </div>
       )}
     </div>
   );
