@@ -143,7 +143,10 @@ export default function BattleMap({
             </div>
 
             {/* ---- İSİM ---- */}
-            <span style={{ fontSize: 8, lineHeight: 1, marginTop: 2 }}>
+            <span
+              className={`token-name${ch.id === currentTurnId ? ' current-turn-name' : ''}`}
+              style={{ fontSize: 8, lineHeight: 1, marginTop: 2 }}
+            >
               {ch.name}
             </span>
 

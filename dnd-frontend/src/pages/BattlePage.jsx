@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams }                  from 'react-router-dom';
 import api                            from '../services/api';
-import { createBattleSocket,
-         getBattleSocket }           from '../services/battleSocket';
+import {
+  createBattleSocket,
+  getBattleSocket,
+  sendBattleMessage,
+} from '../services/battleSocket';
 import BattleSetup                   from './BattleSetup';
 import BattleMap                     from './BattleMap';
 import BattleActions                 from './BattleActions';
@@ -159,14 +162,11 @@ const isActiveCharacter = selectedAttacker?.id === currentEntry.character_id;
   // GM arkaplan değişimini diğer oyunculara iletsin
   useEffect(() => {
     if (!isGM || battleStarted) return;
-    const sock = getBattleSocket();
-    if (sock?.readyState === WebSocket.OPEN) {
-      sock.send(JSON.stringify({
-        event: 'battleUpdate',
-        lobbyId,
-        background: selectedBg,
-      }));
-    }
+    sendBattleMessage({
+      event: 'battleUpdate',
+      lobbyId,
+      background: selectedBg,
+    });
   }, [selectedBg, isGM, battleStarted, lobbyId]);
 
 
@@ -473,14 +473,11 @@ const handleDrop = async (e, cellIndex) => {
   setPlacements(nextPlacements);
 
   // 3) WebSocket ile diğer oyunculara bildir
-  const sock = getBattleSocket();
-  if (sock?.readyState === WebSocket.OPEN) {
-    sock.send(JSON.stringify({
-      event:      'battleUpdate',
-      lobbyId,
-      placements: nextPlacements
-    }));
-  }
+  sendBattleMessage({
+    event: 'battleUpdate',
+    lobbyId,
+    placements: nextPlacements,
+  });
 };
 
 // --- Savaş başlat (GM) ---
@@ -531,19 +528,14 @@ const handleStartBattle = async (childPlacements, childObstacles = {}) => {
   // --- Hücre tıklama: önce saldırı/büyü, sonra hareket ---
 const handleCellClick = (cellIndex, cellCharacter) => {
    if (rollRequestMode && cellCharacter) {
-    const sock = getBattleSocket();
-    if (sock?.readyState === WebSocket.OPEN) {
-      const targetId = cellCharacter.player_id ?? cellCharacter.playerId;
-      sock.send(
-        JSON.stringify({
-          event: 'diceRollRequest',
-          data: {
-            playerId: targetId,
-            lobbyId,
-          },
-        })
-      );
-    }
+    const targetId = cellCharacter.player_id ?? cellCharacter.playerId;
+    sendBattleMessage({
+      event: 'diceRollRequest',
+      data: {
+        playerId: targetId,
+        lobbyId,
+      },
+    });
     setRollRequestMode(false);
     return;
   }
@@ -664,11 +656,11 @@ const handleCellClick = (cellIndex, cellCharacter) => {
     setMoving(true);
     try {
       await api.post('combat/move/', { lobby_id: lobbyId, placements: next });
-      getBattleSocket().send(JSON.stringify({
+      sendBattleMessage({
         event: 'battleUpdate',
         lobbyId,
-        placements: next
-      }));
+        placements: next,
+      });
     } catch(err) {
       console.error("Hareket güncelleme hata:", err);
     } finally {
@@ -712,15 +704,17 @@ const handleMoveCreature = async targetCell => {
       grid_x:  Math.floor(targetCell / GRID_SIZE),
       grid_y:  targetCell % GRID_SIZE,
     });
-    getBattleSocket().send(JSON.stringify({
+    sendBattleMessage({
       event: 'battleUpdate',
       lobbyId,
-      creatures: [ {
-        ...selectedAttacker,
-        grid_x: Math.floor(targetCell / GRID_SIZE),
-        grid_y: targetCell % GRID_SIZE
-      }]
-    }));
+      creatures: [
+        {
+          ...selectedAttacker,
+          grid_x: Math.floor(targetCell / GRID_SIZE),
+          grid_y: targetCell % GRID_SIZE,
+        },
+      ],
+    });
   } catch (err) {
     console.error("Canavar hareket hatası:", err);
   } finally {
@@ -779,11 +773,11 @@ const handleMeleeAttack = async targetCharacter => {
     // 3) Chat log’u güncelle ve yayınla
     setChatLog(prev => {
       const next = [...chatLogRes.slice(0, -1), enrichedMsg];
-      getBattleSocket().send(JSON.stringify({
-        event:   'battleUpdate',
+      sendBattleMessage({
+        event: 'battleUpdate',
         lobbyId,
         chatLog: next
-      }));
+      });
       return next;
     });
 
@@ -825,11 +819,11 @@ const handleCreatureAttack = async targetCharacter => {
     const { chat_log: chatLogRes, placements: newPlacements } = res.data;
     setChatLog(prev => {
       const merged = [...chatLogRes];
-      getBattleSocket().send(JSON.stringify({
+      sendBattleMessage({
         event: 'battleUpdate',
         lobbyId,
         chatLog: merged
-      }));
+      });
       return merged;
     });
     setPlacements(newPlacements);
@@ -894,11 +888,11 @@ const handleCreatureAttack = async targetCharacter => {
       // Chat log’u güncelle
       setChatLog(prev => {
         const next = [...chatLogRes.slice(0, -1), enrichedMsg];
-        getBattleSocket().send(JSON.stringify({
-          event:   'battleUpdate',
+        sendBattleMessage({
+          event: 'battleUpdate',
           lobbyId,
           chatLog: next
-        }));
+        });
         return next;
       });
 
@@ -984,11 +978,11 @@ const handleSpellCast = async (spellId, targetIds = [], extra = {}) => {
         // Chat log’a ekle ve WS yayınla
         setChatLog(prev => {
           const next = [...prev, message];
-          getBattleSocket()?.send(JSON.stringify({
-            event:  'battleUpdate',
+          sendBattleMessage({
+            event: 'battleUpdate',
             lobbyId,
             chatLog: next
-          }));
+          });
           return next;
         });
 
@@ -1021,11 +1015,11 @@ const handleSpellCast = async (spellId, targetIds = [], extra = {}) => {
 
       setChatLog(prev => {
         const next = [...prev, message];
-        getBattleSocket()?.send(JSON.stringify({
+        sendBattleMessage({
           event: 'battleUpdate',
           lobbyId,
           chatLog: next
-        }));
+        });
         return next;
       });
 
@@ -1074,12 +1068,12 @@ const handleSelectSpell = spell => {
     const newIdx   = res.data.current_turn_index ?? currentTurnIndex + 1;
 
     // Sunucuya güncellemeyi bildir
-    getBattleSocket().send(JSON.stringify({
+    sendBattleMessage({
       event: 'battleUpdate',
       lobbyId,
       initiativeOrder: newOrder,
       placements: newPlac
-    }));
+    });
 
     // State’leri güncelle
     setInitiativeOrder(newOrder);
@@ -1126,18 +1120,13 @@ const handleCardRollRequest = () => {
     alert('Bu karakter bir oyuncuya ait değil.');
     return;
   }
-  const sock = getBattleSocket();
-  if (sock?.readyState === WebSocket.OPEN) {
-    sock.send(
-      JSON.stringify({
-        event: 'diceRollRequest',
-        data: {
-          playerId: pid,
-          lobbyId,
-        },
-      })
-    );
-  }
+  sendBattleMessage({
+    event: 'diceRollRequest',
+    data: {
+      playerId: pid,
+      lobbyId,
+    },
+  });
 };
 
 
@@ -1425,11 +1414,11 @@ if (!lobbyData) {
           setChatLog(updatedLog);
           // yine tamamını gönderiyorsunuz, ama BattleChat’e
           // sadece filtrelenmişini iletmiş olacağız
-          getBattleSocket().send(JSON.stringify({
-            event: "battleUpdate",
+          sendBattleMessage({
+            event: 'battleUpdate',
             lobbyId,
             chatLog: updatedLog,
-          }));
+          });
         }}
       />
       </div>
@@ -1440,12 +1429,10 @@ if (!lobbyData) {
       visible={diceVisible}
       onRoll={() => {
         setDiceRolling(true);
-        getBattleSocket().send(
-          JSON.stringify({
-            event: 'diceRoll',
-            data: { playerId: currentUserId },
-          })
-        );
+        sendBattleMessage({
+          event: 'diceRoll',
+          data: { playerId: currentUserId },
+        });
       }}
       onClose={() => { setDiceVisible(false); setDiceResult(null); setDiceRequester(null); }}
       isRolling={diceRolling}

@@ -240,6 +240,18 @@ button:hover {
   box-shadow: 0 0 12px rgba(229, 57, 53, 0.8);
 }
 
+/* Character name styles */
+.token-name {
+  font-size: 8px;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.current-turn-name {
+  color: #00ff00;
+  font-weight: bold;
+}
+
 /* Cell outline for the active character */
 .battle-grid .cell.active-turn {
   outline: 2px solid #e53935;

@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import './BattleSetup.css';
 import api from '../services/api';
-import { getBattleSocket } from '../services/battleSocket';
+import { sendBattleMessage } from '../services/battleSocket';
 import { obstacleIcons, obstacleList } from '../utils/obstacles';
 import { GiCrossedSwords } from 'react-icons/gi';
 
@@ -38,16 +38,11 @@ export default function BattleSetup({
   const handleBgChange = (e) => {
     const newBg = e.target.value;
     setSelectedBg(newBg);
-    const sock = getBattleSocket();
-    if (sock?.readyState === WebSocket.OPEN) {
-      sock.send(
-        JSON.stringify({
-          event: 'battleUpdate',
-          lobbyId,
-          background: newBg,
-        })
-      );
-    }
+    sendBattleMessage({
+      event: 'battleUpdate',
+      lobbyId,
+      background: newBg,
+    });
   };
 
   /* -------- Sunucuda canavar oluştur -------- */

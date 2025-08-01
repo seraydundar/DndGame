@@ -410,9 +410,13 @@ export default function PlayerPage() {
             visible={diceVisible}
             onRoll={() => {
               setDiceRolling(true);
-              socket.send(
-                JSON.stringify({ event: 'diceRoll', playerId: currentUserId })
-              );
+              if (socket.readyState === WebSocket.OPEN) {
+                socket.send(
+                  JSON.stringify({ event: 'diceRoll', playerId: currentUserId })
+                );
+              } else {
+                console.warn('WebSocket not ready, diceRoll dropped');
+              }
             }}
             onClose={() => { setDiceVisible(false); setDiceResult(null); }}
             isRolling={diceRolling}

@@ -90,3 +90,14 @@ export function createBattleSocket(lobbyId, onMessageCallback) {
 export function getBattleSocket() {
   return battleSocket;
 }
+
+export function sendBattleMessage(payload) {
+  const sock = getBattleSocket();
+  if (sock?.readyState === WebSocket.OPEN) {
+    sock.send(JSON.stringify(payload));
+    return true;
+  } else {
+    console.warn('WebSocket not ready, message dropped:', payload);
+    return false;
+  }
+}

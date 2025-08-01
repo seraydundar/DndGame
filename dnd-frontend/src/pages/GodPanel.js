@@ -330,15 +330,22 @@ export default function GodPanel() {
 
   // GM "Savaşa Geç"
   const handleBattle = () => {
-    socket.send(JSON.stringify({ event: 'redirect', target: 'battle' }));
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ event: 'redirect', target: 'battle' }));
+    } else {
+      console.warn('WebSocket not ready, redirect message dropped');
+    }
     navigate(`/battle/${lobbyId}`);
   };
 
   const handleDiceRequest = (char) => {
-    socket.send(JSON.stringify({
-      event: 'diceRollRequest',
-      playerId: char.player_id,
-    }));
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({ event: 'diceRollRequest', playerId: char.player_id })
+      );
+    } else {
+      console.warn('WebSocket not ready, diceRollRequest dropped');
+    }
     // show modal until result arrives
     setDiceVisible(true);
     setDiceResult(null);
@@ -463,9 +470,13 @@ export default function GodPanel() {
             visible={diceVisible}
             onRoll={() => {
               setDiceRolling(true);
-              socket.send(
-                JSON.stringify({ event: 'diceRoll', playerId: currentUserId })
-              );
+              if (socket.readyState === WebSocket.OPEN) {
+                socket.send(
+                  JSON.stringify({ event: 'diceRoll', playerId: currentUserId })
+                );
+              } else {
+                console.warn('WebSocket not ready, diceRoll dropped');
+              }
             }}
             onClose={() => {
               setDiceVisible(false);
