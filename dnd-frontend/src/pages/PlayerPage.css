@@ -5,6 +5,8 @@
   padding: 20px;
   background: linear-gradient(135deg, #1a1f24, #0f1113);
   color: #f0f0f0;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 /* Sidebar */
@@ -112,6 +114,7 @@
   padding: 20px;
   border-radius: 4px;
   width: 300px;
+  color: #333;
 }
 .pp-modal h3 {
   margin-top: 0;
