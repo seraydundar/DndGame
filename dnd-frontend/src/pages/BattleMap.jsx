@@ -71,6 +71,7 @@ export default function BattleMap({
       reachableCells.has(i) ? 'reachable' : '',
       rangedReachableCells.has(i) ? 'ranged' : '',
       aoeCells.has(i) ? 'aoe-preview' : '',
+      ch?.id === currentTurnId ? 'current-turn-cell' : '',
     ]
       .filter(Boolean)
       .join(' ');

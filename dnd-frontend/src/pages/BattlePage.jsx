@@ -1365,7 +1365,7 @@ if (!lobbyData) {
                 setMovementMode(false);
               }}
               onChooseRanged={() => {
-                setAttackMode(true);g
+                setAttackMode(true);
                 setAttackType('ranged');
                 setSpellMode(false);
                 setMovementMode(false);

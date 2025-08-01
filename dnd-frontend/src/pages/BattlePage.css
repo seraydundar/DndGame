@@ -34,7 +34,7 @@ html, body {
 .combat-banner {
   position: absolute;
   top: -150px;
-  left: 50%;
+  left: 44%;
   margin-left: -369px;       /* yarısı kadar negatif kaydırma */
   width: 800px;              /* var(--board-w) sabit px */
   height: 400px;              /* var(--banner-h) */
@@ -238,6 +238,12 @@ button:hover {
 .current-turn-token {
   border-color: #e53935;
   box-shadow: 0 0 12px rgba(229, 57, 53, 0.8);
+}
+
+/* Cell outline for the active character */
+.battle-grid .cell.active-turn {
+  outline: 2px solid #e53935;
+  box-shadow: 0 0 8px rgba(229, 57, 53, 0.7);
 }
 
 
