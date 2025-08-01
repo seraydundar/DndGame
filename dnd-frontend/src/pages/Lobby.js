@@ -59,6 +59,9 @@ export default function Lobby() {
       .then(res => {
         const myChars = res.data.filter(c => c.player_id === currentUserId);
         setCharacters(myChars);
+        if (myChars.length === 1) {
+          setSelChar(myChars[0].id);
+        }
       })
       .catch(console.error);
 
@@ -148,11 +151,11 @@ export default function Lobby() {
   };
 
   const toggleReady = async () => {
-    if (!selChar && characters.length) return alert('Önce karakter seç!');
+    const charId = selChar || characters[0]?.id || null;
     try {
       await api.patch(
         `lobbies/${lobbyId}/players/${currentUserId}/ready/`,
-        { is_ready: !isReady, character_id: selChar || null }
+        { is_ready: !isReady, character_id: charId }
       );
       setIsReady(r => !r);
       sendWS({ event: 'playerReadyUpdate', lobbyId });
@@ -208,39 +211,27 @@ export default function Lobby() {
         </section>
       )}
 
-      {/* — Player: Karakter seç & hazır ol — */}
+       {/* — Player: Hazır ol — */}
       {!isGM && (
         <section className="lobby-player">
-          <h3>Select Characater / Ready</h3>
-          {selChar ? (
-            <p>Character: {characters.find(c => c.id === selChar)?.name}</p>
+          <h3>Your Character</h3>
+          {characters.length === 0 ? (
+            <button
+              onClick={() =>
+                navigate(`/lobbies/${lobbyId}/character-creation`)
+              }
+            >
+              Create Character
+            </button>
           ) : (
             <>
-              <select
-                value={selChar}
-                onChange={e => setSelChar(Number(e.target.value))}
-              >
-                <option value="">--Select Characater--</option>
-                {characters.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              {characters.length === 0 && (
-                <button
-                  onClick={() =>
-                    navigate(`/lobbies/${lobbyId}/character-creation`)
-                  }
-                >
-                  Create Character
-                </button>
-              )}
+              <p>Character: {characters[0].name}</p>
+              <button onClick={toggleReady}>
+                {isReady ? 'Hazır Değil' : 'Hazırım'}
+              </button>
             </>
           )}
-          <button onClick={toggleReady}>
-            {isReady ? 'Hazır Değil' : 'Hazırım'}
-          </button>
+          
         </section>
       )}
 
