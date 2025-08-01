@@ -81,7 +81,7 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
 .character-list,
 .creature-list{
   width:620px;                       /* daha geniş panel */
-  max-height:300px;  
+  max-height:200px;
   overflow-y:auto;
   background:var(--bg-parch) repeat;
   padding:16px;
@@ -89,6 +89,18 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
              inset var(--frame) 0 0 0 var(--edge),
              inset -var(--frame) 0 0 0 var(--edge);
   display:flex;flex-wrap:wrap;gap:var(--gap);justify-content:center;
+}
+
+.available-list::-webkit-scrollbar,
+.character-list::-webkit-scrollbar,
+.creature-list::-webkit-scrollbar {
+  width: 6px;
+}
+.available-list::-webkit-scrollbar-thumb,
+.character-list::-webkit-scrollbar-thumb,
+.creature-list::-webkit-scrollbar-thumb {
+  background: #bfa87c;
+  border-radius: 3px;
 }
 
 /* Tile */
@@ -113,11 +125,14 @@ html,body{height:100%;margin:0;font-family:'Cinzel',serif;color:#322810;}
   color:#f0e6d2;border:2px solid #322810;border-radius:4px;
   font-size:14px;cursor:pointer;
   box-shadow:0 0 8px rgba(0,0,0,.6);transition:.2s;
+  display:flex;align-items:center;gap:8px;
 }
 .start-button:hover{
   background:linear-gradient(135deg,#6b5a3f,#3a2a10);
   box-shadow:0 0 12px rgba(255,215,0,.6);
 }
+
+.start-icon{font-size:80px;}
 
 /* ---------- Responsive --------------------------------------- */
 @media(max-width:1200px){

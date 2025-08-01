@@ -6,6 +6,7 @@ import './BattleSetup.css';
 import api from '../services/api';
 import { getBattleSocket } from '../services/battleSocket';
 import { obstacleIcons, obstacleList } from '../utils/obstacles';
+import { GiCrossedSwords } from 'react-icons/gi';
 
 import forestPng  from '../assets/backgrounds/forest.png';
 import dungeonJpg from '../assets/backgrounds/dungeon.jpg';
@@ -252,6 +253,7 @@ export default function BattleSetup({
 
       {isGM && (
         <button className="start-button" onClick={handleStart}>
+          <GiCrossedSwords className="start-icon" />
           Savaşı Başlat
         </button>
       )}
