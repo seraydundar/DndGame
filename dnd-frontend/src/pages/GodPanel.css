@@ -1,9 +1,10 @@
 /* src/pages/GodPanel.css */
 :root {
-  --gp-surface: #1f2428;
-  --gp-bg: linear-gradient(135deg, #353c42, #1d2024);
-  --gp-accent: #4caf50;
-  --gp-accent-dark: #3e8e41;
+  /* Renk paleti PlayerPage ile uyumlu */
+  --gp-surface: linear-gradient(180deg, #2d333b, #24292e);
+  --gp-bg:      linear-gradient(135deg, #1a1f24, #0f1113);
+  --gp-accent:      #16a34a;
+  --gp-accent-dark: #15803d;
   --gp-border: rgba(255,255,255,0.1);
 }
 .god-panel {
@@ -12,7 +13,7 @@
   padding: 20px;
   background: var(--gp-bg);
   color: #f0f0f0;
-  border-radius: 12px;
+  border-radius: 36px;
   border: 1px solid var(--gp-border);
   box-shadow: 0 6px 16px rgba(0,0,0,0.4);
   min-height: calc(100vh - 40px);
@@ -24,7 +25,7 @@
   background: var(--gp-accent);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s, transform 0.2s;
 }
@@ -52,8 +53,9 @@
 }
 /* Grid düzeni, otomatik dolan satırlar */
 .gp-items-container {
-  background: #fafafa;
-  border: 1px solid #ddd;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--gp-border);
+  border-radius: 36px;
   padding: 10px;
   height: 500px;
   overflow-y: auto;
@@ -113,11 +115,11 @@
   position: relative;
   flex: 0 0 440px;
   padding: 16px;
-  background: #f9f9f9;
-  border: 4px solid #e0e0e0;
-  border-radius: 32px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--gp-border);
+  border-radius: 36px;
   transition: background-color 0.2s, border-color 0.2s;
-  color: #333;
+  color: #f0f0f0;
 }
 
 .gp-char-icon {
@@ -151,9 +153,10 @@
 .gp-inventory {
   margin-top: 50px;
   padding: 8px;
-  background: #eef;
+  background: rgba(255,255,255,0.05);
   min-height: 120px;
-  border: 2px dashed #99c;
+  border: 1px dashed #99c;
+  border-radius: 36px;
 }
 .gp-inventory h5 {
   margin: 0 0 8px;
@@ -210,7 +213,7 @@
 .gp-modal {
   background: #fff;
   padding: 20px;
-  border-radius: 6px;
+  border-radius: 4px;
   width: 360px;
   max-height: 90%;
   overflow-y: auto;
