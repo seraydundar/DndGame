@@ -285,13 +285,16 @@ export default function BattlePage() {
         });
         break;
 
-      case 'diceRollRequest':
-        if (Number(d.playerId) === Number(currentUserId)) {
-          alert('GM sizden zar atmanızı istedi!');
+      case 'diceRollRequest': {
+        const targetId = Number(d.playerId);
+        if (targetId === Number(currentUserId) || isGM) {
+          setDiceVisible(true);
+          setDiceResult(null);
+          setDiceRolling(isGM && targetId !== Number(currentUserId));
+          setDiceRequester(targetId);
         }
-        break;  
-      
-      
+        break;
+      }  
 
 
       case 'battleUpdate':
@@ -339,16 +342,7 @@ export default function BattlePage() {
     }
      break;
 
-      case 'diceRollRequest': {
-        const targetId = Number(d.playerId);
-        if (targetId === Number(currentUserId) || isGM) {
-          setDiceVisible(true);
-          setDiceResult(null);
-          setDiceRolling(isGM && targetId !== Number(currentUserId));
-          setDiceRequester(targetId);
-        }
-        break;
-      }
+      
 
       case 'diceRoll':
         setChatLog(prev => prev.concat(`Oyuncu ${d.playerId} zar attı: ${d.result}`));

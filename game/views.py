@@ -868,7 +868,10 @@ class LobbyViewSet(viewsets.ModelViewSet):
         new_ready = request.data.get('is_ready')
         if new_ready is None:
             return Response({"error": "is_ready is required."}, status=status.HTTP_400_BAD_REQUEST)
-        lp.is_ready = bool(new_ready)
+        if isinstance(new_ready, bool):
+            lp.is_ready = new_ready
+        else:
+            lp.is_ready = str(new_ready).lower() in ["true", "1", "yes", "y", "t"]
         lp.save()
         return Response({
             "message": f"Player with player_id={player_id} is_ready={lp.is_ready}"

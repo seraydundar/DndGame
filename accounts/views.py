@@ -317,6 +317,6 @@ def respond_lobby_invite(request, notification_id):
         notif.delete()
         return Response({"error": "You are already in this lobby."}, status=status.HTTP_400_BAD_REQUEST)
 
-    LobbyPlayer.objects.create(lobby=lobby, player_id=request.user.id)
+    LobbyPlayer.objects.create(lobby=lobby, player_id=request.user.id, is_ready=False)
     notif.delete()
     return Response({"message": f"Joined lobby '{lobby.lobby_name}' successfully!"}, status=status.HTTP_200_OK)
