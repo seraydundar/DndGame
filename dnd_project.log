@@ -28018,3 +28018,4 @@ Bad Request: /api/combat/ranged-attack/
 Bad Request: /api/combat/melee-attack/
 Bad Request: /api/combat/melee-attack/
 Bad Request: /api/combat/melee-attack/
+Not Found: /api/lobbies/9/players/1/ready/

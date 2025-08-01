@@ -363,8 +363,12 @@ export default function PlayerPage() {
             inventory
               .map(id => allItems.find(i => i.id === id))
               .filter(Boolean)
-              .map(it => (
-                <InventoryItem key={it.id} item={it} onView={handleView} />
+              .map((it, idx) => (
+                <InventoryItem
+                  key={`${it.id}-${idx}`}
+                  item={it}
+                  onView={handleView}
+                />
               ))
           ) : (
             <p>Envanter boş.</p>

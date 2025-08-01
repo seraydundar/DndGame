@@ -19,6 +19,9 @@ class FriendRequestConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
+        if data.get("type") == "ping":
+            await self.send(json.dumps({"type": "pong"}))
+            return
         if data.get("type") == "friend_response":
             await self.send(text_data=json.dumps({
                 "type": "friend_response",
@@ -49,6 +52,16 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            return
+        if data.get("type") == "ping":
+            await self.send(json.dumps({"type": "pong"}))
+            return
+    
 
     async def notification_message(self, event):
         await self.send(json.dumps(event))

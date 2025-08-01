@@ -1,10 +1,13 @@
 import json
-import random
+
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+
+from .models import LobbyPlayer
 
 class LobbyConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.lobby_id = self.scope['url_route']['kwargs']['lobby_id']
+        self.lobby_id = int(self.scope['url_route']['kwargs']['lobby_id'])
         self.group_name = f"lobby_{self.lobby_id}"
         await self.channel_layer.group_add(
             self.group_name,
@@ -18,8 +21,23 @@ class LobbyConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        user = self.scope.get("user")
+        if user and user.is_authenticated:
+            await self.set_player_unready(user.id)
+
+    @database_sync_to_async
+    def set_player_unready(self, user_id: int):
+        LobbyPlayer.objects.filter(
+            lobby_id=self.lobby_id,
+            player_id=user_id
+        ).update(is_ready=False)
+
+
     async def receive(self, text_data):
         data = json.loads(text_data)
+        if data.get("type") == "ping":
+            await self.send(json.dumps({"type": "pong"}))
+            return
         event = data.get("event")
         if event == "startGame":
             await self.channel_layer.group_send(

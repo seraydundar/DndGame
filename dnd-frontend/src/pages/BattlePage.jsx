@@ -1324,7 +1324,7 @@ if (!lobbyData) {
           <strong>Sıra:</strong>
           {initiativeOrder.map((entry, idx) => (
             <span
-              key={entry.character_id}
+              key={`${entry.character_id}-${idx}`}
               className={idx === currentTurnIndex ? 'current-turn' : ''}
             >
               {entry.name}

@@ -1,6 +1,9 @@
 // src/services/battleSocket.js
 
-let battleSocket = null;
+let battleSocket     = null;
+let pingIntervalId   = null;
+let reconnectTimeout = null;
+let reconnectTries   = 0;
 
 /**
  * Opens (or re-opens) a WebSocket to the battle channel.
@@ -19,51 +22,69 @@ export function createBattleSocket(lobbyId, onMessageCallback) {
   const socketUrl = `${protocol}://${backendHost}:${backendPort}/ws/battle/${lobbyId}/`;
   console.log("🛰  WebSocket bağlantısı başlatılıyor:", socketUrl);
 
-  let socket;
-  try {
-    socket = new WebSocket(socketUrl);
-  } catch (err) {
-    console.error("❌ WebSocket oluşturulamadı:", err);
-    return null;
-  }
+  const connect = () => {
+    clearTimeout(reconnectTimeout);
+    clearInterval(pingIntervalId);
 
-  socket.onopen = () => {
-    console.log("✅ WebSocket açıldı:", socketUrl);
-  };
-
-  socket.onerror = e => {
-    console.error("❌ WebSocket hatası:", e);
-  };
-
-  socket.onclose = e => {
-    console.warn(
-      "⚠️ WebSocket bağlantısı kapandı.",
-      "code=", e.code,
-      "reason=", e.reason
-    );
-  };
-
-  socket.onmessage = event => {
-    console.log("📨 Raw WS mesajı alındı:", event.data);
-    let msg;
     try {
-      msg = JSON.parse(event.data);
+      battleSocket = new WebSocket(socketUrl);
     } catch (err) {
-      console.error("❌ Mesaj JSON.parse hata:", err, "raw:", event.data);
-      return;
+      console.error("❌ WebSocket oluşturulamadı:", err);
+      scheduleReconnect();
+      return null;
     }
-    console.log("🔍 Parsed mesaj:", msg);
-    if (onMessageCallback) {
+
+    battleSocket.onopen = () => {
+      console.log("✅ WebSocket açıldı:", socketUrl);
+      reconnectTries = 0;
+      pingIntervalId = setInterval(() => {
+        if (battleSocket.readyState === WebSocket.OPEN) {
+          battleSocket.send(JSON.stringify({ type: "ping" }));
+        }
+      }, 30000);
+    };
+
+    battleSocket.onerror = e => {
+      console.error("❌ WebSocket hatası:", e);
+    };
+
+    battleSocket.onclose = e => {
+      console.warn(
+        "⚠️ WebSocket bağlantısı kapandı.",
+        "code=", e.code,
+        "reason=", e.reason
+      );
+      scheduleReconnect();
+    };
+
+    battleSocket.onmessage = event => {
+      let msg;
       try {
-        onMessageCallback(msg);
+        msg = JSON.parse(event.data);
       } catch (err) {
-        console.error("❌ onMessageCallback hata:", err, msg);
+        console.error("❌ Mesaj JSON.parse hata:", err, "raw:", event.data);
+        return;
       }
-    }
+      if (msg.type === "pong") return;
+      if (onMessageCallback) {
+        try {
+          onMessageCallback(msg);
+        } catch (err) {
+          console.error("❌ onMessageCallback hata:", err, msg);
+        }
+      }
+    };
+    return battleSocket;
   };
 
-  battleSocket = socket;
-  return socket;
+  const scheduleReconnect = () => {
+    clearInterval(pingIntervalId);
+    reconnectTries += 1;
+    const wait = Math.min(30000, 1000 * reconnectTries);
+    reconnectTimeout = setTimeout(connect, wait);
+  };
+
+  return connect();
 }
 
 export function getBattleSocket() {

@@ -55,8 +55,11 @@ export default function Lobby() {
 
   const fetchCharacters = () =>
     api
-      .get(`characters/?owner=${currentUserId}`)
-      .then(res => setCharacters(res.data))
+      .get(`lobbies/${lobbyId}/characters/`)
+      .then(res => {
+        const myChars = res.data.filter(c => c.player_id === currentUserId);
+        setCharacters(myChars);
+      })
       .catch(console.error);
 
   /* — Yaşam döngüsü — */
@@ -114,6 +117,18 @@ export default function Lobby() {
     const inLobbyIds = new Set(lobby?.lobby_players.map(p => p.player.id) || []);
     return friends.filter(f => !inLobbyIds.has(f.friend_user.id));
   }, [friends, lobby]);
+
+   // Lobby'den ayrılırken hazır değil olarak işaretle
+  useEffect(() => {
+    return () => {
+      api
+        .patch(`lobbies/${lobbyId}/players/${currentUserId}/ready/`, {
+          is_ready: false,
+        })
+        .catch(() => {});
+    };
+  }, [lobbyId, currentUserId]);
+
 
   /* — Handlers — */
   const inviteFriend = async () => {
@@ -197,23 +212,31 @@ export default function Lobby() {
       {!isGM && (
         <section className="lobby-player">
           <h3>Select Characater / Ready</h3>
-          <select
-            value={selChar}
-            onChange={e => setSelChar(Number(e.target.value))}
-          >
-            <option value="">--Select Characater--</option>
-            {characters.map(c => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          {characters.length === 0 && (
-            <button
-              onClick={() => navigate(`/lobbies/${lobbyId}/character-creation`)}
-            >
-              Create Character
-            </button>
+          {selChar ? (
+            <p>Character: {characters.find(c => c.id === selChar)?.name}</p>
+          ) : (
+            <>
+              <select
+                value={selChar}
+                onChange={e => setSelChar(Number(e.target.value))}
+              >
+                <option value="">--Select Characater--</option>
+                {characters.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {characters.length === 0 && (
+                <button
+                  onClick={() =>
+                    navigate(`/lobbies/${lobbyId}/character-creation`)
+                  }
+                >
+                  Create Character
+                </button>
+              )}
+            </>
           )}
           <button onClick={toggleReady}>
             {isReady ? 'Hazır Değil' : 'Hazırım'}

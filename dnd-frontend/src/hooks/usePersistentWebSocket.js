@@ -12,6 +12,7 @@ export default function usePersistentWebSocket(
 ) {
   const wsRef   = useRef(null);
   const pingId  = useRef(null);
+  const pongId  = useRef(null);
   const retries = useRef(0);
 
   const connect = useCallback(() => {
@@ -20,15 +21,29 @@ export default function usePersistentWebSocket(
 
     wsRef.current.onopen = () => {
       retries.current = 0;
-      // 30 sn’de bir ping
       pingId.current = setInterval(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: 'ping' }));
+          clearTimeout(pongId.current);
+          pongId.current = setTimeout(() => {
+            wsRef.current?.close(4000, 'pong timeout');
+          }, 5_000);
         }
       }, 30_000);
     };
 
-    wsRef.current.onmessage = (e) => onMessage?.(JSON.parse(e.data));
+    wsRef.current.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'pong') {
+          clearTimeout(pongId.current);
+          return;
+        }
+        onMessage?.(data);
+      } catch {
+        // ignore parse errors
+      }
+    };
 
     wsRef.current.onclose = () => {
       clearInterval(pingId.current);
@@ -46,6 +61,7 @@ export default function usePersistentWebSocket(
 
     return () => {
       clearInterval(pingId.current);
+      clearTimeout(pongId.current);
       wsRef.current?.close(1000, 'cleanup');
       window.removeEventListener('beforeunload', handleUnload);
     };

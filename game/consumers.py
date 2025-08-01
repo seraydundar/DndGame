@@ -26,6 +26,9 @@ class BattleConsumer(AsyncJsonWebsocketConsumer):
         İstemciden gelen tüm mesajları ‘event’ alanına göre
         aynı gruba tekrar yayınlıyoruz.
         """
+        if content.get("type") == "ping":
+            await self.send_json({"type": "pong"})
+            return
         event = content.get("event")      # örn: "startBattle", "battleUpdate"
         data  = content.get("data", {}) or {}
 
