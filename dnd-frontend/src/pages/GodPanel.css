@@ -113,7 +113,7 @@
 .gp-char-card {
   height: 500px;
   position: relative;
-  flex: 0 0 440px;
+  flex: 0 0 240px;
   padding: 16px;
   background: rgba(255,255,255,0.05);
   border: 1px solid var(--gp-border);

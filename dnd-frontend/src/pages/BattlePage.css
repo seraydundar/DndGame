@@ -234,6 +234,12 @@ button:hover {
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
 }
 
+/* Highlight for active turn */
+.current-turn-token {
+  border-color: #e53935;
+  box-shadow: 0 0 12px rgba(229, 57, 53, 0.8);
+}
+
 
 /*chat */
 /* ---------------------------
@@ -381,4 +387,16 @@ button:hover {
 
 .actions-container {
   margin-top: 16px;
+}
+
+/* Turn order styling */
+.turn-order {
+  margin-bottom: 12px;
+}
+.turn-order span {
+  margin-right: 4px;
+}
+.turn-order .current-turn {
+  color: #e53935;
+  font-weight: bold;
 }

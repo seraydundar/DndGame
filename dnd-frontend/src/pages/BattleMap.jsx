@@ -18,6 +18,7 @@ export default function BattleMap({
   totalCells,
   moving,
   currentUserId,
+  currentTurnId,
   spellMode,
   selectedSpell,
   aoeHoverCell,
@@ -107,6 +108,7 @@ export default function BattleMap({
               draggable
               onClick={() => onCellClick(i, ch)}
               onDragStart={(e) => onDragStart(e, ch, 'grid', i)}
+              className={`token${ch.id === currentTurnId ? ' current-turn-token' : ''}`}
               style={{
                 width: ICON_SIZE,
                 height: ICON_SIZE,

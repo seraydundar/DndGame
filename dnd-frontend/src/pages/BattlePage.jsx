@@ -1354,6 +1354,9 @@ if (!lobbyData) {
               movementRemaining={movementRemaining}
               actionUsed={actionUsed}
               actionPointsRemaining={actionPointsRemaining}
+              currentTurnId={currentEntry.character_id}
+              
+              
 
               onChooseMelee={() => {
                 setAttackMode(true);
@@ -1362,7 +1365,7 @@ if (!lobbyData) {
                 setMovementMode(false);
               }}
               onChooseRanged={() => {
-                setAttackMode(true);
+                setAttackMode(true);g
                 setAttackType('ranged');
                 setSpellMode(false);
                 setMovementMode(false);
