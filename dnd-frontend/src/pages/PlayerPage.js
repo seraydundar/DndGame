@@ -295,6 +295,7 @@ export default function PlayerPage() {
   if (!char) return null;
   const xpNeeded = 100 * 2 ** (char.level - 1);
   const canLevel = char.xp >= xpNeeded && char.level < 20;
+  const charIconUrl = buildIconUrl(char.icon);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -302,6 +303,13 @@ export default function PlayerPage() {
 
         {/* --------- Sol panel --------- */}
         <div className="pp-sidebar">
+          {charIconUrl && (
+            <img
+              className="pp-char-icon"
+              src={charIconUrl}
+              alt={`${char.name} icon`}
+            />
+          )}
           <h3>{char.name}</h3>
           <p><strong>Level:</strong> {char.level}</p>
           <p><strong>HP:</strong>    {char.hp}</p>

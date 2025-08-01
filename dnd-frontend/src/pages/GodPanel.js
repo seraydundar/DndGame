@@ -67,6 +67,7 @@ function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll, onUpdate 
 
   const [editMode, setEditMode]   = useState(false);
   const [editVals, setEditVals]   = useState({});
+  const iconUrl = buildIconUrl(char.icon);
 
   const inventoryItems = (char.inventory || [])
     .map(itemId => allItems.find(i => i.id === itemId))
@@ -102,6 +103,13 @@ function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll, onUpdate 
 
   return (
     <div ref={drop} className={`gp-char-card ${isOver ? 'gp-char-card-over' : ''}`}>
+      {iconUrl && (
+        <img
+          className="gp-char-icon"
+          src={iconUrl}
+          alt={`${char.name} icon`}
+        />
+      )}
       <h4>{char.name}</h4>
       <p><strong>Level:</strong> {char.level}</p>
       {editMode ? (
