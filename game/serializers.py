@@ -179,7 +179,7 @@ class CharacterSerializer(serializers.ModelSerializer):
         ]
         for stat in stats:
             if hasattr(instance, "get_stat_with_bonuses"):
-                rep[stat] = instance.get_stat_with_bonuses(stat)
+                rep[f"total_{stat}"] = instance.get_stat_with_bonuses(stat)
         rep["ac"] = instance.get_total_ac()
         return rep
 

@@ -149,12 +149,12 @@ function CharCard({ char, allItems, onInventoryUpdate, onView, onRoll, onUpdate 
           </ul>
         ) : (
           <ul>
-            <li>STR: {char.strength}</li>
-            <li>DEX: {char.dexterity}</li>
-            <li>CON: {char.constitution}</li>
-            <li>INT: {char.intelligence}</li>
-            <li>WIS: {char.wisdom}</li>
-            <li>CHA: {char.charisma}</li>
+            <li>STR: {char.total_strength ?? char.strength}</li>
+            <li>DEX: {char.total_dexterity ?? char.dexterity}</li>
+            <li>CON: {char.total_constitution ?? char.constitution}</li>
+            <li>INT: {char.total_intelligence ?? char.intelligence}</li>
+            <li>WIS: {char.total_wisdom ?? char.wisdom}</li>
+            <li>CHA: {char.total_charisma ?? char.charisma}</li>
           </ul>
         )}
       </section>
