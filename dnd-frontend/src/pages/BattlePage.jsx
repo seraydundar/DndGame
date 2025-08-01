@@ -1295,6 +1295,7 @@ if (!lobbyData) {
           totalCells={TOTAL_CELLS}
           moving={moving}
           currentUserId={currentUserId}
+          currentTurnId={currentEntry.character_id}
           onCellClick={handleCellClick}
           spellMode={spellMode}
           selectedSpell={selectedSpell}

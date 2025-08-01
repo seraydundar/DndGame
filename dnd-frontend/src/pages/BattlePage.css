@@ -236,8 +236,8 @@ button:hover {
 
 /* Highlight for active turn */
 .current-turn-token {
-  border-color: #e53935;
-  box-shadow: 0 0 12px rgba(229, 57, 53, 0.8);
+  border-color: #4caf50;
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.8);
 }
 
 /* Character name styles */
@@ -254,8 +254,13 @@ button:hover {
 
 /* Cell outline for the active character */
 .battle-grid .cell.active-turn {
-  outline: 2px solid #e53935;
-  box-shadow: 0 0 8px rgba(229, 57, 53, 0.7);
+  outline: 2px solid #4caf50;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.7);
+}
+
+.battle-grid .cell.current-turn-cell {
+  border-color: #4caf50;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.7);
 }
 
 
